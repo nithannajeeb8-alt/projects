@@ -64,7 +64,8 @@
       }
     }
     const exports = result.instance ? result.instance.exports : result.exports;
-    if (!exports || !exports.memory || typeof exports.pw_alloc !== 'function' || typeof exports.pw_reset !== 'function' || typeof exports.pw_aggregate !== 'function') {
+    const required = ['pw_alloc', 'pw_reset', 'pw_aggregate', 'pw_equal_split', 'pw_percentage_split', 'pw_amount_split', 'pw_sum_minor', 'pw_cash_delta_minor', 'pw_account_balance', 'pw_debt_remaining', 'pw_salary_allocate', 'pw_category_buckets', 'pw_cash_projection', 'pw_ratio_round_minor'];
+    if (!exports || !exports.memory || required.some(name => typeof exports[name] !== 'function')) {
       throw new Error('Financial engine exports are incomplete.');
     }
     engine = exports;
@@ -84,6 +85,224 @@
       });
     }
     return instancePromise;
+  }
+
+  function requireEngine() {
+    if (!engine) throw failure(loadError
+      ? 'The required C++ WebAssembly financial engine is unavailable. Reload or reinstall PocketWise after its engine assets are available.'
+      : 'The required C++ WebAssembly financial engine has not finished loading.');
+    return engine;
+  }
+
+  function ensureScratch(inputBytes, outputBytes) {
+    const wasm = requireEngine();
+    wasm.pw_reset();
+    const inputPtr = wasm.pw_alloc(Math.max(1, inputBytes));
+    const outputPtr = wasm.pw_alloc(Math.max(1, outputBytes));
+    if (!inputPtr || !outputPtr) throw new Error('WebAssembly linear-memory allocation failed.');
+    const requiredEnd = Math.max(inputPtr + Math.max(1, inputBytes), outputPtr + Math.max(1, outputBytes));
+    if (!Number.isSafeInteger(requiredEnd) || requiredEnd > 0xFFFFFFFF) throw new Error('WebAssembly memory address calculation overflowed.');
+    if (requiredEnd > wasm.memory.buffer.byteLength) {
+      wasm.memory.grow(Math.ceil((requiredEnd - wasm.memory.buffer.byteLength) / 65536));
+    }
+    if (requiredEnd > wasm.memory.buffer.byteLength) throw new Error('WebAssembly memory could not be expanded for this operation.');
+    return { wasm, inputPtr, outputPtr, buffer: wasm.memory.buffer };
+  }
+
+  function writeI64(words, index, value) {
+    if (!Number.isSafeInteger(value)) throw new RangeError('Money must be represented as an exact integer number of paise.');
+    const high = Math.floor(value / 4294967296);
+    const low = value - high * 4294967296;
+    words[index * 2] = low >>> 0;
+    words[index * 2 + 1] = high >>> 0;
+  }
+
+  function readI64(words, index) {
+    const high = words[index * 2 + 1] | 0;
+    const value = high * 4294967296 + words[index * 2];
+    if (!Number.isSafeInteger(value)) throw new RangeError('C++ returned an amount outside JavaScript exact-integer range.');
+    return value;
+  }
+
+  function readStatus(status, operation) {
+    if (status === 0) return;
+    let message = ({
+      1: 'Invalid arguments or unsupported input size',
+      2: 'Invalid value or arithmetic overflow',
+      3: 'Allocation percentages or totals do not reconcile',
+      4: 'The calculation could not be reconciled exactly'
+    })[status] || ('status ' + status);
+    if (operation === 'percentage split' && status === 3) message = 'Percentages must add up to exactly 100%.';
+    if (operation === 'exact-amount split' && status === 4) message = 'The entered shares must add up to the full amount';
+    throw new Error('C++ ' + operation + ' failed: ' + message + '.');
+  }
+
+  function equalSplit(totalMinor, count) {
+    try {
+      const { wasm, outputPtr, buffer } = ensureScratch(1, count * 8);
+      const status = wasm.pw_equal_split(BigInt(totalMinor), count, outputPtr);
+      readStatus(status, 'equal split');
+      const values = new Uint32Array(buffer, outputPtr, count * 2);
+      return Array.from({ length: count }, (_, i) => readI64(values, i));
+    } catch (error) { throw failure('WebAssembly equal-split calculation failed: ' + error.message, error); }
+  }
+
+  function percentageSplit(totalMinor, basisPoints) {
+    try {
+      const count = basisPoints.length;
+      const { wasm, inputPtr, outputPtr, buffer } = ensureScratch(count * 4, count * 8);
+      const input = new Int32Array(buffer, inputPtr, count);
+      basisPoints.forEach((value, i) => { input[i] = value; });
+      const status = wasm.pw_percentage_split(BigInt(totalMinor), inputPtr, count, outputPtr);
+      readStatus(status, 'percentage split');
+      const output = new Uint32Array(buffer, outputPtr, count * 2);
+      return Array.from({ length: count }, (_, i) => readI64(output, i));
+    } catch (error) { throw failure('WebAssembly percentage allocation failed: ' + error.message, error); }
+  }
+
+  function amountSplit(totalMinor, amounts) {
+    try {
+      const count = amounts.length;
+      const { wasm, inputPtr, outputPtr, buffer } = ensureScratch(count * 8, count * 8);
+      const input = new Uint32Array(buffer, inputPtr, count * 2);
+      amounts.forEach((value, i) => writeI64(input, i, value));
+      const status = wasm.pw_amount_split(BigInt(totalMinor), inputPtr, count, outputPtr);
+      readStatus(status, 'exact-amount split');
+      const output = new Uint32Array(buffer, outputPtr, count * 2);
+      return Array.from({ length: count }, (_, i) => readI64(output, i));
+    } catch (error) { throw failure('WebAssembly exact-amount allocation failed: ' + error.message, error); }
+  }
+
+  function sum(values) {
+    try {
+      if (!Array.isArray(values) || values.length > 1000000) throw new TypeError('The sum input must be an array with at most 1,000,000 values.');
+      const count = values.length;
+      const { wasm, inputPtr, outputPtr, buffer } = ensureScratch(count * 8, 8);
+      const input = new Uint32Array(buffer, inputPtr, Math.max(1, count * 2));
+      values.forEach((value, i) => writeI64(input, i, value));
+      const status = wasm.pw_sum_minor(inputPtr, count, outputPtr);
+      readStatus(status, 'integer-paise sum');
+      return readI64(new Uint32Array(buffer, outputPtr, 2), 0);
+    } catch (error) { throw failure('WebAssembly sum failed: ' + error.message, error); }
+  }
+
+  function cashDelta(amountMinor, typeCode) {
+    try {
+      if (!Number.isSafeInteger(amountMinor) || !Number.isInteger(typeCode)) throw new TypeError('Cash-flow delta input is invalid.');
+      const { wasm, outputPtr, buffer } = ensureScratch(1, 8);
+      const status = wasm.pw_cash_delta_minor(BigInt(amountMinor), typeCode, outputPtr);
+      readStatus(status, 'cash-flow delta');
+      return readI64(new Uint32Array(buffer, outputPtr, 2), 0);
+    } catch (error) { throw failure('WebAssembly cash-flow delta failed: ' + error.message, error); }
+  }
+
+  function accountBalance(openingMinor, rows) {
+    try {
+      if (!Array.isArray(rows) || rows.length > 1000000) throw new TypeError('Account-balance input is invalid or too large.');
+      const count = rows.length;
+      const { wasm, inputPtr, outputPtr, buffer } = ensureScratch(count * 16, 8);
+      const words = new Uint32Array(buffer, inputPtr, Math.max(1, count * 4));
+      rows.forEach((row, i) => {
+        if (!row || !Number.isInteger(row.typeCode) || !Number.isSafeInteger(row.amountMinor)) throw new TypeError('Invalid account transaction at row ' + i + '.');
+        writeI64(words, i * 2, row.amountMinor);
+        words[i * 4 + 2] = row.typeCode >>> 0;
+        words[i * 4 + 3] = ((row.fromAccount ? 1 : 0) | (row.toAccount ? 2 : 0)) >>> 0;
+      });
+      const status = wasm.pw_account_balance(BigInt(openingMinor), inputPtr, count, outputPtr);
+      readStatus(status, 'account balance');
+      return readI64(new Uint32Array(buffer, outputPtr, 2), 0);
+    } catch (error) { throw failure('WebAssembly account-balance calculation failed: ' + error.message, error); }
+  }
+
+  function debtRemaining(originalMinor, repayments) {
+    try {
+      if (!Array.isArray(repayments) || repayments.length > 1000000) throw new TypeError('Debt repayment input is invalid or too large.');
+      const count = repayments.length;
+      const { wasm, inputPtr, outputPtr, buffer } = ensureScratch(count * 8, 8);
+      const input = new Uint32Array(buffer, inputPtr, Math.max(1, count * 2));
+      repayments.forEach((value, i) => writeI64(input, i, value));
+      const status = wasm.pw_debt_remaining(BigInt(originalMinor), inputPtr, count, outputPtr);
+      readStatus(status, 'debt remaining');
+      return readI64(new Uint32Array(buffer, outputPtr, 2), 0);
+    } catch (error) { throw failure('WebAssembly debt calculation failed: ' + error.message, error); }
+  }
+
+  function salaryAllocate(baseMinor, perCycleBaseMinor, payCycles, perCyclePercentDenominator, rules) {
+    try {
+      if (!Array.isArray(rules) || rules.length > 1000 || !Number.isInteger(payCycles) || payCycles < 0 || payCycles > 520) {
+        throw new TypeError('Salary allocation input is invalid or too large.');
+      }
+      const count = rules.length;
+      const { wasm, inputPtr, outputPtr, buffer } = ensureScratch(count * 16, count * 16 + 24);
+      const input = new Uint32Array(buffer, inputPtr, Math.max(1, count * 4));
+      rules.forEach((rule, i) => {
+        if (!rule || !Number.isSafeInteger(rule.valueScaled) || !['percent', 'fixed'].includes(rule.mode) || (rule.mode === 'percent' && Math.abs(rule.valueScaled) > 100000000) || (rule.mode === 'fixed' && (rule.valueScaled < 0 || rule.valueScaled > Number.MAX_SAFE_INTEGER))) throw new TypeError('Invalid salary allocation rule at row ' + i + '.');
+        writeI64(input, i * 2, rule.valueScaled);
+        input[i * 4 + 2] = rule.mode === 'percent' ? 1 : 0;
+        input[i * 4 + 3] = 0;
+      });
+      const summaryPtr = outputPtr + count * 16;
+      const status = wasm.pw_salary_allocate(BigInt(baseMinor), BigInt(perCycleBaseMinor), payCycles, perCyclePercentDenominator, inputPtr, count, outputPtr, summaryPtr);
+      readStatus(status, 'salary allocation');
+      const output = new Uint32Array(buffer, outputPtr, Math.max(1, count * 4));
+      const summary = new Uint32Array(buffer, summaryPtr, 6);
+      return {
+        rows: Array.from({ length: count }, (_, i) => ({ periodMinor: readI64(output, i * 2), perCycleMinor: readI64(output, i * 2 + 1) })),
+        allocatedMinor: readI64(summary, 0),
+        fixedMinor: readI64(summary, 1),
+        percentageScaled: readI64(summary, 2)
+      };
+    } catch (error) { throw failure('WebAssembly salary-allocation calculation failed: ' + error.message, error); }
+  }
+
+  function categoryBuckets(rows, groupCount, bucketCount) {
+    try {
+      if (!Array.isArray(rows) || rows.length > 1000000 || !Number.isInteger(groupCount) || groupCount < 1 || groupCount > 5000 || !Number.isInteger(bucketCount) || bucketCount < 1 || bucketCount > 12) {
+        throw new TypeError('Category comparison input is invalid or too large.');
+      }
+      const count = rows.length;
+      const outputCount = groupCount * bucketCount * 2;
+      const { wasm, inputPtr, outputPtr, buffer } = ensureScratch(count * 24, outputCount * 8);
+      const input = new Uint32Array(buffer, inputPtr, Math.max(1, count * 6));
+      rows.forEach((row, i) => {
+        if (!row || !Number.isSafeInteger(row.amountMinor) || !Number.isInteger(row.groupIndex) || !Number.isInteger(row.bucketIndex) || !Number.isInteger(row.periodIndex) || ![1, -1].includes(row.sign)) {
+          throw new TypeError('Invalid category comparison transaction at row ' + i + '.');
+        }
+        writeI64(input, i * 3, row.amountMinor);
+        input[i * 6 + 2] = row.groupIndex >>> 0;
+        input[i * 6 + 3] = row.bucketIndex >>> 0;
+        input[i * 6 + 4] = row.periodIndex >>> 0;
+        input[i * 6 + 5] = row.sign >>> 0;
+      });
+      const status = wasm.pw_category_buckets(inputPtr, count, groupCount, bucketCount, outputPtr);
+      readStatus(status, 'category comparison');
+      const output = new Uint32Array(buffer, outputPtr, outputCount * 2);
+      return Array.from({ length: outputCount }, (_, i) => readI64(output, i));
+    } catch (error) { throw failure('WebAssembly category-comparison calculation failed: ' + error.message, error); }
+  }
+
+  function cashProjection(openingMinor, deltas) {
+    try {
+      if (!Array.isArray(deltas) || deltas.length > 1000000) throw new TypeError('Cash projection input is invalid or too large.');
+      const count = deltas.length;
+      const { wasm, inputPtr, outputPtr, buffer } = ensureScratch(count * 8, 40);
+      const input = new Uint32Array(buffer, inputPtr, Math.max(1, count * 2));
+      deltas.forEach((value, i) => writeI64(input, i, value));
+      const status = wasm.pw_cash_projection(BigInt(openingMinor), inputPtr, count, outputPtr);
+      readStatus(status, 'cash projection');
+      const output = new Uint32Array(buffer, outputPtr, 10);
+      return { endingMinor: readI64(output, 0), minimumMinor: readI64(output, 1), shortageMinor: readI64(output, 2), shortageIndex: readI64(output, 3), minimumIndex: readI64(output, 4) };
+    } catch (error) { throw failure('WebAssembly cash projection failed: ' + error.message, error); }
+  }
+
+  function ratioRound(amountMinor, numerator, denominator) {
+    try {
+      if (!Number.isSafeInteger(amountMinor) || !Number.isInteger(numerator) || !Number.isInteger(denominator)) throw new TypeError('Rounded ratio input is invalid.');
+      const { wasm, outputPtr, buffer } = ensureScratch(1, 8);
+      const status = wasm.pw_ratio_round_minor(BigInt(amountMinor), numerator, denominator, outputPtr);
+      readStatus(status, 'rounded monetary ratio');
+      return readI64(new Uint32Array(buffer, outputPtr, 2), 0);
+    } catch (error) { throw failure('WebAssembly monetary projection failed: ' + error.message, error); }
   }
 
   function aggregate(transactions, toMinor, bucketFor) {
@@ -185,6 +404,8 @@
     isReady: () => !!engine,
     getLoadError: () => loadError,
     aggregate,
+    equalSplit, percentageSplit, amountSplit, sum, cashDelta, accountBalance, debtRemaining,
+    salaryAllocate, categoryBuckets, cashProjection, ratioRound,
     typeCodes: TYPE_CODES
   });
 });

@@ -4,7 +4,7 @@
 
   const APP_SCRIPTS = [
     'finance-analytics.js',
-    'shared-costs.js',
+    'wasm/shared-costs-api.js',
     'app.js',
     'onboarding.js',
     'statement-parser.js',
