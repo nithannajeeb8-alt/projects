@@ -1693,22 +1693,11 @@
       toast('Receipt download started. Check Downloads or Files.');
     }catch(error){console.error('Receipt download failed.',error);toast('Could not download this receipt. Use Share receipt or Print / Save PDF instead.','error');}
   }
-  function printTransactionReceipt(id){
+  async function printTransactionReceipt(id){
     const tx=state.transactions.find(item=>item.id===id);if(!tx){toast('This transaction could not be found.','error');return;}
-    // Open synchronously from the user's tap so Safari/iOS keeps the print gesture trusted.
-    const printWindow=window.open('about:blank','_blank');
-    if(!printWindow){toast('Allow pop-ups for PocketWise to print this receipt.','amber');return;}
-    try{
-      const autoPrint=`<script>window.addEventListener('load',function(){window.setTimeout(function(){window.print();},300);},{once:true});<\/script>`;
-      const html=standaloneReceiptHTML(tx).replace('</body>',`${autoPrint}</body>`);
-      printWindow.document.open();
-      printWindow.document.write(html);
-      printWindow.document.close();
-    }catch(error){
-      try{printWindow.close();}catch(_){}
-      console.error('Receipt print view could not be opened.',error);
-      toast('Could not open the print view. Try Download copy instead.','error');
-    }
+    const html=standaloneReceiptHTML(tx).replace(/<div class=\"receipt-export-actions\">[\s\S]*?<\/div>/,'');
+    const filename=receiptFilename(tx).replace(/\.html$/i,'.pdf');
+    return deliverGeneratedPDF(html,filename,'PocketWise transaction receipt');
   }
   const deletingTransactionIds = new Set();
   async function confirmDeleteTransaction(id){
@@ -1774,6 +1763,7 @@
   function downloadBlob(filename,blob){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1800);}
 
   const PDF_RENDERER_URL='https://cdn.jsdelivr.net/npm/html2pdf.js@0.14.0/dist/html2pdf.bundle.min.js';
+  const IOS_PDF_RENDERER_URL='https://cdn.jsdelivr.net/npm/html3pdf@0.12.2/dist/html3pdf.bundle.min.js';
   let pendingGeneratedPDF=null;
   let pdfReturnModal=null;
   function isIOSShareContext(){
@@ -1781,16 +1771,11 @@
     return /iPad|iPhone|iPod/i.test(ua)||(navigator.platform==='MacIntel'&&Number(navigator.maxTouchPoints)>1);
   }
   function getPDFRenderScale(root,ios=isIOSShareContext()){
-    if(!ios)return 2;
-    // html2pdf.js renders the complete report into one canvas before splitting it
-    // into A4 pages. iOS WebKit has lower, device-dependent canvas limits, so keep
-    // the backing canvas below a conservative pixel and dimension budget.
-    const rect=root?.getBoundingClientRect?.();
-    const width=Math.max(320,Math.ceil(root?.scrollWidth||rect?.width||794));
-    const height=Math.max(900,Math.ceil(root?.scrollHeight||rect?.height||1123));
-    const maxPixels=2_800_000,maxDimension=3900;
-    const areaScale=Math.sqrt(maxPixels/(width*height));
-    return Math.max(0.25,Math.min(1.15,areaScale,maxDimension/width,maxDimension/height));
+    // html3pdf renders one canvas per A4 page rather than one canvas for the
+    // complete report. Keep each iOS page modest to stay below WebKit's
+    // device-dependent canvas memory limits.
+    if(ios)return 1.15;
+    return 2;
   }
   async function assertValidPDFBlob(blob){
     if(!blob||typeof blob.size!=='number'||blob.size<500)throw new Error('The PDF renderer returned an empty document.');
@@ -1803,6 +1788,8 @@
     return blob;
   }
   async function renderPDFBlobFromHTML(html,filename){
+    const ios=isIOSShareContext();
+    const rendererURL=ios?IOS_PDF_RENDERER_URL:PDF_RENDERER_URL;
     const frame=document.createElement('iframe');
     frame.setAttribute('title','PDF rendering surface');
     frame.setAttribute('aria-hidden','true');
@@ -1810,44 +1797,44 @@
     frame.style.cssText='position:fixed;left:-12000px;top:0;width:794px;height:1123px;border:0;pointer-events:none;z-index:-1';
     document.body.appendChild(frame);
     try{
-      const rendererTag=`<script src="${PDF_RENDERER_URL}" crossorigin="anonymous"><\/script>`;
+      const rendererTag=`<script src="${rendererURL}" crossorigin="anonymous"><\/script>`;
       const source=String(html||'').replace(/<\/head>/i,`${rendererTag}</head>`);
       if(source===String(html||''))throw new Error('The report document is missing its head section.');
       await new Promise((resolve,reject)=>{
         const timeout=window.setTimeout(()=>reject(new Error('PDF renderer loading timed out. Check the connection and retry.')),20000);
         frame.onload=()=>{window.clearTimeout(timeout);resolve();};
-        frame.onerror=()=>{window.clearTimeout(timeout);reject(new Error('Could not load the PDF renderer.'));};
+        frame.onerror=()=>{window.clearTimeout(timeout);reject(new Error('Could not load the PDF renderer.'))};
         frame.srcdoc=source;
       });
       const win=frame.contentWindow,doc=frame.contentDocument;
-      if(!win||!doc||typeof win.html2pdf!=='function')throw new Error('PDF renderer did not initialize.');
+      if(!win||!doc||typeof win.html2pdf!=='function')throw new Error('The PDF renderer did not initialize.');
       try{await doc.fonts?.ready;}catch(_){}
       const root=doc.querySelector('.report-page,.report,.receipt-paper,main')||doc.body;
-      const ios=isIOSShareContext(),baseScale=getPDFRenderScale(root,ios);
-      const scales=ios?[baseScale,Math.max(0.2,baseScale*0.72),Math.max(0.18,baseScale*0.52)].filter((value,index,list)=>list.indexOf(value)===index):[baseScale];
-      let lastError=null;
-      for(let attempt=0;attempt<scales.length;attempt++){
-        try{
-          const width=Math.max(794,Math.ceil(root.scrollWidth||root.getBoundingClientRect().width||794));
-          const height=Math.max(1123,Math.ceil(root.scrollHeight||root.getBoundingClientRect().height||1123));
-          const result=await win.html2pdf().set({
-            margin:[10,10,12,10],
-            filename,
-            image:{type:'jpeg',quality:ios?0.9:0.96},
-            html2canvas:{scale:scales[attempt],useCORS:true,allowTaint:false,logging:false,backgroundColor:'#ffffff',windowWidth:width,windowHeight:height,imageTimeout:15000},
-            jsPDF:{unit:'mm',format:'a4',orientation:'portrait',compress:true},
-            pagebreak:{mode:['css','legacy'],avoid:['.brand','.report-brand-row','.summary','.report-note','.note','.report-footer','.receipt-brand','.receipt-fields']}
-          }).from(root).outputPdf('blob');
-          const blob=await assertValidPDFBlob(new Blob([result],{type:'application/pdf'}));
-          return blob;
-        }catch(error){
-          lastError=error;
-          if(!ios||attempt===scales.length-1)throw error;
-          // Release the previous html2canvas allocation before retrying smaller.
-          await new Promise(resolve=>requestAnimationFrame(()=>setTimeout(resolve,80)));
-        }
+      const scale=getPDFRenderScale(root,ios);
+      const width=Math.max(794,Math.ceil(root.scrollWidth||root.getBoundingClientRect().width||794));
+      const height=Math.max(1123,Math.ceil(root.scrollHeight||root.getBoundingClientRect().height||1123));
+      const options={
+        margin:[10,10,12,10],
+        filename,
+        image:{type:'jpeg',quality:ios?0.88:0.96},
+        html2canvas:{scale,useCORS:true,allowTaint:false,logging:false,backgroundColor:'#ffffff',windowWidth:width,windowHeight:height,imageTimeout:15000},
+        jsPDF:{unit:'mm',format:'a4',orientation:'portrait',compress:true},
+        pagebreak:{mode:['css','legacy'],avoid:['.brand','.report-brand-row','.summary','.report-note','.note','.report-footer','.receipt-brand','.receipt-fields']}
+      };
+      const worker=win.html2pdf().set(options).from(root);
+      let result;
+      if(ios){
+        // html3pdf paginates first and renders each A4 page into its own
+        // canvas. The old html2pdf toCanvas() path created one canvas as tall
+        // as the entire report and silently failed on iOS WebKit.
+        if(typeof worker.toCanvases!=='function')throw new Error('The iOS page-wise PDF renderer is missing its page-splitting support.');
+        result=await worker.toCanvases().toPdf().outputPdf('blob');
+      }else{
+        // Preserve the existing html2pdf path for desktop and Android.
+        result=await worker.outputPdf('blob');
       }
-      throw lastError||new Error('Could not render the PDF on this device.');
+      const blob=result instanceof Blob?result:new Blob([result],{type:'application/pdf'});
+      return await assertValidPDFBlob(blob);
     }finally{frame.remove();}
   }
   function canSharePDFFile(file){
@@ -1888,21 +1875,22 @@
   function showPDFReadyActions(file,title,shareSupported=true){
     pdfReturnModal=capturePDFReturnModal();
     pendingGeneratedPDF={file,title,shareSupported};
-    const message=shareSupported
-      ?'The PDF is ready on this device. Tap Share PDF to open the iOS share sheet, or save a copy to Files.'
-      :'This iOS browser cannot share PDF files directly. Save PDF opens the PDF preview, where you can use Share to save it to Files.';
-    openModal('Your PDF is ready',`<div class="modal-body generated-pdf-ready"><div class="shared-cost-intro"><strong>${escapeHTML(file.name)}</strong><p>${message}</p></div><div class="form-actions"><button type="button" class="secondary-button" data-cancel-modal>Close</button><button type="button" class="secondary-button" id="download-ready-pdf">Save PDF</button>${shareSupported?'<button type="button" class="primary-button" id="share-ready-pdf">Share PDF</button>':''}</div></div>`,'PDF EXPORT');
+    const message=isIOSShareContext()
+      ?(shareSupported?'Your PDF is ready. Save PDF or Share PDF opens the iOS Share Sheet. Choose Save to Files to keep a copy.':'Your PDF is ready. Open the PDF preview, then use Share to save it to Files.')
+      :shareSupported
+        ?'The PDF is ready on this device. Share PDF opens the system sharing options, or save a copy to your device.'
+        :'The PDF is ready on this device. Save a copy to your device.';
+    openModal('Your PDF is ready',`<div class="modal-body generated-pdf-ready"><div class="shared-cost-intro"><strong>${escapeHTML(file.name||'PocketWise-report.pdf')}</strong><p>${message}</p></div><div class="form-actions"><button type="button" class="secondary-button" data-cancel-modal>Close</button><button type="button" class="secondary-button" id="download-ready-pdf">Save PDF</button>${shareSupported?'<button type="button" class="primary-button" id="share-ready-pdf">Share PDF</button>':''}</div></div>`,'PDF EXPORT');
   }
   async function deliverGeneratedPDF(html,filename,title){
     try{
       const safeName=String(filename||'PocketWise-report.pdf').replace(/[^a-zA-Z0-9._-]+/g,'-').replace(/\.html$/i,'.pdf');
       const blob=await renderPDFBlobFromHTML(html,safeName);
-      if(typeof File!=='function'){downloadBlob(safeName,blob);toast('PDF download started. Check Files or Downloads.');return true;}
-      const file=new File([blob],safeName,{type:'application/pdf',lastModified:Date.now()});
       if(isIOSShareContext()){
+        const file=typeof File==='function'?new File([blob],safeName,{type:'application/pdf',lastModified:Date.now()}):blob;
         const shareSupported=canSharePDFFile(file);
         showPDFReadyActions(file,title||'PocketWise PDF',shareSupported);
-        toast(shareSupported?'PDF ready. Tap Share PDF to open the iOS share sheet.':'PDF ready. Save it first, then share from Files.',shareSupported?'green':'amber');
+        toast(shareSupported?'PDF created. Tap Save PDF and choose Save to Files.':'PDF created. Opening the preview is available from Save PDF.','green');
         return true;
       }
       downloadBlob(safeName,blob);
@@ -1931,20 +1919,21 @@
     const pending=pendingGeneratedPDF;
     if(!pending)return;
     if(isIOSShareContext()){
-      if(!pending.shareSupported||!canSharePDFFile(pending.file)){
-        openPDFInBrowser(pending.file);restorePDFReturnModal();toast('PDF opened. Use Share, then Save to Files.','amber');return;
+      if(pending.shareSupported&&canSharePDFFile(pending.file)){
+        // Invoke navigator.share synchronously in this click handler, before
+        // yielding to any awaited operation. iOS requires transient activation.
+        let sharePromise;
+        try{sharePromise=navigator.share({files:[pending.file]});}
+        catch(error){console.warn('iOS PDF Share Sheet could not be opened.',error);pending.shareSupported=false;toast('The Share Sheet could not open. Tap Save PDF again to open the PDF preview.','amber');return;}
+        try{await sharePromise;restorePDFReturnModal();toast('PDF shared. Choose Save to Files to keep a copy.');return;}
+        catch(error){
+          if(error?.name==='AbortError')return;
+          console.warn('iOS PDF save via Share Sheet failed; browser preview fallback is available.',error);
+          pending.shareSupported=false;
+          toast('The Share Sheet could not open. Tap Save PDF again to open the PDF preview.','amber');return;
+        }
       }
-      try{
-        // iOS Web Share file payloads are more reliable when kept to files only.
-        // The user can choose “Save to Files” in the native share sheet.
-        await navigator.share({files:[pending.file]});
-        restorePDFReturnModal();toast('PDF shared. Choose Save to Files to keep a copy.');return;
-      }catch(error){
-        if(error?.name==='AbortError')return;
-        console.warn('iOS PDF save via Share Sheet failed; the browser preview fallback is available.',error);
-        pending.shareSupported=false;
-        toast('The share sheet could not open. Tap Save PDF again to open the PDF preview.','amber');return;
-      }
+      openPDFInBrowser(pending.file);restorePDFReturnModal();toast('PDF opened. Use Share, then Save to Files.','amber');return;
     }
     downloadBlob(pending.file.name,pending.file);restorePDFReturnModal();toast('PDF download started. Check Files or Downloads.');
   }
@@ -1952,17 +1941,21 @@
     const pending=pendingGeneratedPDF;
     if(!pending)return;
     if(!pending.shareSupported||!canSharePDFFile(pending.file)){
-      openPDFInBrowser(pending.file);restorePDFReturnModal();toast('PDF opened. Use Share, then Save to Files.','amber');return;
+      if(isIOSShareContext()){
+        openPDFInBrowser(pending.file);restorePDFReturnModal();toast('PDF opened. Use Share, then Save to Files.','amber');return;
+      }
+      openPDFInBrowser(pending.file);restorePDFReturnModal();toast('PDF opened. Use your device Share action to send it.','amber');return;
     }
-    try{
-      // File-only payload avoids iOS Web Share failures seen with extra metadata.
-      await navigator.share({files:[pending.file]});
-      restorePDFReturnModal();toast('PDF shared.');
-    }catch(error){
+    // Keep the Web Share call in the direct button activation path.
+    let sharePromise;
+    try{sharePromise=navigator.share({files:[pending.file]});}
+    catch(error){console.warn('The system Share Sheet could not be opened.',error);pending.shareSupported=false;toast('The Share Sheet could not open. Tap Save PDF to open the PDF preview.','amber');return;}
+    try{await sharePromise;restorePDFReturnModal();toast('PDF shared.');}
+    catch(error){
       if(error?.name==='AbortError')return;
-      console.warn('The iOS share sheet could not be opened from the follow-up action.',error);
+      console.warn('The system Share Sheet could not be opened.',error);
       pending.shareSupported=false;
-      toast('The share sheet could not open. Tap Save PDF to open the PDF preview.','amber');
+      toast('The Share Sheet could not open. Tap Save PDF to open the PDF preview.','amber');
     }
   }
   async function exportBackup(){const snapshot=JSON.stringify(state);state.settings.lastBackup=new Date().toISOString();if(!(await persistMutation(snapshot,'Could not update backup metadata. Your previous records were restored.')))return;const pack={app:'Pocketwise',format:'pocketwise-backup',version:2,exportedAt:state.settings.lastBackup,description:'Complete local financial records. Keep this file private.',data:state};downloadBlob(`pocketwise-backup-${today()}.json`,new Blob([JSON.stringify(pack,null,2)],{type:'application/json'}));renderSettingsSummary();toast('Full backup exported. Keep it somewhere safe.');}

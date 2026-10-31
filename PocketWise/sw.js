@@ -1,6 +1,7 @@
-const CACHE_NAME = 'pocketwise-shell-v2.4.11-ios-pdf-render-fallback';
+const CACHE_NAME = 'pocketwise-shell-v2.4.13-ios-share-pagewise-pdf';
 const PADDLE_RUNTIME_CACHE = 'pocketwise-paddle-runtime-v243';
 const PDF_RENDERER_URL = 'https://cdn.jsdelivr.net/npm/html2pdf.js@0.14.0/dist/html2pdf.bundle.min.js';
+const IOS_PDF_RENDERER_URL = 'https://cdn.jsdelivr.net/npm/html3pdf@0.12.2/dist/html3pdf.bundle.min.js';
 const BOOTSTRAP_ICONS_CSS_URL = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.2/font/bootstrap-icons.min.css';
 const BASE_URL = self.registration.scope;
 const asset = path => new URL(path, BASE_URL).href;
@@ -69,6 +70,7 @@ self.addEventListener('install', event => {
       const runtimeCache = await caches.open(PADDLE_RUNTIME_CACHE);
       await Promise.all([
         cacheRuntimeAsset(runtimeCache, PDF_RENDERER_URL),
+        cacheRuntimeAsset(runtimeCache, IOS_PDF_RENDERER_URL),
         cacheRuntimeAsset(runtimeCache, BOOTSTRAP_ICONS_CSS_URL)
       ]);
       await self.skipWaiting();
@@ -190,7 +192,7 @@ self.addEventListener('fetch', event => {
     return;
   }
   if (req.method !== 'GET') return;
-  // Cache approved jsDelivr runtime assets, including PaddleOCR.js, html2pdf and
+  // Cache approved jsDelivr runtime assets, including PaddleOCR.js, the PDF renderers (standard html2pdf and iOS page-wise html3pdf) and
   // Bootstrap Icons CSS/fonts. CORS-enabled requests are cacheable and reusable offline.
   // Receipt images are never sent to this cache or to a remote OCR endpoint.
   if (url.origin !== self.location.origin) {
