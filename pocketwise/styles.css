@@ -3126,3 +3126,10 @@ input[type="range"]{touch-action:pan-x pan-y;}
   .event-planner-hub>.form-actions{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
   .event-planner-hub>.form-actions>*{min-height:52px;padding:11px 8px;font-size:12px;}
 }
+
+/* Settings build attribution, kept separate from the app-wide footer. */
+.settings-build-footer{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:7px 14px;padding:16px 8px 24px;color:var(--muted);font-size:10px;line-height:1.5;text-align:center}
+.settings-build-footer a{color:var(--ink);font-weight:700;text-decoration:none}
+.settings-build-footer a:hover{text-decoration:underline;text-underline-offset:3px}
+.settings-build-footer span{opacity:.82}
+@media(max-width:720px){.settings-build-footer{padding:12px 8px calc(22px + env(safe-area-inset-bottom));font-size:9px;gap:4px 10px}}

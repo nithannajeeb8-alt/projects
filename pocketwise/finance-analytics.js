@@ -17,7 +17,7 @@
     return Number.isSafeInteger(rounded) ? rounded : Math.sign(rounded) * Number.MAX_SAFE_INTEGER;
   };
   const major = value => Number((value / 100).toFixed(2));
-  const sum = values => major(values.reduce((total, value) => total + minor(value), 0));
+  const sum = values => major(financialEngine().sum(values.map(minor)));
   const validISO = value => /^\d{4}-\d{2}-\d{2}$/.test(String(value || '')) && (() => {
     const [y, m, d] = String(value).split('-').map(Number);
     const date = new Date(y, m - 1, d, 12);
@@ -83,35 +83,39 @@
     const end = addDays(range.start, -1);
     return { start: addDays(end, -(days - 1)), end, type: 'custom' };
   }
-  function cashDeltaMinor(tx) {
-    const amount = minor(tx && tx.amount);
-    switch (tx && tx.type) {
-      case 'income': case 'refund': case 'borrowed': case 'repay_in': return amount;
-      case 'expense': case 'lent': case 'repay_out': return -amount;
-      case 'transfer': default: return 0;
+  function financialEngine() {
+    const bridge = typeof globalThis !== 'undefined' ? globalThis.PocketWiseWasm : null;
+    if (!bridge || ['cashDelta','accountBalance','sum','salaryAllocate','categoryBuckets','cashProjection','ratioRound'].some(name => typeof bridge[name] !== 'function')) {
+      const error = new Error('The required C++ WebAssembly financial engine does not expose its complete calculation interface.');
+      error.name = 'PocketWiseFinancialEngineError';
+      throw error;
     }
+    return bridge;
+  }
+  function cashDeltaMinor(tx) {
+    const bridge = financialEngine();
+    const code = bridge.typeCodes[String(tx && tx.type || '')] || 0;
+    return bridge.cashDelta(minor(tx && tx.amount), code);
   }
   const txWithin = (tx, start, end) => validISO(tx && tx.date) && tx.date >= start && tx.date <= end;
   function accountBalanceAt(state, account, asOf) {
     const accountId = account.id;
     const openingDate = validISO(account.openingBalanceDate) ? account.openingBalanceDate : null;
     let complete = true;
-    let balance = minor(account.openingBalance || 0);
     if (openingDate && asOf < openingDate) return { balanceMinor: null, complete: false, reason: `The opening date for ${account.name || account.id} is after the reporting date.` };
     const txs = Array.isArray(state.transactions) ? state.transactions : [];
     const accountTxs = txs.filter(tx => validISO(tx.date) && tx.date <= asOf && (tx.accountId === accountId || (tx.type === 'transfer' && tx.toAccountId === accountId)));
     // A zero opening amount does not prove that an account had no earlier
     // transactions. Require an explicit opening-balance date for verified history.
     if (!openingDate) complete = false;
-    accountTxs.forEach(tx => {
-      if (openingDate && tx.date < openingDate) return;
-      if (tx.type === 'transfer') {
-        if (tx.accountId === accountId) balance -= minor(tx.amount);
-        if (tx.toAccountId === accountId) balance += minor(tx.amount);
-      } else if (tx.accountId === accountId) {
-        balance += cashDeltaMinor(tx);
-      }
-    });
+    const bridge = financialEngine();
+    const rows = accountTxs.filter(tx => !openingDate || tx.date >= openingDate).map(tx => ({
+      amountMinor: minor(tx.amount),
+      typeCode: bridge.typeCodes[String(tx.type || '')] || 0,
+      fromAccount: tx.accountId === accountId,
+      toAccount: tx.type === 'transfer' && tx.toAccountId === accountId
+    }));
+    const balance = bridge.accountBalance(minor(account.openingBalance || 0), rows);
     return { balanceMinor: balance, complete, reason: complete ? '' : `The opening date or complete pre-history for ${account.name || account.id} is not recorded.` };
   }
   function consolidatedBalanceAt(state, asOf) {
@@ -119,7 +123,7 @@
       account, ...accountBalanceAt(state, account, asOf)
     }));
     const complete = accounts.every(row => row.complete && row.balanceMinor !== null);
-    const balanceMinor = accounts.reduce((total, row) => total + (row.balanceMinor === null ? 0 : row.balanceMinor), 0);
+    const balanceMinor = financialEngine().sum(accounts.map(row => row.balanceMinor === null ? 0 : row.balanceMinor));
     return { amount: major(balanceMinor), balanceMinor, complete, accounts };
   }
   function consolidatedOpeningBalanceAt(state, startDate) {
@@ -130,7 +134,7 @@
       return { account, ...accountBalanceAt(state, account, addDays(startDate, -1)) };
     });
     const complete = accounts.every(row => row.complete && row.balanceMinor !== null);
-    const balanceMinor = accounts.reduce((total, row) => total + (row.balanceMinor === null ? 0 : row.balanceMinor), 0);
+    const balanceMinor = financialEngine().sum(accounts.map(row => row.balanceMinor === null ? 0 : row.balanceMinor));
     return { amount: major(balanceMinor), balanceMinor, complete, accounts };
   }
   function wasmAggregate(txs, bucketFor) {
@@ -234,11 +238,11 @@
     outflow.subscriptions = c.subscriptions; outflow.debtRepayments = c.debtRepayments;
     outflow.moneyLent = c.moneyLent; outflow.other = c.otherOutflow;
     internalTransfers = c.internalTransfers;
-    const totalInflows = Object.values(inflow).reduce((a, b) => a + b, 0);
-    const totalOutflows = Object.values(outflow).reduce((a, b) => a + b, 0);
+    const totalInflows = financialEngine().sum(Object.values(inflow));
+    const totalOutflows = financialEngine().sum(Object.values(outflow));
     const opening = consolidatedOpeningBalanceAt(state, range.start);
     const closing = consolidatedBalanceAt(state, range.end);
-    const net = totalInflows - totalOutflows;
+    const net = financialEngine().sum([totalInflows, -totalOutflows]);
     return {
       range, openingBalance: opening.amount, closingBalance: closing.amount,
       openingComplete: opening.complete, closingComplete: closing.complete,
@@ -246,28 +250,20 @@
       outflows: Object.fromEntries(Object.entries(outflow).map(([k, v]) => [k, major(v)])),
       totalInflows: major(totalInflows), totalOutflows: major(totalOutflows),
       netCashMovement: major(net), internalTransfers: major(internalTransfers),
-      reconciliationDifference: major((closing.balanceMinor - opening.balanceMinor) - net),
+      reconciliationDifference: major(financialEngine().sum([closing.balanceMinor, -opening.balanceMinor, -net])),
       transactions: txs
     };
   }
   function debtRemainingAt(state, debt, asOf) {
     if (!validISO(debt.date) || debt.date > asOf) return 0;
-    let remaining = minor(debt.amount);
-    (state.transactions || []).forEach(tx => {
-      if (tx.debtId !== debt.id || !validISO(tx.date) || tx.date < debt.date || tx.date > asOf) return;
-      if (debt.direction === 'borrowed' && tx.type === 'repay_out') remaining -= minor(tx.amount);
-      if (debt.direction === 'lent' && tx.type === 'repay_in') remaining -= minor(tx.amount);
-    });
-    return Math.max(0, remaining);
+    const repayType = debt.direction === 'borrowed' ? 'repay_out' : debt.direction === 'lent' ? 'repay_in' : '';
+    const repayments = (state.transactions || []).filter(tx => tx.debtId === debt.id && tx.type === repayType && validISO(tx.date) && tx.date >= debt.date && tx.date <= asOf).map(tx => minor(tx.amount));
+    return financialEngine().debtRemaining(minor(debt.amount), repayments);
   }
   function balanceSheet(state, asOf) {
     const rows = (state.accounts || []).map(account => ({ account, ...accountBalanceAt(state, account, asOf) }));
-    let cashAssets = 0, accountLiabilities = 0;
-    rows.forEach(row => {
-      if (row.balanceMinor === null) return;
-      if (row.balanceMinor >= 0) cashAssets += row.balanceMinor;
-      else accountLiabilities += Math.abs(row.balanceMinor);
-    });
+    const cashAssets = financialEngine().sum(rows.filter(row => row.balanceMinor !== null && row.balanceMinor >= 0).map(row => row.balanceMinor));
+    const accountLiabilities = financialEngine().sum(rows.filter(row => row.balanceMinor !== null && row.balanceMinor < 0).map(row => -row.balanceMinor));
     const receivables = [], debtsPayable = [];
     (state.debts || []).forEach(debt => {
       const outstanding = debtRemainingAt(state, debt, asOf);
@@ -275,16 +271,16 @@
       const item = { id: debt.id, person: debt.person || 'Unspecified', amount: major(outstanding), due: debt.due || '' };
       if (debt.direction === 'lent') receivables.push(item); else debtsPayable.push(item);
     });
-    const receivableMinor = receivables.reduce((n, d) => n + minor(d.amount), 0);
-    const payableMinor = debtsPayable.reduce((n, d) => n + minor(d.amount), 0);
-    const assetsMinor = cashAssets + receivableMinor;
-    const liabilitiesMinor = accountLiabilities + payableMinor;
+    const receivableMinor = financialEngine().sum(receivables.map(d => minor(d.amount)));
+    const payableMinor = financialEngine().sum(debtsPayable.map(d => minor(d.amount)));
+    const assetsMinor = financialEngine().sum([cashAssets, receivableMinor]);
+    const liabilitiesMinor = financialEngine().sum([accountLiabilities, payableMinor]);
     return {
       asOf,
       accounts: rows.map(row => ({ id: row.account.id, name: row.account.name || row.account.id, type: row.account.type || 'other', amount: row.balanceMinor === null ? null : major(row.balanceMinor), complete: row.complete })),
       cash: major(cashAssets), receivables: major(receivableMinor), liabilitiesFromAccounts: major(accountLiabilities), debtsPayable: major(payableMinor),
       receivablesList: receivables, debtsPayableList: debtsPayable,
-      totalAssets: major(assetsMinor), totalLiabilities: major(liabilitiesMinor), netWorth: major(assetsMinor - liabilitiesMinor),
+      totalAssets: major(assetsMinor), totalLiabilities: major(liabilitiesMinor), netWorth: major(financialEngine().sum([assetsMinor, -liabilitiesMinor])),
       complete: rows.every(row => row.complete && row.balanceMinor !== null),
       coverageNote: rows.every(row => row.complete && row.balanceMinor !== null)
         ? 'Includes recorded account balances and tracked lending/borrowing only. External assets and liabilities are not included unless entered in PocketWise.'
@@ -329,7 +325,17 @@
     }
     if (!current || !previous) return { type, currentRange: current, previousRange: previous, labels, categories: [] };
     const categories = (state.activities || []).filter(a => a.kind === 'expense' || a.kind === 'both');
-    const byId = new Map(categories.map(a => [a.id, { id: a.id, name: a.name, current: Array(labels.length).fill(0), previous: Array(labels.length).fill(0) }]));
+    const groups = categories.map(activity => ({ id: activity.id, name: activity.name }));
+    const groupIndex = new Map(groups.map((row, index) => [row.id, index]));
+    const getGroupIndex = tx => {
+      if (groupIndex.has(tx.activityId)) return groupIndex.get(tx.activityId);
+      if (groupIndex.has('other')) return groupIndex.get('other');
+      if (!groupIndex.has('__uncategorised__')) {
+        groupIndex.set('__uncategorised__', groups.length);
+        groups.push({ id: '__uncategorised__', name: 'Uncategorised' });
+      }
+      return groupIndex.get('__uncategorised__');
+    };
     const indexFor = (date, range) => {
       const d = dateOf(date); if (!d) return -1;
       if (type === 'custom') return 0;
@@ -337,24 +343,24 @@
       if (type === 'year') return d.getMonth();
       return Math.min(5, Math.floor((d.getDate() - 1 + (dateOf(range.start).getDay() + 6) % 7) / 7));
     };
+    const bucketRows = [];
     (state.transactions || []).forEach(tx => {
       if (!validISO(tx.date) || !['expense', 'refund'].includes(tx.type)) return;
-      let row = byId.get(tx.activityId) || byId.get('other');
-      if (!row) { if (!byId.has('__uncategorised__')) byId.set('__uncategorised__', { id: '__uncategorised__', name: 'Uncategorised', current: Array(labels.length).fill(0), previous: Array(labels.length).fill(0) }); row = byId.get('__uncategorised__'); }
-      const target = tx.date >= current.start && tx.date <= current.end ? 'current' : tx.date >= previous.start && tx.date <= previous.end ? 'previous' : '';
-      if (!target) return;
-      const index = indexFor(tx.date, target === 'current' ? current : previous);
-      if (index < 0 || index >= labels.length) return;
-      const sign = tx.type === 'refund' ? -1 : 1;
-      row[target][index] = major(minor(row[target][index]) + sign * minor(tx.amount));
+      const periodIndex = tx.date >= current.start && tx.date <= current.end ? 0 : tx.date >= previous.start && tx.date <= previous.end ? 1 : -1;
+      if (periodIndex < 0) return;
+      const selected = periodIndex === 0 ? current : previous;
+      const bucketIndex = indexFor(tx.date, selected);
+      if (bucketIndex < 0 || bucketIndex >= labels.length) return;
+      bucketRows.push({ amountMinor: minor(tx.amount), groupIndex: getGroupIndex(tx), bucketIndex, periodIndex, sign: tx.type === 'refund' ? -1 : 1 });
     });
-    // Keep signed bucket values: a refund can exceed purchases in one bucket and
-    // still offset purchases in another bucket of the same reporting period.
-    // Clamping each bucket independently would overstate net category spending.
-    const rows = [...byId.values()].map(row => ({
-      ...row,
-      currentTotal: sum(row.current), previousTotal: sum(row.previous)
-    })).filter(row => row.currentTotal || row.previousTotal).sort((a, b) => (b.currentTotal + b.previousTotal) - (a.currentTotal + a.previousTotal));
+    const totals = groups.length ? financialEngine().categoryBuckets(bucketRows, groups.length, labels.length) : [];
+    const rows = groups.map((group, index) => {
+      const offset = index * labels.length * 2;
+      const current = totals.slice(offset, offset + labels.length).map(major);
+      const previous = totals.slice(offset + labels.length, offset + labels.length * 2).map(major);
+      return { ...group, current, previous, currentTotal: sum(current), previousTotal: sum(previous) };
+    }).filter(row => row.currentTotal || row.previousTotal)
+      .sort((a, b) => financialEngine().sum([minor(b.currentTotal), minor(b.previousTotal), -minor(a.currentTotal), -minor(a.previousTotal)]));
     const visible = rows.slice(0, 5);
     const hidden = rows.slice(5);
     if (hidden.length) visible.push({
@@ -439,56 +445,70 @@
     const rangeEnd = hasRange ? (selectedRange.effectiveEnd || selectedRange.end) : today;
     const paydays = hasRange ? scheduledPaydays(plan, selectedRange.start, selectedRange.end, today) : [cycle.start];
     const salaryTransactions = (state.transactions || []).filter(tx => tx.type === 'income' && txWithin(tx, rangeStart, rangeEnd) && ((tx.activityId === 'salary') || /salary|wage|payroll/i.test(activityName(state, tx))));
-    const actual = salaryTransactions.reduce((total, tx) => total + minor(tx.amount), 0);
+    const actual = financialEngine().sum(salaryTransactions.map(tx => minor(tx.amount)));
     const payCycles = Math.max(paydays.length, actual > 0 && paydays.length === 0 ? 1 : 0);
-    const expectedForPeriod = expected * payCycles;
+    const expectedForPeriod = financialEngine().sum(Array(payCycles).fill(expected));
     const base = actual > 0 ? actual : (hasRange ? expectedForPeriod : expected);
-    let allocated = 0, fixed = 0, percentage = 0;
-    const rows = (Array.isArray(plan.allocations) ? plan.allocations : []).filter(rule => rule && rule.enabled !== false).map(rule => {
+    const enabledRules = (Array.isArray(plan.allocations) ? plan.allocations : []).filter(rule => rule && rule.enabled !== false);
+    const rules = enabledRules.map(rule => {
       const value = Number(rule.value);
-      const perCycleFixed = rule.mode === 'percent' ? 0 : Math.max(0, minor(value));
-      const amount = rule.mode === 'percent' ? Math.round(base * Math.max(0, value) / 100) : perCycleFixed * (hasRange ? payCycles : 1);
-      allocated += amount;
-      if (rule.mode === 'percent') percentage += Number(value) || 0; else fixed += amount;
-      const monthlyFactor = frequency === 'weekly' ? 52 / 12 : frequency === 'fortnightly' ? 26 / 12 : 1;
-      const perCycleAmount = rule.mode === 'percent' ? Math.round((actual > 0 && hasRange ? (payCycles ? actual / payCycles : actual) : expected) * Math.max(0, value) / 100) : perCycleFixed;
-      return { ...rule, amount: major(amount), perCycleAmount: major(perCycleAmount), monthlyAmount: major(Math.round(perCycleAmount * monthlyFactor)) };
+      if (rule.mode === 'percent') {
+        if (!Number.isFinite(value)) throw new RangeError('A salary percentage rule contains an invalid number.');
+        return { mode: 'percent', valueScaled: Math.round(value * 100) };
+      }
+      return { mode: 'fixed', valueScaled: Math.max(0, minor(value)) };
     });
-    const monthlyFactor = frequency === 'weekly' ? 52 / 12 : frequency === 'fortnightly' ? 26 / 12 : 1;
+    const useActualPerCycle = actual > 0 && hasRange && payCycles > 0;
+    const perCycleNumerator = useActualPerCycle ? actual : expected;
+    const perCyclePercentDenominator = useActualPerCycle ? 10000 * payCycles : 10000;
+    const allocation = financialEngine().salaryAllocate(base, perCycleNumerator, payCycles, perCyclePercentDenominator, rules);
+    const monthlyNumerator = frequency === 'weekly' ? 52 : frequency === 'fortnightly' ? 26 : 12;
+    const monthlyDenominator = 12;
+    const rows = enabledRules.map((rule, index) => {
+      const amountMinor = allocation.rows[index].periodMinor;
+      const perCycleMinor = allocation.rows[index].perCycleMinor;
+      return { ...rule, amount: major(amountMinor), perCycleAmount: major(perCycleMinor), monthlyAmount: major(financialEngine().ratioRound(perCycleMinor, monthlyNumerator, monthlyDenominator)) };
+    });
+    const perCycleAllocated = financialEngine().sum(allocation.rows.map(row => row.perCycleMinor));
     const reportCycle = hasRange ? { start: selectedRange.start, end: selectedRange.end, frequency, payCycles } : cycle;
+    const monthlyBaseDenominator = monthlyDenominator * (hasRange && payCycles ? payCycles : 1);
     return {
       expectedSalary: major(expected), expectedSalaryForPeriod: major(expectedForPeriod), actualSalary: major(actual), baseSalary: major(base), usesActual: actual > 0,
-      monthlyBaseSalary: major(Math.round((hasRange && payCycles ? base / payCycles : base) * monthlyFactor)), frequency, payCycles,
-      cycle: reportCycle, allocations: rows, totalAllocated: major(allocated), monthlyAllocated: major(Math.round(rows.reduce((n, row) => n + minor(row.perCycleAmount), 0) * monthlyFactor)), unallocated: major(base - allocated),
-      overAllocated: allocated > base, percentageTotal: percentage, fixedTotal: major(fixed),
-      percentageOver100: percentage > 100, salaryTransactions: salaryTransactions.length
+      monthlyBaseSalary: major(financialEngine().ratioRound(base, monthlyNumerator, monthlyBaseDenominator)), frequency, payCycles,
+      cycle: reportCycle, allocations: rows, totalAllocated: major(allocation.allocatedMinor), monthlyAllocated: major(financialEngine().ratioRound(perCycleAllocated, monthlyNumerator, monthlyDenominator)), unallocated: major(financialEngine().sum([base, -allocation.allocatedMinor])),
+      overAllocated: allocation.allocatedMinor > base, percentageTotal: allocation.percentageScaled / 100, fixedTotal: major(allocation.fixedMinor),
+      percentageOver100: allocation.percentageScaled > 10000, salaryTransactions: salaryTransactions.length
     };
   }
   function categorySpend(state, start, end, activityId) {
-    let total = 0;
+    const deltas = [];
     (state.transactions || []).forEach(tx => {
       if (tx.activityId !== activityId || !txWithin(tx, start, end)) return;
-      if (tx.type === 'expense') total += minor(tx.amount);
-      else if (tx.type === 'refund') total -= minor(tx.amount);
+      if (tx.type === 'expense') deltas.push(minor(tx.amount));
+      else if (tx.type === 'refund') deltas.push(-minor(tx.amount));
     });
-    return major(Math.max(0, total));
+    return major(Math.max(0, financialEngine().sum(deltas)));
   }
   function projectionEvidence(state, start, end, today, activityId, observedEnd) {
     const stop = observedEnd && validISO(observedEnd) ? observedEnd : today;
     const isCurrentPeriod = validISO(end) && end >= today;
     const elapsed = Math.max(1, Math.round((dateOf(stop) - dateOf(start)) / DAY_MS) + 1);
     const txs = (state.transactions || []).filter(tx => tx.type === 'expense' && txWithin(tx, start, stop) && (!activityId || tx.activityId === activityId));
-    const dayTotals = new Map();
-    txs.forEach(tx => dayTotals.set(tx.date, (dayTotals.get(tx.date) || 0) + minor(tx.amount)));
-    const total = [...dayTotals.values()].reduce((n, v) => n + v, 0);
-    const largestDayShare = total ? Math.max(...dayTotals.values()) / total : 0;
-    const enoughObservations = elapsed >= 7 && txs.length >= 5 && dayTotals.size >= 3;
+    const dayBuckets = new Map();
+    txs.forEach(tx => {
+      if (!dayBuckets.has(tx.date)) dayBuckets.set(tx.date, []);
+      dayBuckets.get(tx.date).push(minor(tx.amount));
+    });
+    const dailyTotals = [...dayBuckets.values()].map(values => financialEngine().sum(values));
+    const total = financialEngine().sum(dailyTotals);
+    const largestDayShare = total ? Math.max(...dailyTotals) / total : 0;
+    const enoughObservations = elapsed >= 7 && txs.length >= 5 && dayBuckets.size >= 3;
     const sufficientlyDistributed = largestDayShare <= 0.65;
     const totalDays = Math.max(1, Math.round((dateOf(end) - dateOf(start)) / DAY_MS) + 1);
     return {
-      elapsed, totalDays, count: txs.length, distinctDays: dayTotals.size, largestDayShare,
+      elapsed, totalDays, count: txs.length, distinctDays: dayBuckets.size, largestDayShare,
       reliable: isCurrentPeriod && enoughObservations && sufficientlyDistributed,
-      projectedMinor: isCurrentPeriod && enoughObservations && sufficientlyDistributed ? Math.round(total / elapsed * totalDays) : null
+      projectedMinor: isCurrentPeriod && enoughObservations && sufficientlyDistributed ? financialEngine().ratioRound(total, totalDays, elapsed) : null
     };
   }
   function periodBudgetMultiplier(range) {
@@ -512,12 +532,15 @@
     const previous = partial && elapsedDays ? { ...fullPrevious, end: addDays(fullPrevious.start, elapsedDays - 1) > fullPrevious.end ? fullPrevious.end : addDays(fullPrevious.start, elapsedDays - 1) } : fullPrevious;
     const multiplier = periodBudgetMultiplier({ ...selected, end: periodEnd });
     const salary = salaryAllocationSummary(state, today, { ...selected, effectiveEnd: end });
-    const plannedByCategory = {};
+    const allocationBuckets = new Map();
     salary.allocations.forEach(rule => {
-      if (rule.type === 'category' && rule.activityId) plannedByCategory[rule.activityId] = (plannedByCategory[rule.activityId] || 0) + minor(rule.amount);
+      if (rule.type !== 'category' || !rule.activityId) return;
+      if (!allocationBuckets.has(rule.activityId)) allocationBuckets.set(rule.activityId, []);
+      allocationBuckets.get(rule.activityId).push(minor(rule.amount));
     });
+    const plannedByCategory = Object.fromEntries([...allocationBuckets.entries()].map(([id, amounts]) => [id, financialEngine().sum(amounts)]));
     const scaleMonthly = value => Math.max(0, Math.round(minor(value || 0) * multiplier));
-    const actualIncome = (state.transactions || []).filter(tx => tx.type === 'income' && txWithin(tx, current.start, current.end)).reduce((n, tx) => n + minor(tx.amount), 0);
+    const actualIncome = financialEngine().sum((state.transactions || []).filter(tx => tx.type === 'income' && txWithin(tx, current.start, current.end)).map(tx => minor(tx.amount)));
     const incomeBasis = actualIncome > 0 ? actualIncome : minor(salary.baseSalary);
     const rows = (state.activities || []).filter(a => a.kind === 'expense' || a.kind === 'both').map(activity => {
       const monthlyBudget = Number(state.budgets && state.budgets.categories && state.budgets.categories[activity.id]) || 0;
@@ -530,13 +553,13 @@
       const projected = evidence.projectedMinor === null ? null : major(evidence.projectedMinor);
       return { id: activity.id, name: activity.name, plannedAllocation: major(plannedMinor), salaryAllocation: major(salaryAllocationMinor), budgetLimit: major(budgetMinor), spent, remaining: major(plannedMinor - minor(spent)), percentUsed: plannedMinor > 0 ? minor(spent) / plannedMinor * 100 : null, projectedSpending: projected, previousSpent, change: major(minor(spent) - minor(previousSpent)), incomeAllocationPct: incomeBasis ? plannedMinor / incomeBasis * 100 : null, spendingShareOfIncome: incomeBasis ? minor(spent) / incomeBasis * 100 : null, canProject: evidence.reliable, projectionEvidence: evidence };
     }).filter(row => row.plannedAllocation > 0 || row.spent > 0).sort((a, b) => (b.percentUsed || 0) - (a.percentUsed || 0));
-    const grossExpense = (state.transactions || []).filter(tx => tx.type === 'expense' && txWithin(tx, current.start, current.end)).reduce((n, tx) => n + minor(tx.amount), 0);
-    const refund = (state.transactions || []).filter(tx => tx.type === 'refund' && txWithin(tx, current.start, current.end)).reduce((n, tx) => n + minor(tx.amount), 0);
+    const grossExpense = financialEngine().sum((state.transactions || []).filter(tx => tx.type === 'expense' && txWithin(tx, current.start, current.end)).map(tx => minor(tx.amount)));
+    const refund = financialEngine().sum((state.transactions || []).filter(tx => tx.type === 'refund' && txWithin(tx, current.start, current.end)).map(tx => minor(tx.amount)));
     const netSpentMinor = Math.max(0, grossExpense - refund);
     const configuredTotalBudget = Math.max(0, minor(state.budgets && state.budgets.total || 0));
-    const periodTotalBudget = configuredTotalBudget ? Math.round(configuredTotalBudget * multiplier) : rows.reduce((n, row) => n + minor(row.plannedAllocation), 0);
+    const periodTotalBudget = configuredTotalBudget ? Math.round(configuredTotalBudget * multiplier) : financialEngine().sum(rows.map(row => minor(row.plannedAllocation)));
     const projection = projectionEvidence(state, current.start, periodEnd, today, null, current.end);
-    const categoryBudgetTotal = rows.reduce((n, row) => n + minor(row.budgetLimit), 0);
+    const categoryBudgetTotal = financialEngine().sum(rows.map(row => minor(row.budgetLimit)));
     const label = current.type === 'week' ? 'week' : current.type === 'year' ? 'year' : current.type === 'custom' ? 'selected period' : 'month';
     return {
       range: current, previousRange: previous, periodLabel: label, rows, salary, totalBudget: major(periodTotalBudget), totalSpent: major(netSpentMinor),
@@ -584,18 +607,17 @@
     });
     const orderReminders = list => list.slice().sort((a, b) => compareDate(a.date, b.date) || ((a.kind === 'income' ? 0 : 1) - (b.kind === 'income' ? 0 : 1)));
     const next7 = orderReminders(reminders.filter(r => r.date <= horizon7));
-    let runway7 = balance.balanceMinor || 0, shortage7 = 0, shortageDate = '';
-    next7.forEach(r => {
-      runway7 += r.kind === 'income' ? minor(r.amount) : -minor(r.amount);
-      if (runway7 < 0 && !shortageDate) { shortage7 = Math.abs(runway7); shortageDate = r.date; }
-    });
+    const projectReminders = list => financialEngine().cashProjection(balance.balanceMinor || 0, list.map(r => r.kind === 'income' ? minor(r.amount) : -minor(r.amount)));
+    const projection7 = projectReminders(next7);
+    const shortage7 = projection7.shortageMinor;
+    const shortageDate = projection7.shortageIndex >= 0 ? next7[projection7.shortageIndex].date : '';
     if (balance.complete && shortage7 > 0) {
       items.push({ priority: 1, kind: 'cash-shortage', amount: major(shortage7), title: 'A scheduled commitment may exceed available cash', detail: `The date-ordered reminder scenario first falls below zero on ${shortageDate}. Current tracked cash is ${balance.amount}; recorded recurring reminders, due debt entries and the configured next-payday estimate are included in date order.`, evidence: `Starting balance ${balance.amount}; reminder inflows and outflows in date order leave a minimum position of −${major(shortage7)}. Same-day income is applied before same-day outflows.`, action: 'Confirm the expected income date, review the payment timing, or adjust a commitment.' });
     }
-    const currentBalance = balance.balanceMinor || 0;
     const next30 = orderReminders(reminders.filter(r => r.date <= horizon30));
-    let projected30 = currentBalance, minimum30 = currentBalance, minimum30Date = '';
-    next30.forEach(r => { projected30 += r.kind === 'income' ? minor(r.amount) : -minor(r.amount); if (projected30 < minimum30) { minimum30 = projected30; minimum30Date = r.date; } });
+    const projection30 = projectReminders(next30);
+    const minimum30 = projection30.minimumMinor;
+    const minimum30Date = projection30.minimumIndex >= 0 ? next30[projection30.minimumIndex].date : '';
     if (balance.complete && minimum30 < 0 && !shortageDate) items.push({ priority: 1, kind: 'negative-projection', amount: major(Math.abs(minimum30)), title: 'Projected cash position may turn negative', detail: `The date-ordered reminder scenario reaches a negative position on ${minimum30Date}.`, evidence: `Starting tracked cash ${balance.amount}; scheduled income and outflows in date order produce a minimum of ${major(minimum30)}. This is a reminder-based scenario, not a bank forecast.`, action: 'Confirm each reminder and review the timing of necessary payments.' });
     const majorOver = budgets.rows.filter(row => row.plannedAllocation > 0 && row.spent > row.plannedAllocation * 1.25);
     majorOver.forEach(row => items.push({ priority: 1, kind: 'major-budget-overrun', amount: major(row.spent - row.plannedAllocation), title: `${row.name} is materially over plan`, detail: `${row.name} spending is ${row.percentUsed.toFixed(0)}% of its planned allocation.`, evidence: `${row.spent} spent against ${row.plannedAllocation} planned (${row.percentUsed.toFixed(1)}%).`, action: 'Review recent transactions and update the plan only if the original limit no longer fits.' }));
@@ -612,20 +634,27 @@
     const current = range || monthBounds(today);
     const prior = previousRange({ ...current, type: current.type || 'month' });
     if (prior) {
-      const previousTxs = (state.transactions || []).filter(tx => txWithin(tx, prior.start, prior.end));
-      const currentTxs = (state.transactions || []).filter(tx => txWithin(tx, current.start, current.end));
-      const currBy = new Map(), prevBy = new Map();
-      currentTxs.filter(tx => tx.type === 'expense').forEach(tx => currBy.set(tx.activityId, (currBy.get(tx.activityId) || 0) + minor(tx.amount)));
-      previousTxs.filter(tx => tx.type === 'expense').forEach(tx => prevBy.set(tx.activityId, (prevBy.get(tx.activityId) || 0) + minor(tx.amount)));
-      for (const [id, amount] of currBy) {
-        const old = prevBy.get(id) || 0;
+      const previousTxs = (state.transactions || []).filter(tx => tx.type === 'expense' && txWithin(tx, prior.start, prior.end));
+      const currentTxs = (state.transactions || []).filter(tx => tx.type === 'expense' && txWithin(tx, current.start, current.end));
+      const currentIds = [...new Set(currentTxs.map(tx => tx.activityId))];
+      const trendIndex = new Map(currentIds.map((id, index) => [id, index]));
+      const trendRows = [];
+      currentTxs.forEach(tx => trendRows.push({ amountMinor: minor(tx.amount), groupIndex: trendIndex.get(tx.activityId), bucketIndex: 0, periodIndex: 0, sign: 1 }));
+      previousTxs.forEach(tx => {
+        if (trendIndex.has(tx.activityId)) trendRows.push({ amountMinor: minor(tx.amount), groupIndex: trendIndex.get(tx.activityId), bucketIndex: 0, periodIndex: 1, sign: 1 });
+      });
+      const trendTotals = currentIds.length ? financialEngine().categoryBuckets(trendRows, currentIds.length, 1) : [];
+      for (let index = 0; index < currentIds.length; index += 1) {
+        const id = currentIds[index];
+        const amount = trendTotals[index * 2];
+        const old = trendTotals[index * 2 + 1];
         if (amount >= 3 * 100 && old >= 3 * 100 && amount >= old * 1.3) {
           const activity = (state.activities || []).find(a => a.id === id);
-          items.push({ priority: 3, kind: 'category-jump', amount: major(amount - old), title: `${activity && activity.name || 'A category'} spending increased`, detail: 'Recorded spending is at least 30% higher than the previous equivalent period.', evidence: `${major(amount)} current vs ${major(old)} previous (${((amount - old) / old * 100).toFixed(1)}% increase).`, action: 'Inspect the transactions in this category and decide whether the increase is temporary.' });
+          items.push({ priority: 3, kind: 'category-jump', amount: major(financialEngine().sum([amount, -old])), title: `${activity && activity.name || 'A category'} spending increased`, detail: 'Recorded spending is at least 30% higher than the previous equivalent period.', evidence: `${major(amount)} current vs ${major(old)} previous (${((amount - old) / old * 100).toFixed(1)}% increase).`, action: 'Inspect the transactions in this category and decide whether the increase is temporary.' });
         }
       }
     }
-    const incomeForPeriod = (state.transactions || []).filter(tx => tx.type === 'income' && txWithin(tx, current.start, current.end)).reduce((n, tx) => n + minor(tx.amount), 0);
+    const incomeForPeriod = financialEngine().sum((state.transactions || []).filter(tx => tx.type === 'income' && txWithin(tx, current.start, current.end)).map(tx => minor(tx.amount)));
     if (incomeForPeriod > 0) {
       budgets.rows.filter(row => row.spendingShareOfIncome !== null && row.spendingShareOfIncome >= 35 && row.spent > 0).forEach(row => {
         items.push({ priority: 3, kind: 'income-concentration', amount: row.spent, title: `${row.name} is taking a large share of recorded income`, detail: `${row.name} represents ${row.spendingShareOfIncome.toFixed(1)}% of recorded take-home inflows in this period.`, evidence: `${row.spent} category spending ÷ ${major(incomeForPeriod)} recorded income × 100 = ${row.spendingShareOfIncome.toFixed(1)}%.`, action: 'Check whether this is an essential cost, a one-off, or an area where a different plan could help.' });
@@ -649,14 +678,14 @@
       const days = new Set(last7.map(tx => tx.date));
       if (days.size >= 5 && last7.length >= 7) {
         const activity = (state.activities || []).find(a => a.id === activityId);
-        items.push({ priority: 3, kind: 'repeated-spending', amount: major(last7.reduce((n, tx) => n + minor(tx.amount), 0)), title: `${activity && activity.name || 'A category'} has repeated activity this week`, detail: `Transactions were recorded on ${days.size} of the last 7 days.`, evidence: `${last7.length} expense entries across ${days.size} distinct days in the trailing seven-day window.`, action: 'Review whether these repeat purchases are planned essentials or small costs adding up.' });
+        items.push({ priority: 3, kind: 'repeated-spending', amount: major(financialEngine().sum(last7.map(tx => minor(tx.amount)))), title: `${activity && activity.name || 'A category'} has repeated activity this week`, detail: `Transactions were recorded on ${days.size} of the last 7 days.`, evidence: `${last7.length} expense entries across ${days.size} distinct days in the trailing seven-day window.`, action: 'Review whether these repeat purchases are planned essentials or small costs adding up.' });
       }
     }
     const goals = (state.goals || []).filter(goal => Number(goal.target) > 0 && Number(goal.saved) > 0);
     goals.forEach(goal => items.push({ priority: 4, kind: 'goal-progress', amount: Number(goal.saved), title: `Progress on ${goal.name || 'a savings goal'}`, detail: `${Math.min(100, Number(goal.saved) / Number(goal.target) * 100).toFixed(0)}% of the target is recorded.`, evidence: `${goal.saved} saved out of ${goal.target}.`, action: 'Keep recording contributions; this is tracking progress, not a separate cash transfer.' }));
     const actualSpending = budgets.totalSpent;
     const priorMonth = previousRange({ ...monthBounds(today), type: 'month' });
-    const priorSpend = (state.transactions || []).filter(tx => txWithin(tx, priorMonth.start, priorMonth.end) && ['expense', 'refund'].includes(tx.type)).reduce((n, tx) => n + (tx.type === 'expense' ? minor(tx.amount) : -minor(tx.amount)), 0);
+    const priorSpend = financialEngine().sum((state.transactions || []).filter(tx => txWithin(tx, priorMonth.start, priorMonth.end) && ['expense', 'refund'].includes(tx.type)).map(tx => tx.type === 'expense' ? minor(tx.amount) : -minor(tx.amount)));
     if (priorSpend > 0 && minor(actualSpending) < priorSpend * 0.9) items.push({ priority: 4, kind: 'spending-down', amount: major(priorSpend - minor(actualSpending)), title: 'Recorded spending is lower than last month', detail: 'Spending so far is at least 10% below the previous calendar month.', evidence: `${actualSpending} current net spending vs ${major(priorSpend)} previous.`, action: 'Notice which choices helped, without treating every lower-spend period as a target.' });
     return items.sort((a, b) => a.priority - b.priority || minor(b.amount) - minor(a.amount));
   }

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pocketwise-shell-v2.4.17-alpha.1-wasm-required-core';
+const CACHE_NAME = 'pocketwise-shell-v2.4.18-alpha.1-extended-cpp-core';
 const PADDLE_RUNTIME_CACHE = 'pocketwise-paddle-runtime-v243';
 const PDF_RENDERER_URL = 'https://cdn.jsdelivr.net/npm/html2pdf.js@0.14.0/dist/html2pdf.bundle.min.js';
 const IOS_PDF_RENDERER_URL = 'https://cdn.jsdelivr.net/npm/html3pdf@0.12.2/dist/html3pdf.bundle.min.js';
@@ -13,7 +13,7 @@ const APP_SHELL = [
   asset('wasm/financial-core-bootstrap.js'),
   asset('wasm/pocketwise-engine.wasm'),
   asset('finance-analytics.js'),
-  asset('shared-costs.js'),
+  asset('wasm/shared-costs-api.js'),
   asset('app.js'),
   asset('paddleocr-pwa.js'),
   asset('paddleocr-sandbox.html'),
