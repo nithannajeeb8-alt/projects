@@ -1299,7 +1299,7 @@
   }
   function showEventPlannerHub() {
     const plans = Array.isArray(state.eventPlans) ? state.eventPlans : [];
-    openModal('Event planning', `<div class="modal-body"><div class="shared-cost-intro"><strong>Plan together, settle clearly</strong><p>Build a trip, gathering or event budget. Allocate each category equally, by percentage or by exact amount across people or groups. Nothing is posted as a transaction.</p></div><button type="button" class="primary-button" id="event-plan-new">Create an event plan</button><div class="event-plan-list">${plans.length ? plans.map(plan => `<div class="event-plan-list-item"><div><strong>${escapeHTML(plan.name || 'Untitled event')}</strong><small>${escapeHTML(plan.date || '')} · ${escapeHTML(money(fromMinorUnits(Number(plan.totalMinor) || 0)))}</small></div><button type="button" class="mini-button" data-event-open="${escapeHTML(plan.id)}">Open</button></div>`).join('') : '<div class="empty-inline">No event plans yet. Your saved trips and gatherings will appear here.</div>'}</div><div class="form-actions"><button type="button" class="secondary-button" id="entry-tools-back">← Back to entry methods</button><button type="button" class="secondary-button" data-cancel-modal>Close</button></div></div>`, 'TRIPS · GATHERINGS · EVENTS');
+    openModal('Event planning', `<div class="modal-body event-planner-hub"><div class="shared-cost-intro"><strong>Plan together, settle clearly</strong><p>Build a trip, gathering or event budget. Allocate each category equally, by percentage or by exact amount across people or groups. Nothing is posted as a transaction.</p></div><button type="button" class="primary-button" id="event-plan-new">Create an event plan</button><div class="event-plan-list">${plans.length ? plans.map(plan => `<div class="event-plan-list-item"><div><strong>${escapeHTML(plan.name || 'Untitled event')}</strong><small>${escapeHTML(plan.date || '')} · ${escapeHTML(money(fromMinorUnits(Number(plan.totalMinor) || 0)))}</small></div><button type="button" class="mini-button" data-event-open="${escapeHTML(plan.id)}">Open</button></div>`).join('') : '<div class="empty-inline">No event plans yet. Your saved trips and gatherings will appear here.</div>'}</div><div class="form-actions"><button type="button" class="secondary-button" id="entry-tools-back">← Back to entry methods</button><button type="button" class="secondary-button" data-cancel-modal>Close</button></div></div>`, 'TRIPS · GATHERINGS · EVENTS');
   }
   function showEventPlannerStart(existing = null) {
     eventPlannerDraft = existing ? JSON.parse(JSON.stringify(existing)) : null;
@@ -1760,7 +1760,19 @@
   async function showSystemNotification(title,options={}){if(!('Notification'in window)||Notification.permission!=='granted')return false;const payload={body:String(options.body||''),tag:String(options.tag||`pw-${Date.now()}`),icon:new URL('assets/icons/icon-192.PNG',location.href).href,badge:new URL('assets/icons/icon-192.PNG',location.href).href,data:{url:location.href}};try{if('serviceWorker'in navigator){const registration=await navigator.serviceWorker.ready;await registration.showNotification(title,payload);}else{new Notification(title,payload);}return true;}catch(error){console.warn('System notification could not be displayed.',error);return false;}}
   async function evaluateBudgetAlerts(allowSystem=true){const alerts=makeAlerts().filter(a=>a.id!=='all-clear'),snapshot=JSON.stringify(state);state.settings.sentAlerts=state.settings.sentAlerts||[];state.settings.notifications=state.settings.notifications||[];let added=false;for(const a of alerts){if(state.settings.sentAlerts.includes(a.id))continue;state.settings.sentAlerts.push(a.id);state.settings.notifications.unshift({...a,createdAt:new Date().toISOString()});added=true;if(allowSystem&&'Notification'in window&&Notification.permission==='granted'&&!isQuietNow()){try{await showSystemNotification(a.title,{body:a.body,tag:a.id});}catch(error){console.warn('System notification could not be shown.',error);}}}if(state.settings.notifications.length>100)state.settings.notifications.length=100;if(added&&await persistMutation(snapshot,'Could not save alert history. Your previous records were restored.'))renderAlerts();}
   function openNotifications(){const active=makeAlerts().filter(a=>a.id!=='all-clear'),history=state.settings.notifications||[],previousSeen=[...(state.settings.seenAlerts||[])];active.forEach(a=>{if(!state.settings.seenAlerts.includes(a.id))state.settings.seenAlerts.push(a.id)});$('#notifications-content').innerHTML=(history.length?[...history.slice(0,20)]:active).map(a=>`<div class="notification-record"><span class="alert-symbol ${a.type||'blue'}">${icon(a.icon||'bell')}</span><div><strong>${escapeHTML(a.title||'Financial reminder')}</strong><p>${escapeHTML(a.body||'')}</p><small>${escapeHTML(a.createdAt?new Date(a.createdAt).toLocaleString():a.time||'Current')}</small></div></div>`).join('')||'<div class="empty-state"><span class="empty-icon">'+icon('bell')+'</span><h3>All caught up</h3><p>Important reminders will show up here.</p></div>';$('#notifications-modal').showModal();persist().then(()=>renderAlerts()).catch(error=>{state.settings.seenAlerts=previousSeen;console.error('Could not persist notification read state.',error);toast('Could not save notification read status. Your other records are unchanged.','error');renderAlerts();});}
-  function downloadBlob(filename,blob){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1800);}
+  function downloadBlob(filename,blob){
+    if(!(blob instanceof Blob)||!blob.size){toast('The file is empty and could not be saved.','error');return false;}
+    const url=URL.createObjectURL(blob),a=document.createElement('a');
+    a.href=url;a.download=String(filename||'pocketwise-export');a.rel='noopener';
+    a.style.position='fixed';a.style.left='-10000px';a.style.top='0';
+    document.body.appendChild(a);
+    try{a.click();}catch(error){console.error('PocketWise file download failed.',error);URL.revokeObjectURL(url);a.remove();return false;}
+    a.remove();
+    // Mobile browsers may not consume a Blob URL until after their download
+    // manager has handled the click. Do not revoke it after only 1.8 seconds.
+    window.setTimeout(()=>URL.revokeObjectURL(url),60000);
+    return true;
+  }
 
   const PDF_RENDERER_URL='https://cdn.jsdelivr.net/npm/html2pdf.js@0.14.0/dist/html2pdf.bundle.min.js';
   const IOS_PDF_RENDERER_URL='https://cdn.jsdelivr.net/npm/html3pdf@0.12.2/dist/html3pdf.bundle.min.js';
@@ -1769,6 +1781,10 @@
   function isIOSShareContext(){
     const ua=navigator.userAgent||'';
     return /iPad|iPhone|iPod/i.test(ua)||(navigator.platform==='MacIntel'&&Number(navigator.maxTouchPoints)>1);
+  }
+  function isMobilePDFDeliveryContext(){
+    const ua=navigator.userAgent||'';
+    return isIOSShareContext()||/Android/i.test(ua)||navigator.userAgentData?.mobile===true;
   }
   function getPDFRenderScale(root,ios=isIOSShareContext()){
     // html3pdf renders one canvas per A4 page rather than one canvas for the
@@ -1866,7 +1882,7 @@
     }finally{frame.remove();}
   }
   function canSharePDFFile(file){
-    try{return typeof File==='function'&&typeof navigator.share==='function'&&typeof navigator.canShare==='function'&&navigator.canShare({files:[file]});}
+    try{return !!file&&typeof File==='function'&&typeof navigator.share==='function'&&typeof navigator.canShare==='function'&&navigator.canShare({files:[file]});}
     catch(_){return false;}
   }
   function capturePDFReturnModal(){
@@ -1900,34 +1916,60 @@
     });
     requestAnimationFrame(()=>{if(dialog?.open)dialog.scrollTop=previous.scrollTop||0;if(content)content.scrollTop=previous.contentScrollTop||0;});
   }
-  function showPDFReadyActions(file,title,shareSupported=true){
+  function showPDFReadyActions(file,title,shareSupported=true,kind='pdf'){
     pdfReturnModal=capturePDFReturnModal();
-    pendingGeneratedPDF={file,title,shareSupported};
-    const message=isIOSShareContext()
-      ?(shareSupported?'Your PDF is ready. Save PDF or Share PDF opens the iOS Share Sheet. Choose Save to Files to keep a copy.':'Your PDF is ready. Open the PDF preview, then use Share to save it to Files.')
-      :shareSupported
-        ?'The PDF is ready on this device. Share PDF opens the system sharing options, or save a copy to your device.'
-        :'The PDF is ready on this device. Save a copy to your device.';
-    openModal('Your PDF is ready',`<div class="modal-body generated-pdf-ready"><div class="shared-cost-intro"><strong>${escapeHTML(file.name||'PocketWise-report.pdf')}</strong><p>${message}</p></div><div class="form-actions"><button type="button" class="secondary-button" data-cancel-modal>Close</button><button type="button" class="secondary-button" id="download-ready-pdf">Save PDF</button>${shareSupported?'<button type="button" class="primary-button" id="share-ready-pdf">Share PDF</button>':''}</div></div>`,'PDF EXPORT');
+    pendingGeneratedPDF={file,title,shareSupported,kind};
+    const printable=kind==='html';
+    const itemLabel=printable?'print-ready report':'PDF';
+    const message=printable
+      ?'The PDF engine could not finish on this device. A print-ready report is ready instead. Open it in your browser and choose Print / Save as PDF.'
+      :isIOSShareContext()
+        ?(shareSupported?'Your PDF is ready. Save PDF or Share PDF opens the iOS Share Sheet. Choose Save to Files to keep a copy.':'Your PDF is ready. Open the PDF preview, then use Share to save it to Files.')
+        :shareSupported
+          ?'Your PDF is ready. Tap Save PDF to download it, or Share PDF to open your device sharing options.'
+          :'Your PDF is ready. Tap Save PDF to download it to your device.';
+    const titleText=printable?'Print-ready report is ready':'Your PDF is ready';
+    const saveLabel=printable?'Save report':'Save PDF';
+    const shareLabel=printable?'Share report':'Share PDF';
+    openModal(titleText,`<div class="modal-body generated-pdf-ready"><div class="shared-cost-intro"><strong>${escapeHTML(file.name||'PocketWise-report.pdf')}</strong><p>${message}</p></div><div class="form-actions"><button type="button" class="secondary-button" data-cancel-modal>Close</button><button type="button" class="secondary-button" id="download-ready-pdf">${saveLabel}</button>${shareSupported?`<button type="button" class="primary-button" id="share-ready-pdf">${shareLabel}</button>`:''}</div></div>`,printable?'PRINT-READY EXPORT':'PDF EXPORT');
   }
   async function deliverGeneratedPDF(html,filename,title){
+    const safeName=String(filename||'PocketWise-report.pdf').replace(/[^a-zA-Z0-9._-]+/g,'-').replace(/\.html$/i,'.pdf');
     try{
-      const safeName=String(filename||'PocketWise-report.pdf').replace(/[^a-zA-Z0-9._-]+/g,'-').replace(/\.html$/i,'.pdf');
       const blob=await renderPDFBlobFromHTML(html,safeName);
-      if(isIOSShareContext()){
+      if(isMobilePDFDeliveryContext()){
         const file=typeof File==='function'?new File([blob],safeName,{type:'application/pdf',lastModified:Date.now()}):blob;
         const shareSupported=canSharePDFFile(file);
-        showPDFReadyActions(file,title||'PocketWise PDF',shareSupported);
-        toast(shareSupported?'PDF created. Tap Save PDF and choose Save to Files.':'PDF created. Opening the preview is available from Save PDF.','green');
+        showPDFReadyActions(file,title||'PocketWise PDF',shareSupported,'pdf');
+        toast(isIOSShareContext()?(shareSupported?'PDF created. Tap Save PDF and choose Save to Files.':'PDF created. Tap Save PDF to open the preview.'):'PDF created. Tap Save PDF to download it.','green');
         return true;
       }
-      downloadBlob(safeName,blob);
+      if(!downloadBlob(safeName,blob))throw new Error('The browser did not accept the PDF download.');
       toast('PDF download started. Check Files or Downloads.');
       return true;
     }catch(error){
-      console.error('PocketWise PDF export failed.',error);
-      toast('Could not create the PDF. Please retry, or choose a shorter report period.','error');
-      return false;
+      console.error('PocketWise PDF export failed; preparing the original printable report fallback.',error);
+      try{
+        // Keep the older, self-contained print-ready HTML export as a safety
+        // net. This avoids losing the report when a CDN renderer cannot load
+        // or a mobile canvas renderer runs out of memory.
+        const htmlName=safeName.replace(/\.pdf$/i,'.html');
+        const htmlBlob=new Blob([String(html||'')],{type:'text/html;charset=utf-8'});
+        if(!htmlBlob.size||!/<html[\s>]/i.test(String(html||'')))throw new Error('The print-ready report source is empty or invalid.');
+        if(isMobilePDFDeliveryContext()){
+          const file=typeof File==='function'?new File([htmlBlob],htmlName,{type:'text/html',lastModified:Date.now()}):htmlBlob;
+          const shareSupported=canSharePDFFile(file);
+          showPDFReadyActions(file,title||'PocketWise report',shareSupported,'html');
+        }else if(!downloadBlob(htmlName,htmlBlob)){
+          throw new Error('The browser did not accept the print-ready report download.');
+        }
+        toast('PDF generation was unavailable. A print-ready report is ready instead. Open it and choose Print / Save as PDF.','amber');
+        return true;
+      }catch(fallbackError){
+        console.error('PocketWise printable report fallback failed.',fallbackError);
+        toast('Could not export this report. Your saved transactions were not changed. Please retry.','error');
+        return false;
+      }
     }
   }
   function openPDFInBrowser(file){
@@ -1936,7 +1978,7 @@
     try{opened=window.open(url,'_blank');}catch(_){}
     if(!opened){
       const link=document.createElement('a');
-      link.href=url;link.target='_blank';link.rel='noopener';link.setAttribute('aria-label','Open generated PDF');
+      link.href=url;link.target='_blank';link.rel='noopener';link.setAttribute('aria-label','Open generated report file');
       document.body.appendChild(link);link.click();link.remove();
     }
     // iOS PDF preview may fetch the blob after the new browsing context starts.
@@ -1946,44 +1988,52 @@
   async function savePendingGeneratedPDF(){
     const pending=pendingGeneratedPDF;
     if(!pending)return;
+    const printable=pending.kind==='html';
+    const fileLabel=printable?'print-ready report':'PDF';
     if(isIOSShareContext()){
       if(pending.shareSupported&&canSharePDFFile(pending.file)){
         // Invoke navigator.share synchronously in this click handler, before
         // yielding to any awaited operation. iOS requires transient activation.
         let sharePromise;
         try{sharePromise=navigator.share({files:[pending.file]});}
-        catch(error){console.warn('iOS PDF Share Sheet could not be opened.',error);pending.shareSupported=false;toast('The Share Sheet could not open. Tap Save PDF again to open the PDF preview.','amber');return;}
-        try{await sharePromise;restorePDFReturnModal();toast('PDF shared. Choose Save to Files to keep a copy.');return;}
+        catch(error){console.warn('iOS export Share Sheet could not be opened.',error);pending.shareSupported=false;toast('The Share Sheet could not open. Tap Save again to open the file.','amber');return;}
+        try{await sharePromise;restorePDFReturnModal();toast(printable?'Report shared. Open it in a browser and choose Print / Save as PDF.':'PDF shared. Choose Save to Files to keep a copy.');return;}
         catch(error){
           if(error?.name==='AbortError')return;
-          console.warn('iOS PDF save via Share Sheet failed; browser preview fallback is available.',error);
+          console.warn('iOS export via Share Sheet failed; browser preview fallback is available.',error);
           pending.shareSupported=false;
-          toast('The Share Sheet could not open. Tap Save PDF again to open the PDF preview.','amber');return;
+          toast('The Share Sheet could not open. Tap Save again to open the file.','amber');return;
         }
       }
-      openPDFInBrowser(pending.file);restorePDFReturnModal();toast('PDF opened. Use Share, then Save to Files.','amber');return;
+      openPDFInBrowser(pending.file);restorePDFReturnModal();toast(printable?'Print-ready report opened. Choose Print / Save as PDF.':'PDF opened. Use Share, then Save to Files.','amber');return;
     }
-    downloadBlob(pending.file.name,pending.file);restorePDFReturnModal();toast('PDF download started. Check Files or Downloads.');
+    // Android now downloads only from this explicit Save tap. The previous
+    // flow attempted a hidden download after a long async render, outside the
+    // original tap's activation window, which can be rejected by mobile PWAs.
+    if(downloadBlob(pending.file.name,pending.file)){
+      restorePDFReturnModal();
+      toast(printable?'Print-ready report downloaded. Open it and choose Print / Save as PDF.':'PDF download started. Check Files or Downloads.');
+    }else{
+      toast(`Could not save the ${fileLabel}. Try Share instead.`,'error');
+    }
   }
   async function sharePendingGeneratedPDF(){
     const pending=pendingGeneratedPDF;
     if(!pending)return;
     if(!pending.shareSupported||!canSharePDFFile(pending.file)){
-      if(isIOSShareContext()){
-        openPDFInBrowser(pending.file);restorePDFReturnModal();toast('PDF opened. Use Share, then Save to Files.','amber');return;
-      }
-      openPDFInBrowser(pending.file);restorePDFReturnModal();toast('PDF opened. Use your device Share action to send it.','amber');return;
+      openPDFInBrowser(pending.file);restorePDFReturnModal();
+      toast(pending.kind==='html'?'Print-ready report opened. Choose Print / Save as PDF.':'PDF opened. Use your device Share action to send or save it.','amber');return;
     }
     // Keep the Web Share call in the direct button activation path.
     let sharePromise;
     try{sharePromise=navigator.share({files:[pending.file]});}
-    catch(error){console.warn('The system Share Sheet could not be opened.',error);pending.shareSupported=false;toast('The Share Sheet could not open. Tap Save PDF to open the PDF preview.','amber');return;}
-    try{await sharePromise;restorePDFReturnModal();toast('PDF shared.');}
+    catch(error){console.warn('The system Share Sheet could not be opened.',error);pending.shareSupported=false;toast('The Share Sheet could not open. Tap Save to open the file.','amber');return;}
+    try{await sharePromise;restorePDFReturnModal();toast(pending.kind==='html'?'Print-ready report shared.':'PDF shared.');}
     catch(error){
       if(error?.name==='AbortError')return;
       console.warn('The system Share Sheet could not be opened.',error);
       pending.shareSupported=false;
-      toast('The Share Sheet could not open. Tap Save PDF to open the PDF preview.','amber');
+      toast('The Share Sheet could not open. Tap Save to open the file.','amber');
     }
   }
   async function exportBackup(){const snapshot=JSON.stringify(state);state.settings.lastBackup=new Date().toISOString();if(!(await persistMutation(snapshot,'Could not update backup metadata. Your previous records were restored.')))return;const pack={app:'Pocketwise',format:'pocketwise-backup',version:2,exportedAt:state.settings.lastBackup,description:'Complete local financial records. Keep this file private.',data:state};downloadBlob(`pocketwise-backup-${today()}.json`,new Blob([JSON.stringify(pack,null,2)],{type:'application/json'}));renderSettingsSummary();toast('Full backup exported. Keep it somewhere safe.');}

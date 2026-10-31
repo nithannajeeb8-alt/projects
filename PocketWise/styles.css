@@ -3074,3 +3074,55 @@ input[type="range"]{touch-action:pan-x pan-y;}
   .add-entry-choices .entry-choice-secondary{grid-template-columns:minmax(0,1fr);}
   .add-entry-choices .entry-choice-secondary .quick-choice:last-child{grid-column:auto;}
 }
+
+/* PocketWise event-planning hub spacing and equal-width mobile actions. */
+.event-planner-hub{
+  display:grid;
+  align-content:start;
+  gap:15px;
+}
+.event-planner-hub>.shared-cost-intro,
+.event-planner-hub>#event-plan-new,
+.event-planner-hub>.event-plan-list,
+.event-planner-hub>.form-actions{
+  min-width:0;
+  width:100%;
+  max-width:100%;
+  box-sizing:border-box;
+}
+.event-planner-hub>#event-plan-new{
+  min-height:54px;
+  white-space:normal;
+  line-height:1.25;
+}
+.event-planner-hub>.event-plan-list{margin-top:0;}
+.event-planner-hub>.form-actions{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+  margin-top:2px;
+}
+.event-planner-hub>.form-actions>*{
+  box-sizing:border-box;
+  min-width:0;
+  width:100%;
+  max-width:100%;
+  min-height:54px;
+  padding:12px 10px;
+  white-space:normal;
+  line-height:1.3;
+  overflow-wrap:anywhere;
+}
+.generated-pdf-ready>.form-actions{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:9px;
+}
+.generated-pdf-ready>.form-actions>*{min-width:0;white-space:normal;line-height:1.25;}
+.generated-pdf-ready>.form-actions>#share-ready-pdf{grid-column:1/-1;}
+@media(max-width:520px){
+  .event-planner-hub{gap:13px;}
+  .event-planner-hub>#event-plan-new{width:100%;}
+  .event-planner-hub>.form-actions{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+  .event-planner-hub>.form-actions>*{min-height:52px;padding:11px 8px;font-size:12px;}
+}
