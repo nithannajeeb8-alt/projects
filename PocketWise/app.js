@@ -1794,22 +1794,52 @@
     frame.setAttribute('title','PDF rendering surface');
     frame.setAttribute('aria-hidden','true');
     frame.tabIndex=-1;
-    frame.style.cssText='position:fixed;left:-12000px;top:0;width:794px;height:1123px;border:0;pointer-events:none;z-index:-1';
+    // Keep the rendering document in the layout/paint tree. iOS WebKit can
+    // fail to initialise html2canvas in a far-offscreen srcdoc iframe.
+    // Opacity prevents a visual flash without using display:none/visibility:hidden.
+    frame.style.cssText='position:fixed;left:0;top:0;width:794px;height:1123px;border:0;opacity:0;pointer-events:none;z-index:-1';
     document.body.appendChild(frame);
     try{
-      const rendererTag=`<script src="${rendererURL}" crossorigin="anonymous"><\/script>`;
-      const source=String(html||'').replace(/<\/head>/i,`${rendererTag}</head>`);
-      if(source===String(html||''))throw new Error('The report document is missing its head section.');
+      const source=String(html||'');
+      if(!/<head(?:\s[^>]*)?>/i.test(source)||!/<\/head>/i.test(source))throw new Error('The report document is missing its head section.');
+
+      // Do not use a frame navigation event as a proxy for a remote renderer script.
+      // On iOS, the initial about:blank/srcdoc load can race the real document
+      // load. Write the report into the same-origin blank frame, then wait for
+      // the renderer script's own load event before touching its global.
+      const doc=frame.contentDocument;
+      if(!doc)throw new Error('The PDF rendering document is unavailable.');
+      doc.open();
+      doc.write(source);
+      doc.close();
+
       await new Promise((resolve,reject)=>{
-        const timeout=window.setTimeout(()=>reject(new Error('PDF renderer loading timed out. Check the connection and retry.')),20000);
-        frame.onload=()=>{window.clearTimeout(timeout);resolve();};
-        frame.onerror=()=>{window.clearTimeout(timeout);reject(new Error('Could not load the PDF renderer.'))};
-        frame.srcdoc=source;
+        let settled=false;
+        const timeout=window.setTimeout(()=>finish(new Error('PDF renderer loading timed out. Check the connection and retry.')),20000);
+        const finish=error=>{
+          if(settled)return;
+          settled=true;
+          window.clearTimeout(timeout);
+          if(error)reject(error);else resolve();
+        };
+        const script=doc.createElement('script');
+        script.src=rendererURL;
+        script.crossOrigin='anonymous';
+        script.async=true;
+        script.onload=()=>{
+          const renderer=frame.contentWindow?.html2pdf;
+          if(typeof renderer!=='function')finish(new Error('The PDF renderer script loaded but did not expose html2pdf.'));
+          else finish();
+        };
+        script.onerror=()=>finish(new Error('Could not load the PDF renderer from its cached or network source.'));
+        doc.head.appendChild(script);
       });
-      const win=frame.contentWindow,doc=frame.contentDocument;
+
+      const win=frame.contentWindow;
       if(!win||!doc||typeof win.html2pdf!=='function')throw new Error('The PDF renderer did not initialize.');
-      try{await doc.fonts?.ready;}catch(_){}
+      try{await Promise.race([doc.fonts?.ready||Promise.resolve(),new Promise(resolve=>window.setTimeout(resolve,3000))]);}catch(_){}
       const root=doc.querySelector('.report-page,.report,.receipt-paper,main')||doc.body;
+      if(!root)throw new Error('The report content could not be found in the PDF rendering document.');
       const scale=getPDFRenderScale(root,ios);
       const width=Math.max(794,Math.ceil(root.scrollWidth||root.getBoundingClientRect().width||794));
       const height=Math.max(1123,Math.ceil(root.scrollHeight||root.getBoundingClientRect().height||1123));
@@ -1824,9 +1854,7 @@
       const worker=win.html2pdf().set(options).from(root);
       let result;
       if(ios){
-        // html3pdf paginates first and renders each A4 page into its own
-        // canvas. The old html2pdf toCanvas() path created one canvas as tall
-        // as the entire report and silently failed on iOS WebKit.
+        // html3pdf paginates first and renders each A4 page into its own canvas.
         if(typeof worker.toCanvases!=='function')throw new Error('The iOS page-wise PDF renderer is missing its page-splitting support.');
         result=await worker.toCanvases().toPdf().outputPdf('blob');
       }else{
