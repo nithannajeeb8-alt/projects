@@ -1,0 +1,43 @@
+# Local dependencies and production output
+node_modules/
+dist/
+build/
+coverage/
+.cache/
+.tmp/
+
+# Environment variables and private deployment credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+
+# Debug and local artifacts
+*.map
+*.log
+*.tmp
+*.bak
+*.orig
+*.swp
+.DS_Store
+Thumbs.db
+
+# Native build intermediates (keep the deployed .wasm runtime artifact)
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dylib
+*.dll
+*.exe
+*.dSYM/
+
+# Local release archives
+PocketWise-*.zip
+PocketWise-*.zip.sha256
