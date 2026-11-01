@@ -3133,3 +3133,44 @@ input[type="range"]{touch-action:pan-x pan-y;}
 .settings-build-footer a:hover{text-decoration:underline;text-underline-offset:3px}
 .settings-build-footer span{opacity:.82}
 @media(max-width:720px){.settings-build-footer{padding:12px 8px calc(22px + env(safe-area-inset-bottom));font-size:9px;gap:4px 10px}}
+
+
+/* PocketWise 2.4.25 — viewport containment. The document itself never rubber-bands;
+   long pages scroll inside the app canvas, while short pages anchor the footer above the tab bar. */
+@media (max-width: 720px) {
+  html,
+  body {
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+  body {
+    position: fixed;
+    inset: 0;
+  }
+  .app-shell {
+    width: 100%;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .main-content {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100dvh;
+    min-height: 0;
+    max-height: 100dvh;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: none;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .main-content::-webkit-scrollbar { display: none; }
+  .main-content > .topbar { flex: 0 0 auto; }
+  .main-content > .page.active { flex: 0 0 auto; width: 100%; }
+  .main-content > .app-footer { flex: 0 0 auto; margin-top: auto; }
+}

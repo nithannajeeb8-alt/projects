@@ -7,6 +7,7 @@
     'system-orchestrator.js',
     'finance-analytics.js',
     'wasm/shared-costs-api.js',
+    'receipt-media.js',
     'app.js',
     'onboarding.js',
     'statement-parser.js',

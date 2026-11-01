@@ -18,6 +18,7 @@ const runtimeFiles = [
   'rupee-ocr.js',
   'receipt-ocr-parser.js',
   'finance-analytics.js',
+  'receipt-media.js',
   'app.js',
   'onboarding.js',
   'statement-parser.js',

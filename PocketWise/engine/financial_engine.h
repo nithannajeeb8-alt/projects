@@ -66,6 +66,37 @@ typedef struct PWDebtPlanOutput {
   long long interest_minor;
 } PWDebtPlanOutput;
 
+
+typedef struct PWDuplicateRow {
+  long long amount_minor;
+  int date_key; /* YYYYMMDD */
+  char merchant[128];
+} PWDuplicateRow;
+
+typedef struct PWSearchRow {
+  long long amount_minor;
+  int date_key; /* YYYYMMDD */
+  int account_index;
+  int category_index;
+  int type_code;
+  char search_text[512];
+  char tags[256];
+} PWSearchRow;
+
+typedef struct PWSearchFilter {
+  long long min_minor;
+  long long max_minor;
+  int has_min;
+  int has_max;
+  int account_index;  /* -1 means any */
+  int category_index; /* -1 means any */
+  int type_code;      /* 0 means any */
+  int date_from;      /* 0 means any */
+  int date_to;        /* 0 means any */
+  char query[128];
+  char tag[64];
+} PWSearchFilter;
+
 typedef struct PWProviderRouteInput {
   unsigned int provider_id;
   int priority;
@@ -139,6 +170,21 @@ int pw_reliability_update(PWProviderHealth *health, unsigned int outcome,
 int pw_extract_merchant(const char *text, unsigned int text_length,
                          char *output, unsigned int output_capacity,
                          int *confidence_percent, int *direction);
+
+/* Merchant categorisation, learned-rule matching, import de-duplication,
+   and activity filtering remain deterministic C++ domain operations. */
+int pw_merchant_lookup(const char *merchant, unsigned int merchant_length,
+                       char *category_output, unsigned int category_capacity,
+                       char *canonical_output, unsigned int canonical_capacity,
+                       int *confidence_percent);
+int pw_contains_text(const char *text, unsigned int text_length,
+                     const char *needle, unsigned int needle_length);
+int pw_find_duplicate(const PWDuplicateRow *rows, unsigned int count,
+                      const PWDuplicateRow *candidate, int *match_index);
+int pw_filter_transactions(const PWSearchRow *rows, unsigned int count,
+                           const PWSearchFilter *filter, unsigned char *matches);
+int pw_next_recurrence(int date_key, int frequency_code, int anchor_day,
+                       int *next_date_key);
 
 #ifdef __cplusplus
 }

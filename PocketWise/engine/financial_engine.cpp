@@ -1,4 +1,5 @@
 #include "financial_engine.h"
+#include "merchant_catalog.inc"
 
 /*
  * PocketWise Alpha 2 financial kernel.
@@ -1014,5 +1015,224 @@ extern "C" int pw_extract_merchant(const char *text, unsigned int text_length,
   for (unsigned int i = 0; i < count; ++i) output[i] = text[start + i];
   output[count] = '\0';
   *confidence_percent = candidate_confidence;
+  return 0;
+}
+
+namespace {
+struct PWMerchantEntry { const char *pattern; const char *category; const char *canonical; };
+#define PW_MERCHANT_ROW(pattern, category, canonical) { pattern, category, canonical },
+static const PWMerchantEntry PW_MERCHANTS[] = { PW_MERCHANT_CATALOG(PW_MERCHANT_ROW) };
+#undef PW_MERCHANT_ROW
+
+unsigned int pwNormalize(const char *input, unsigned int length, char *output, unsigned int capacity) {
+  if (!input || !output || capacity == 0U) return 0U;
+  unsigned int used = 0U;
+  bool pending_space = false;
+  for (unsigned int i = 0U; i < length && input[i] != '\0'; ++i) {
+    unsigned char ch = (unsigned char)input[i];
+    /* Fold common two-byte Latin-1 accents (e.g. Café) to ASCII so display
+       names, OCR output and bank descriptors share the same lookup key. */
+    if (ch == 0xC3U && i + 1U < length && input[i + 1U] != '\0') {
+      const unsigned char accent = (unsigned char)input[i + 1U];
+      ++i;
+      if ((accent >= 0x80U && accent <= 0x85U) || (accent >= 0xA0U && accent <= 0xA5U)) ch = 'a';
+      else if (accent == 0x87U || accent == 0xA7U) ch = 'c';
+      else if ((accent >= 0x88U && accent <= 0x8BU) || (accent >= 0xA8U && accent <= 0xABU)) ch = 'e';
+      else if ((accent >= 0x8CU && accent <= 0x8FU) || (accent >= 0xACU && accent <= 0xAFU)) ch = 'i';
+      else if (accent == 0x91U || accent == 0xB1U) ch = 'n';
+      else if ((accent >= 0x92U && accent <= 0x96U) || (accent >= 0xB2U && accent <= 0xB6U)) ch = 'o';
+      else if ((accent >= 0x99U && accent <= 0x9BU) || (accent >= 0xB9U && accent <= 0xBBU)) ch = 'u';
+      else if (accent == 0x9DU || accent == 0xBDU || accent == 0xBFU || accent == 0xFFU) ch = 'y';
+      else if (accent == 0x9FU) ch = 's';
+      else ch = ' ';
+    }
+    if (ch >= 'A' && ch <= 'Z') ch = (unsigned char)(ch + ('a' - 'A'));
+    const bool word = (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9');
+    if (!word) { if (used) pending_space = true; continue; }
+    if (pending_space && used + 1U < capacity) output[used++] = ' ';
+    pending_space = false;
+    if (used + 1U >= capacity) break;
+    output[used++] = (char)ch;
+  }
+  while (used && output[used - 1U] == ' ') --used;
+  output[used] = '\0';
+  return used;
+}
+
+bool pwContainsNormalized(const char *haystack, unsigned int hay_len, const char *needle, unsigned int needle_len) {
+  if (!haystack || !needle || !needle_len || needle_len > hay_len) return false;
+  for (unsigned int i = 0U; i + needle_len <= hay_len; ++i) {
+    if (i && haystack[i - 1U] != ' ') continue;
+    if (i + needle_len < hay_len && haystack[i + needle_len] != ' ') continue;
+    unsigned int j = 0U;
+    while (j < needle_len && haystack[i + j] == needle[j]) ++j;
+    if (j == needle_len) return true;
+  }
+  return false;
+}
+
+void pwCopyText(const char *source, char *target, unsigned int capacity) {
+  if (!target || !capacity) return;
+  unsigned int i = 0U;
+  if (source) while (i + 1U < capacity && source[i]) { target[i] = source[i]; ++i; }
+  target[i] = '\0';
+}
+
+bool pwLeap(int year) { return (year % 4 == 0 && year % 100 != 0) || year % 400 == 0; }
+int pwDaysInMonth(int year, int month) {
+  static const int days[] = {0,31,28,31,30,31,30,31,31,30,31,30,31};
+  if (month < 1 || month > 12) return 0;
+  return month == 2 && pwLeap(year) ? 29 : days[month];
+}
+bool pwParseDate(int key, int &year, int &month, int &day) {
+  if (key < 10101 || key > 99991231) return false;
+  year = key / 10000; month = (key / 100) % 100; day = key % 100;
+  return year >= 1900 && month >= 1 && month <= 12 && day >= 1 && day <= pwDaysInMonth(year, month);
+}
+int pwDaysFromCivil(int y, unsigned int m, unsigned int d) {
+  y -= m <= 2;
+  const int era = (y >= 0 ? y : y - 399) / 400;
+  const unsigned int yoe = (unsigned int)(y - era * 400);
+  const unsigned int doy = (153U * (m + (m > 2 ? (unsigned int)-3 : 9U)) + 2U) / 5U + d - 1U;
+  const unsigned int doe = yoe * 365U + yoe / 4U - yoe / 100U + doy;
+  return era * 146097 + (int)doe - 719468;
+}
+void pwCivilFromDays(int z, int &y, unsigned int &m, unsigned int &d) {
+  z += 719468;
+  const int era = (z >= 0 ? z : z - 146096) / 146097;
+  const unsigned int doe = (unsigned int)(z - era * 146097);
+  const unsigned int yoe = (doe - doe/1460U + doe/36524U - doe/146096U) / 365U;
+  y = (int)yoe + era * 400;
+  const unsigned int doy = doe - (365U*yoe + yoe/4U - yoe/100U);
+  const unsigned int mp = (5U*doy + 2U)/153U;
+  d = doy - (153U*mp+2U)/5U + 1U;
+  m = mp + (mp < 10U ? 3U : (unsigned int)-9);
+  y += m <= 2U;
+}
+
+bool pwTextHasAllTokens(const char *haystack, unsigned int hay_len, const char *query, unsigned int query_len) {
+  char token[64]; unsigned int ti = 0U;
+  for (unsigned int i = 0U; i <= query_len; ++i) {
+    char ch = i < query_len ? query[i] : ' ';
+    if (ch == ' ') {
+      if (ti) {
+        if (!pwContainsNormalized(haystack, hay_len, token, ti)) return false;
+        ti = 0U;
+      }
+    } else if (ti + 1U < sizeof(token)) token[ti++] = ch;
+    else return false;
+  }
+  return true;
+}
+}
+
+extern "C" int pw_merchant_lookup(const char *merchant, unsigned int merchant_length,
+                                    char *category_output, unsigned int category_capacity,
+                                    char *canonical_output, unsigned int canonical_capacity,
+                                    int *confidence_percent) {
+  if (!merchant || !category_output || !category_capacity || !canonical_output || !canonical_capacity || !confidence_percent || merchant_length > 4096U) return 1;
+  char normalized[512];
+  const unsigned int normalized_len = pwNormalize(merchant, merchant_length, normalized, sizeof(normalized));
+  if (!normalized_len) return 2;
+  for (unsigned int i = 0U; i < sizeof(PW_MERCHANTS)/sizeof(PW_MERCHANTS[0]); ++i) {
+    char pattern[256];
+    const unsigned int pattern_len = pwNormalize(PW_MERCHANTS[i].pattern, 255U, pattern, sizeof(pattern));
+    if (!pattern_len || !pwContainsNormalized(normalized, normalized_len, pattern, pattern_len)) continue;
+    pwCopyText(PW_MERCHANTS[i].category, category_output, category_capacity);
+    pwCopyText(PW_MERCHANTS[i].canonical, canonical_output, canonical_capacity);
+    *confidence_percent = pattern_len <= 4U ? 68 : 94;
+    return 0;
+  }
+  return 2;
+}
+
+extern "C" int pw_contains_text(const char *text, unsigned int text_length,
+                                  const char *needle, unsigned int needle_length) {
+  if (!text || !needle || text_length > 200000U || needle_length > 512U) return 0;
+  char normalized_text[1024]; char normalized_needle[128];
+  unsigned int tlen = pwNormalize(text, text_length, normalized_text, sizeof(normalized_text));
+  unsigned int nlen = pwNormalize(needle, needle_length, normalized_needle, sizeof(normalized_needle));
+  if (tlen == 0U || nlen == 0U) return 0;
+  /* Learned keywords may be part of a longer merchant phrase, so substring matching is intentional. */
+  if (nlen > tlen) return 0;
+  for (unsigned int i = 0U; i + nlen <= tlen; ++i) {
+    unsigned int j = 0U; while (j < nlen && normalized_text[i+j] == normalized_needle[j]) ++j;
+    if (j == nlen) return 1;
+  }
+  return 0;
+}
+
+extern "C" int pw_find_duplicate(const PWDuplicateRow *rows, unsigned int count,
+                                   const PWDuplicateRow *candidate, int *match_index) {
+  if ((!rows && count) || !candidate || !match_index || count > MAX_ROWS || candidate->amount_minor < 0) return 1;
+  *match_index = -1;
+  char candidate_name[256];
+  unsigned int candidate_len = pwNormalize(candidate->merchant, 127U, candidate_name, sizeof(candidate_name));
+  char candidate_category[32], candidate_canonical[128]; int candidate_confidence = 0;
+  if (pw_merchant_lookup(candidate->merchant, 127U, candidate_category, sizeof(candidate_category), candidate_canonical, sizeof(candidate_canonical), &candidate_confidence) == 0)
+    candidate_len = pwNormalize(candidate_canonical, 127U, candidate_name, sizeof(candidate_name));
+  if (!candidate_len) return 2;
+  for (unsigned int i = 0U; i < count; ++i) {
+    if (rows[i].amount_minor != candidate->amount_minor || rows[i].date_key != candidate->date_key) continue;
+    char row_name[256], row_category[32], row_canonical[128]; int row_confidence = 0;
+    unsigned int row_len = pwNormalize(rows[i].merchant, 127U, row_name, sizeof(row_name));
+    if (pw_merchant_lookup(rows[i].merchant, 127U, row_category, sizeof(row_category), row_canonical, sizeof(row_canonical), &row_confidence) == 0)
+      row_len = pwNormalize(row_canonical, 127U, row_name, sizeof(row_name));
+    if (row_len != candidate_len) continue;
+    unsigned int j = 0U; while (j < row_len && row_name[j] == candidate_name[j]) ++j;
+    if (j == row_len) { *match_index = (int)i; return 0; }
+  }
+  return 2;
+}
+
+extern "C" int pw_filter_transactions(const PWSearchRow *rows, unsigned int count,
+                                        const PWSearchFilter *filter, unsigned char *matches) {
+  if ((!rows && count) || !filter || (!matches && count) || count > MAX_ROWS) return 1;
+  char query[128]; const unsigned int query_len = pwNormalize(filter->query, 127U, query, sizeof(query));
+  char tag[64]; const unsigned int tag_len = pwNormalize(filter->tag, 63U, tag, sizeof(tag));
+  for (unsigned int i = 0U; i < count; ++i) {
+    const PWSearchRow &r = rows[i]; bool ok = true;
+    if (filter->has_min && r.amount_minor < filter->min_minor) ok = false;
+    if (filter->has_max && r.amount_minor > filter->max_minor) ok = false;
+    if (filter->account_index >= 0 && r.account_index != filter->account_index) ok = false;
+    if (filter->category_index >= 0 && r.category_index != filter->category_index) ok = false;
+    if (filter->type_code && r.type_code != filter->type_code) ok = false;
+    if (filter->date_from && r.date_key < filter->date_from) ok = false;
+    if (filter->date_to && r.date_key > filter->date_to) ok = false;
+    if (ok && query_len) {
+      char search[512]; unsigned int slen = pwNormalize(r.search_text, 511U, search, sizeof(search));
+      if (!pwTextHasAllTokens(search, slen, query, query_len)) ok = false;
+    }
+    if (ok && tag_len) {
+      char tags[256]; unsigned int tlen = pwNormalize(r.tags, 255U, tags, sizeof(tags));
+      if (!pwContainsNormalized(tags, tlen, tag, tag_len)) ok = false;
+    }
+    matches[i] = ok ? 1U : 0U;
+  }
+  return 0;
+}
+
+extern "C" int pw_next_recurrence(int date_key, int frequency_code, int anchor_day, int *next_date_key) {
+  if (!next_date_key || frequency_code < 1 || frequency_code > 3) return 1;
+  int year, month, day;
+  if (!pwParseDate(date_key, year, month, day)) return 1;
+  int next_year = year, next_month = month, next_day = day;
+  if (frequency_code == 1) {
+    int y; unsigned int m, d;
+    pwCivilFromDays(pwDaysFromCivil(year, (unsigned int)month, (unsigned int)day) + 7, y, m, d);
+    next_year = y; next_month = (int)m; next_day = (int)d;
+  } else if (frequency_code == 2) {
+    next_month++;
+    if (next_month > 12) { next_month = 1; ++next_year; }
+    int wanted = anchor_day >= 1 && anchor_day <= 31 ? anchor_day : day;
+    int max_day = pwDaysInMonth(next_year, next_month);
+    next_day = wanted < max_day ? wanted : max_day;
+  } else {
+    ++next_year;
+    int wanted = anchor_day >= 1 && anchor_day <= 31 ? anchor_day : day;
+    int max_day = pwDaysInMonth(next_year, next_month);
+    next_day = wanted < max_day ? wanted : max_day;
+  }
+  *next_date_key = next_year * 10000 + next_month * 100 + next_day;
   return 0;
 }

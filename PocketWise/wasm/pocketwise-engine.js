@@ -64,7 +64,7 @@
       }
     }
     const exports = result.instance ? result.instance.exports : result.exports;
-    const required = ['pw_alloc', 'pw_reset', 'pw_aggregate', 'pw_equal_split', 'pw_percentage_split', 'pw_amount_split', 'pw_sum_minor', 'pw_cash_delta_minor', 'pw_account_balance', 'pw_debt_remaining', 'pw_salary_allocate', 'pw_category_buckets', 'pw_cash_projection', 'pw_ratio_round_minor', 'pw_budget_metrics', 'pw_debt_amortize', 'pw_reliability_order', 'pw_reliability_update', 'pw_extract_merchant'];
+    const required = ['pw_alloc', 'pw_reset', 'pw_aggregate', 'pw_equal_split', 'pw_percentage_split', 'pw_amount_split', 'pw_sum_minor', 'pw_cash_delta_minor', 'pw_account_balance', 'pw_debt_remaining', 'pw_salary_allocate', 'pw_category_buckets', 'pw_cash_projection', 'pw_ratio_round_minor', 'pw_budget_metrics', 'pw_debt_amortize', 'pw_reliability_order', 'pw_reliability_update', 'pw_extract_merchant', 'pw_merchant_lookup', 'pw_contains_text', 'pw_find_duplicate', 'pw_filter_transactions', 'pw_next_recurrence'];
     if (!exports || !exports.memory || required.some(name => typeof exports[name] !== 'function')) {
       throw new Error('Financial engine exports are incomplete.');
     }
@@ -423,6 +423,142 @@
     }
   }
 
+  function writeCString(view, base, capacity, value) {
+    const bytes = new TextEncoder().encode(String(value == null ? '' : value));
+    if (bytes.length >= capacity) throw new RangeError('Text value exceeds the C++ engine field capacity.');
+    new Uint8Array(view.buffer, base, capacity).fill(0);
+    new Uint8Array(view.buffer, base, bytes.length).set(bytes);
+  }
+
+  function merchantLookup(merchant) {
+    const bytes = new TextEncoder().encode(String(merchant || ''));
+    if (!bytes.length || bytes.length > 4096) return null;
+    try {
+      const categoryCapacity = 32, canonicalCapacity = 128;
+      const { wasm, inputPtr, outputPtr, buffer } = ensureScratch(bytes.length, categoryCapacity + canonicalCapacity + 4);
+      new Uint8Array(buffer, inputPtr, bytes.length).set(bytes);
+      const canonicalPtr = outputPtr + categoryCapacity;
+      const confidencePtr = canonicalPtr + canonicalCapacity;
+      const status = wasm.pw_merchant_lookup(inputPtr, bytes.length, outputPtr, categoryCapacity, canonicalPtr, canonicalCapacity, confidencePtr);
+      if (status === 2) return null;
+      readStatus(status, 'merchant categorisation');
+      const read = (ptr, size) => {
+        const view = new Uint8Array(buffer, ptr, size);
+        const end = view.indexOf(0);
+        return new TextDecoder().decode(view.subarray(0, end < 0 ? size : end));
+      };
+      const confidence = new Int32Array(buffer, confidencePtr, 1)[0];
+      const category = read(outputPtr, categoryCapacity), canonical = read(canonicalPtr, canonicalCapacity);
+      return category && canonical ? { category, canonical, confidence: Math.max(0, Math.min(1, confidence / 100)), source: 'builtin-cpp-wasm' } : null;
+    } catch (error) {
+      if (error && error.pocketWiseFinancialCore) throw error;
+      throw failure('WebAssembly merchant categorisation failed: ' + (error && error.message ? error.message : 'unknown engine error'), error);
+    }
+  }
+
+  function containsText(text, needle) {
+    const source = new TextEncoder().encode(String(text || ''));
+    const pattern = new TextEncoder().encode(String(needle || ''));
+    if (!source.length || !pattern.length || source.length > 200000 || pattern.length > 512) return false;
+    try {
+      const { wasm, inputPtr, outputPtr, buffer } = ensureScratch(source.length + pattern.length, 4);
+      new Uint8Array(buffer, inputPtr, source.length).set(source);
+      new Uint8Array(buffer, inputPtr + source.length, pattern.length).set(pattern);
+      return wasm.pw_contains_text(inputPtr, source.length, inputPtr + source.length, pattern.length) === 1;
+    } catch (error) {
+      if (error && error.pocketWiseFinancialCore) throw error;
+      throw failure('WebAssembly learned-rule matching failed: ' + error.message, error);
+    }
+  }
+
+  function findDuplicate(rows, candidate) {
+    if (!Array.isArray(rows) || rows.length > 100000 || !candidate) throw new TypeError('Duplicate detection input is invalid.');
+    const rowBytes = 144;
+    try {
+      const { wasm, inputPtr, outputPtr, buffer } = ensureScratch((rows.length + 1) * rowBytes, 4);
+      const view = new DataView(buffer);
+      const writeRow = (ptr, row) => {
+        const amount = Number(row.amountMinor);
+        if (!Number.isSafeInteger(amount) || amount < 0) throw new TypeError('Duplicate detection amount must be exact integer paise.');
+        view.setBigInt64(ptr, BigInt(amount), true);
+        view.setInt32(ptr + 8, Number(row.dateKey) | 0, true);
+        writeCString(view, ptr + 12, 128, row.merchant || '');
+      };
+      rows.forEach((row, index) => writeRow(inputPtr + index * rowBytes, row));
+      writeRow(inputPtr + rows.length * rowBytes, candidate);
+      const status = wasm.pw_find_duplicate(inputPtr, rows.length, inputPtr + rows.length * rowBytes, outputPtr);
+      if (status === 2) return -1;
+      readStatus(status, 'duplicate detection');
+      return new Int32Array(buffer, outputPtr, 1)[0];
+    } catch (error) {
+      if (error && error.pocketWiseFinancialCore) throw error;
+      throw failure('WebAssembly duplicate detection failed: ' + error.message, error);
+    }
+  }
+
+  function filterTransactions(rows, filters) {
+    if (!Array.isArray(rows) || rows.length > 100000) throw new TypeError('Activity search input is invalid.');
+    const rowBytes = 792, filterBytes = 240;
+    try {
+      const { wasm, inputPtr, outputPtr, buffer } = ensureScratch(rows.length * rowBytes + filterBytes, rows.length || 1);
+      const view = new DataView(buffer);
+      const enc = new TextEncoder();
+      const writeText = (ptr, cap, value) => {
+        const bytes = enc.encode(String(value == null ? '' : value));
+        if (bytes.length >= cap) throw new RangeError('Search text exceeds the C++ engine field capacity.');
+        new Uint8Array(buffer, ptr, cap).fill(0);
+        new Uint8Array(buffer, ptr, bytes.length).set(bytes);
+      };
+      rows.forEach((row, i) => {
+        const base = inputPtr + i * rowBytes;
+        const amount = Number(row.amountMinor || 0);
+        if (!Number.isSafeInteger(amount)) throw new TypeError('Activity amount must be exact integer paise.');
+        view.setBigInt64(base, BigInt(amount), true);
+        view.setInt32(base + 8, Number(row.dateKey) || 0, true);
+        view.setInt32(base + 12, Number.isInteger(row.accountIndex) ? row.accountIndex : -1, true);
+        view.setInt32(base + 16, Number.isInteger(row.categoryIndex) ? row.categoryIndex : -1, true);
+        view.setInt32(base + 20, Number(row.typeCode) || 0, true);
+        writeText(base + 24, 512, row.searchText || '');
+        writeText(base + 536, 256, Array.isArray(row.tags) ? row.tags.join(' ') : (row.tags || ''));
+      });
+      const fp = inputPtr + rows.length * rowBytes;
+      const min = filters && filters.minMinor != null ? Number(filters.minMinor) : 0;
+      const max = filters && filters.maxMinor != null ? Number(filters.maxMinor) : 0;
+      if ((filters && filters.minMinor != null && !Number.isSafeInteger(min)) || (filters && filters.maxMinor != null && !Number.isSafeInteger(max))) throw new TypeError('Amount filter must be exact integer paise.');
+      view.setBigInt64(fp, BigInt(min), true);
+      view.setBigInt64(fp + 8, BigInt(max), true);
+      view.setInt32(fp + 16, filters && filters.minMinor != null ? 1 : 0, true);
+      view.setInt32(fp + 20, filters && filters.maxMinor != null ? 1 : 0, true);
+      view.setInt32(fp + 24, filters && Number.isInteger(filters.accountIndex) ? filters.accountIndex : -1, true);
+      view.setInt32(fp + 28, filters && Number.isInteger(filters.categoryIndex) ? filters.categoryIndex : -1, true);
+      view.setInt32(fp + 32, filters && Number.isInteger(filters.typeCode) ? filters.typeCode : 0, true);
+      view.setInt32(fp + 36, filters && Number(filters.dateFrom) || 0, true);
+      view.setInt32(fp + 40, filters && Number(filters.dateTo) || 0, true);
+      writeText(fp + 44, 128, filters && filters.query || '');
+      writeText(fp + 172, 64, filters && filters.tag || '');
+      const status = wasm.pw_filter_transactions(inputPtr, rows.length, fp, outputPtr);
+      readStatus(status, 'activity filtering');
+      return Array.from(new Uint8Array(buffer, outputPtr, rows.length));
+    } catch (error) {
+      if (error && error.pocketWiseFinancialCore) throw error;
+      throw failure('WebAssembly activity filtering failed: ' + error.message, error);
+    }
+  }
+
+  function nextRecurrence(dateKey, frequency, anchorDay) {
+    const code = frequency === 'weekly' ? 1 : frequency === 'monthly' ? 2 : frequency === 'yearly' ? 3 : 0;
+    if (!code) throw new TypeError('Unsupported recurring frequency.');
+    try {
+      const { wasm, inputPtr, outputPtr, buffer } = ensureScratch(4, 4);
+      const status = wasm.pw_next_recurrence(Number(dateKey) || 0, code, Number(anchorDay) || 0, outputPtr);
+      readStatus(status, 'recurrence date calculation');
+      return new DataView(buffer).getInt32(outputPtr, true);
+    } catch (error) {
+      if (error && error.pocketWiseFinancialCore) throw error;
+      throw failure('WebAssembly recurrence calculation failed: ' + error.message, error);
+    }
+  }
+
   function orderProviders(candidates, nowMs) {
     if (!Array.isArray(candidates) || candidates.length > 64) throw new TypeError('Provider route list is invalid or too large.');
     if (!candidates.length) return [];
@@ -589,7 +725,7 @@
     aggregate,
     equalSplit, percentageSplit, amountSplit, sum, cashDelta, accountBalance, debtRemaining,
     salaryAllocate, categoryBuckets, cashProjection, ratioRound, budgetMetrics, debtAmortize,
-    extractMerchant, orderProviders, updateProviderHealth,
+    extractMerchant, merchantLookup, containsText, findDuplicate, filterTransactions, nextRecurrence, orderProviders, updateProviderHealth,
     typeCodes: TYPE_CODES
   });
 });
