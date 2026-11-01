@@ -1,8 +1,8 @@
 {
   "name": "pocketwise-alpha2",
-  "version": "2.4.26",
+  "version": "2.4.28",
   "private": true,
-  "description": "PocketWise local-first finance PWA source and release tooling with adaptive local OCR routing, device-scoped reliability memory, and recurring entries, merchant learning, duplicate safeguards, structured filters and local receipts",
+  "description": "PocketWise local-first finance PWA with C++/WASM financial core, adaptive OCR, automation suite and refined mobile surfaces",
   "scripts": {
     "test": "node --test tests/*.test.js",
     "build:wasm": "bash scripts/build-wasm.sh",
