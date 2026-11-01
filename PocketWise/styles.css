@@ -3380,12 +3380,3 @@ html[data-theme="dark"] .card {
   .insights-controls h2 { font-size: 17px; }
 }
 
-/* PocketWise 2.4.30 — align the mobile header with the status-bar canvas.
-   The document root already switches between --bg for light and dark themes.
-   Use that exact opaque canvas on the topbar so the safe-area strip and the
-   Pocketwise brand/header area read as one continuous surface. */
-@media (max-width: 720px) {
-  .topbar {
-    background: var(--bg) !important;
-  }
-}
