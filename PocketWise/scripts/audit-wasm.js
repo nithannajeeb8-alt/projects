@@ -12,7 +12,7 @@ const required = [
   'pw_percentage_split', 'pw_amount_split', 'pw_sum_minor',
   'pw_cash_delta_minor', 'pw_account_balance', 'pw_debt_remaining',
   'pw_salary_allocate', 'pw_category_buckets', 'pw_cash_projection',
-  'pw_ratio_round_minor'
+  'pw_ratio_round_minor', 'pw_budget_metrics', 'pw_debt_amortize'
 ];
 for (const name of required) {
   if (!exportNames.has(name)) throw new Error(`Missing required Wasm export: ${name}`);

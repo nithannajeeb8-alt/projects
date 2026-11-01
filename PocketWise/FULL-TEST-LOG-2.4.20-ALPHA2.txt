@@ -1,0 +1,357 @@
+
+> pocketwise-alpha2@2.4.20 test
+> node --test tests/*.test.js
+
+TAP version 13
+# PASS Activity grouping reads object-shaped date ranges without array destructuring.
+# Subtest: tests/activity-runtime-regression.test.js
+ok 1 - tests/activity-runtime-regression.test.js
+  ---
+  duration_ms: 66.100004
+  type: 'test'
+  ...
+# PASS passes spatial amount, party, UPI, UTR and transaction ID to review
+# PASS does not let spatial incoming direction override explicit outgoing text
+# PASS does not use a UPI ID as the recipient name in text-only fallback
+# PASS does not label a generic Reference field as an RRN
+# PASS passes the detected source app into the existing transaction note without requiring a new field
+# 5/5 app import integration tests passed.
+# Subtest: tests/app-spatial-import.test.js
+ok 2 - tests/app-spatial-import.test.js
+  ---
+  duration_ms: 80.680374
+  type: 'test'
+  ...
+# PASS prefers a copied image over accompanying transaction text
+# PASS reads old Shortcut JSON through Clipboard.read text/plain
+# PASS falls back to readText for older text-only Shortcut/browser support
+# PASS rejects empty and oversized clipboard images
+# PASS reports an empty clipboard without trying to import blank data
+# PASS returns iOS NotAllowedError without consuming activation with a second readText call
+# PASS reads image data from a native paste event before accompanying text
+# PASS reads older Shortcut text from the native paste event
+# PASS returns null when native paste has no supported content
+# PASS unified Paste section accepts both new image and old text Shortcut formats
+# 10/10 clipboard import tests passed.
+# Subtest: tests/clipboard-import.test.js
+ok 3 - tests/clipboard-import.test.js
+  ---
+  duration_ms: 151.729879
+  type: 'test'
+  ...
+# PASS new and upgraded workspaces enable Money Stories while preserving explicit choices made in 2.4.7+.
+# 7/7 Money Stories default and migration assertions passed.
+# Subtest: tests/daily-story-default.test.js
+ok 4 - tests/daily-story-default.test.js
+  ---
+  duration_ms: 55.707092
+  type: 'test'
+  ...
+# event-plan-export-persistence.test.js: all assertions passed
+# Subtest: tests/event-plan-export-persistence.test.js
+ok 5 - tests/event-plan-export-persistence.test.js
+  ---
+  duration_ms: 91.33204
+  type: 'test'
+  ...
+# event-planner-layout.test.js: all assertions passed
+# Subtest: tests/event-planner-layout.test.js
+ok 6 - tests/event-planner-layout.test.js
+  ---
+  duration_ms: 71.668319
+  type: 'test'
+  ...
+# PASS period-aware weekly/monthly/yearly salary and budget calculations
+# PASS historical projection suppression
+# Financial calculation tests completed successfully.
+# PASS balance reconciliation, transfers, refunds, borrowing/lending, debt, opening-date coverage and paise arithmetic.
+# PASS salary allocations, historical comparisons, budget forecasting and period-aware weekly/monthly/yearly calculations.
+# Finance analytics suite completed with no assertion failures.
+# Subtest: tests/finance-analytics.test.js
+ok 7 - tests/finance-analytics.test.js
+  ---
+  duration_ms: 192.744754
+  type: 'test'
+  ...
+# PASS application startup is blocked until the required Wasm engine is ready
+# PASS failed Wasm startup never loads the application JavaScript modules
+# PASS Pocketwise logo splash remains until storage initialization and first render finish
+# Subtest: tests/financial-core-bootstrap.test.js
+ok 8 - tests/financial-core-bootstrap.test.js
+  ---
+  duration_ms: 115.580445
+  type: 'test'
+  ...
+# PASS period selector, single compact category comparison chart and redesigned entry form, compact activity, report addendum and service-worker cache integration.
+# Subtest: tests/financial-ui-regression.test.js
+ok 9 - tests/financial-ui-regression.test.js
+  ---
+  duration_ms: 70.958418
+  type: 'test'
+  ...
+# PASS: Insights DOM hierarchy, Settings containment, single backup callout, immediate page reset and report-table wrapping.
+# Subtest: tests/html-structure-regression.test.js
+ok 10 - tests/html-structure-regression.test.js
+  ---
+  duration_ms: 68.472685
+  type: 'test'
+  ...
+# icon-fallback.test.js: all assertions passed
+# Subtest: tests/icon-fallback.test.js
+ok 11 - tests/icon-fallback.test.js
+  ---
+  duration_ms: 80.390115
+  type: 'test'
+  ...
+# ios-pdf-render.test.js: iOS page-wise rendering, Android user-initiated saving, HTML fallback and desktop compatibility passed
+# Subtest: tests/ios-pdf-render.test.js
+ok 12 - tests/ios-pdf-render.test.js
+  ---
+  duration_ms: 3091.295159
+  type: 'test'
+  ...
+# ios-pdf-share.test.js: page-wise PDF pipeline and native iOS File share checks passed
+# Subtest: tests/ios-pdf-share.test.js
+ok 13 - tests/ios-pdf-share.test.js
+  ---
+  duration_ms: 78.242286
+  type: 'test'
+  ...
+# mobile-file-download.test.js: Blob download setup and deferred URL cleanup passed
+# Subtest: tests/mobile-file-download.test.js
+ok 14 - tests/mobile-file-download.test.js
+  ---
+  duration_ms: 73.534277
+  type: 'test'
+  ...
+# PASS Android uses WASM, rejects a truncated ₹2 amount, loads Small fallback, and caches both model pairs
+# PASS cached Tiny and Small models are reused when offline
+# 2/2 OCR model fallback integration tests passed.
+# Subtest: tests/ocr-model-fallback-integration.test.js
+ok 15 - tests/ocr-model-fallback-integration.test.js
+  ---
+  duration_ms: 160.900779
+  type: 'test'
+  ...
+# PASS small PP-OCRv6 Tiny pair is the first local AI model
+# PASS existing PP-OCRv6 Small pair remains available as the fallback
+# PASS Tiny accepts a complete receipt with currency, payment context and confidence
+# PASS Tiny triggers Small fallback when the rupee marker is missing
+# PASS Tiny triggers Small when the rupee glyph survives but the amount is truncated to one digit
+# PASS Android runtime selects the compatibility WASM backend rather than automatic WebGPU
+# PASS Tiny triggers Small fallback on empty or incomplete output
+# PASS Tiny triggers Small fallback when average recognition confidence is weak
+# PASS recognition attempts Tiny before invoking Small fallback
+# PASS model cache namespace is retained for existing Small-model offline cache
+# 10/10 OCR model selection and fallback tests passed.
+# Subtest: tests/ocr-model-fallback.test.js
+ok 16 - tests/ocr-model-fallback.test.js
+  ---
+  duration_ms: 93.823763
+  type: 'test'
+  ...
+# offline-runtime-assets.test.js: source assertions and simulated offline cache assertions passed
+# Subtest: tests/offline-runtime-assets.test.js
+ok 17 - tests/offline-runtime-assets.test.js
+  ---
+  duration_ms: 172.402653
+  type: 'test'
+  ...
+# PASS main app keeps JavaScript eval blocked while allowing WebAssembly
+# PASS main app permits only the same-origin hidden OCR frame
+# PASS the isolated OCR page has a verified CSP hash and scoped eval permission
+# PASS parent validates iframe message source and transfers only image/model blobs
+# PASS service worker precaches the isolated OCR page without discarding existing model/runtime caches
+# PASS raw CSP errors are translated into a readable import status
+# 6/6 CSP isolation tests passed.
+# Subtest: tests/paddleocr-csp-isolation.test.js
+ok 18 - tests/paddleocr-csp-isolation.test.js
+  ---
+  duration_ms: 116.206303
+  type: 'test'
+  ...
+# PASS single tile
+# PASS partial trailing tile
+# PASS avoid sliver duplicate
+# PASS three overlapping tiles
+# PASS square grid
+# 5/5 tile tests passed.
+# Subtest: tests/paddleocr-tiling.test.js
+ok 19 - tests/paddleocr-tiling.test.js
+  ---
+  duration_ms: 57.512212
+  type: 'test'
+  ...
+# receipt-actions.test.js: text sharing and unified PDF export remain separate
+# Subtest: tests/receipt-actions.test.js
+ok 20 - tests/receipt-actions.test.js
+  ---
+  duration_ms: 58.089123
+  type: 'test'
+  ...
+# PASS Indian and international display formats preserve all digits
+# PASS rejects malformed comma grouping and unsupported decimal precision
+# PASS extracts outgoing party, VPA, UTR and transaction ID separately
+# PASS extracts incoming sender when the name is on the following line
+# PASS recognises amount label on one line and digits on the next
+# PASS does not treat a VPA alone as a person name
+# PASS recognises unknown UPI handles without assigning a bank identity
+# PASS does not classify Total as a To party label
+# PASS accepts short and long Paddle currency lines without a tallest-block cutoff
+# PASS joins a currency-only line to the numerical line beneath it
+# PASS does not guess a rupee symbol when Paddle only returned a leading digit
+# PASS prefers a currency amount over balance and cashback values
+# PASS keeps PSP suffix mapping configurable without claiming an underlying bank
+# PASS does not let balance or cashback figures steal the paid amount on the same OCR line
+# PASS uses an amount label to recover a bare amount without guessing unlabeled numbers
+# PASS marks equally plausible payment amounts for review instead of silently declaring certainty
+# PASS detects visible Indian payment app labels without inferring the bank from a VPA suffix
+# PASS leaves direction unknown when incoming and outgoing labels conflict
+# 18/18 parser tests passed.
+# Subtest: tests/receipt-ocr-parser.test.js
+ok 21 - tests/receipt-ocr-parser.test.js
+  ---
+  duration_ms: 122.159987
+  type: 'test'
+  ...
+# release-hardening.test.js: all assertions passed
+# Subtest: tests/release-hardening.test.js
+ok 22 - tests/release-hardening.test.js
+  ---
+  duration_ms: 51.793535
+  type: 'test'
+  ...
+# release-package-cleanup.test.js: all assertions passed
+# Subtest: tests/release-package-cleanup.test.js
+ok 23 - tests/release-package-cleanup.test.js
+  ---
+  duration_ms: 81.014501
+  type: 'test'
+  ...
+# PASS report-only statement layout, PWA salary/budget configuration, compact alert statuses and report appendices.
+# Subtest: tests/report-download-only.test.js
+ok 24 - tests/report-download-only.test.js
+  ---
+  duration_ms: 101.709291
+  type: 'test'
+  ...
+# PASS A4 print geometry, fixed financial table columns, repeated headers, row pagination, chart bounds and explanatory-text wrapping.
+# Subtest: tests/report-print-layout.test.js
+ok 25 - tests/report-print-layout.test.js
+  ---
+  duration_ms: 90.954745
+  type: 'test'
+  ...
+# shared-cost-tools-ui.test.js: all assertions passed
+# Subtest: tests/shared-cost-tools-ui.test.js
+ok 26 - tests/shared-cost-tools-ui.test.js
+  ---
+  duration_ms: 84.166278
+  type: 'test'
+  ...
+# shared-costs.test.js: all assertions passed (C++/Wasm allocation core)
+# Subtest: tests/shared-costs.test.js
+ok 27 - tests/shared-costs.test.js
+  ---
+  duration_ms: 73.056229
+  type: 'test'
+  ...
+# PASS existing text Shortcut retained
+# PASS exact image Shortcut iCloud link retained
+# PASS only Get Image Shortcut remains in the image Shortcut row
+# PASS removed PWA controls and dead event handler
+# PASS action group can shrink and stays inside its parent
+# PASS mobile action alignment and wrapping rules
+# PASS service worker cache version updated
+# 7/7 Shortcut Settings regression assertions passed.
+# Subtest: tests/shortcut-settings.test.js
+ok 28 - tests/shortcut-settings.test.js
+  ---
+  duration_ms: 76.508221
+  type: 'test'
+  ...
+# PASS reads standard XLSX ZIP/OOXML workbook entries and worksheet relationships
+# PASS reads inline strings and date-formatted cells from openpyxl-style workbooks
+# PASS automatically selects transaction sheet and maps Indian bank debit/credit columns
+# PASS preserves references, running balances, direction and paise values
+# PASS converts 1900- and 1904-system Excel date serials without local timezone drift
+# PASS rejects invalid, damaged and checksum-tampered workbooks with readable errors
+# 7/7 XLSX reader integration assertions passed.
+# Subtest: tests/statement-xlsx-import.test.js
+ok 29 - tests/statement-xlsx-import.test.js
+  ---
+  duration_ms: 138.728053
+  type: 'test'
+  ...
+# PASS XLSX import UI, legacy XLS messaging, local parser wiring and offline precache integration.
+# 10/10 XLSX UI and PWA integration assertions passed.
+# Subtest: tests/statement-xlsx-ui.test.js
+ok 30 - tests/statement-xlsx-ui.test.js
+  ---
+  duration_ms: 109.316002
+  type: 'test'
+  ...
+# PASS all three Safari gesture events are intercepted in capture phase
+# PASS prevention is applied only to cancelable events
+# PASS normal paste, pointer and one-finger scroll handlers are not intercepted
+# 3/3 viewport guard runtime tests passed.
+# Subtest: tests/viewport-guard-runtime.test.js
+ok 31 - tests/viewport-guard-runtime.test.js
+  ---
+  duration_ms: 90.793595
+  type: 'test'
+  ...
+# PASS fixed viewport metadata on the main PWA
+# PASS fixed viewport metadata on the share landing page
+# PASS the app canvas is vertically scrollable without horizontal page drift
+# PASS intentional horizontal scrollers and range controls retain two-axis panning
+# PASS Safari gesture fallback blocks proprietary pinch gestures
+# PASS regular UI text cannot be selected
+# PASS form fields remain editable and can receive paste
+# PASS focused touch-device controls use 16px only while active, preserving idle UI typography
+# PASS original amount-field typography is preserved
+# PASS native paste target retains iOS long-press Paste support
+# PASS viewport guard is precached with the new shell version
+# 10/10 viewport and interaction regression assertions passed.
+# Subtest: tests/viewport-lock.test.js
+ok 32 - tests/viewport-lock.test.js
+  ---
+  duration_ms: 68.728306
+  type: 'test'
+  ...
+# PASS WebAssembly loads and exports the financial aggregation ABI
+# PASS C++ aggregation matches independent legacy JavaScript oracle on identical inputs
+# PASS cash-flow buckets and period output use Wasm results
+# PASS empty, negative, decimal, large, non-finite and memory-growth cases
+# PASS failed Wasm load, missing engine, and unsafe ranges fail closed without JS fallback
+# Subtest: tests/wasm-financial-engine.test.js
+ok 33 - tests/wasm-financial-engine.test.js
+  ---
+  duration_ms: 561.946709
+  type: 'test'
+  ...
+# PASS manifest registers an installed-PWA multipart image share target
+# PASS service worker intercepts only the exact same-origin share-target POST route
+# PASS shared screenshot is stored locally and returned with a 303 redirect
+# PASS missing image part is recorded as a recoverable error, not a blank import
+# PASS MIME-less image is identified from its file extension
+# PASS oversized shared image is rejected before local storage of the image blob
+# PASS OCR output is parsed internally and never inserted into a visible textarea
+# PASS review entry contains editable amount, merchant, reference and a vertical category chooser
+# PASS shared image route consumes the temporary inbox entry and starts OCR automatically
+# 9/9 Android Web Share Target tests passed.
+# Subtest: tests/web-share-target.test.js
+ok 34 - tests/web-share-target.test.js
+  ---
+  duration_ms: 581.30707
+  type: 'test'
+  ...
+1..34
+# tests 34
+# suites 0
+# pass 34
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3452.545609

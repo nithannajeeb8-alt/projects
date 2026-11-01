@@ -480,14 +480,13 @@
       percentageOver100: allocation.percentageScaled > 10000, salaryTransactions: salaryTransactions.length
     };
   }
-  function categorySpend(state, start, end, activityId) {
-    const deltas = [];
-    (state.transactions || []).forEach(tx => {
-      if (tx.activityId !== activityId || !txWithin(tx, start, end)) return;
-      if (tx.type === 'expense') deltas.push(minor(tx.amount));
-      else if (tx.type === 'refund') deltas.push(-minor(tx.amount));
-    });
-    return major(Math.max(0, financialEngine().sum(deltas)));
+  function periodBudgetRatio(range) {
+    if (range.type === 'week') return { numerator: 3, denominator: 13 };
+    if (range.type === 'year') return { numerator: 12, denominator: 1 };
+    if (range.type === 'month') return { numerator: 1, denominator: 1 };
+    const days = Math.max(1, Math.round((dateOf(range.end) - dateOf(range.start)) / DAY_MS) + 1);
+    // 30.436875 days/month = 243495 / 8000 exactly.
+    return { numerator: days * 8000, denominator: 243495 };
   }
   function projectionEvidence(state, start, end, today, activityId, observedEnd) {
     const stop = observedEnd && validISO(observedEnd) ? observedEnd : today;
@@ -531,6 +530,7 @@
     const partial = end < periodEnd;
     const previous = partial && elapsedDays ? { ...fullPrevious, end: addDays(fullPrevious.start, elapsedDays - 1) > fullPrevious.end ? fullPrevious.end : addDays(fullPrevious.start, elapsedDays - 1) } : fullPrevious;
     const multiplier = periodBudgetMultiplier({ ...selected, end: periodEnd });
+    const ratio = periodBudgetRatio({ ...selected, end: periodEnd });
     const salary = salaryAllocationSummary(state, today, { ...selected, effectiveEnd: end });
     const allocationBuckets = new Map();
     salary.allocations.forEach(rule => {
@@ -539,35 +539,69 @@
       allocationBuckets.get(rule.activityId).push(minor(rule.amount));
     });
     const plannedByCategory = Object.fromEntries([...allocationBuckets.entries()].map(([id, amounts]) => [id, financialEngine().sum(amounts)]));
-    const scaleMonthly = value => Math.max(0, Math.round(minor(value || 0) * multiplier));
-    const actualIncome = financialEngine().sum((state.transactions || []).filter(tx => tx.type === 'income' && txWithin(tx, current.start, current.end)).map(tx => minor(tx.amount)));
-    const incomeBasis = actualIncome > 0 ? actualIncome : minor(salary.baseSalary);
-    const rows = (state.activities || []).filter(a => a.kind === 'expense' || a.kind === 'both').map(activity => {
-      const monthlyBudget = Number(state.budgets && state.budgets.categories && state.budgets.categories[activity.id]) || 0;
-      const budgetMinor = scaleMonthly(monthlyBudget);
-      const salaryAllocationMinor = plannedByCategory[activity.id] || 0;
-      const plannedMinor = budgetMinor > 0 ? budgetMinor : salaryAllocationMinor;
-      const spent = categorySpend(state, current.start, current.end, activity.id);
-      const previousSpent = categorySpend(state, previous.start, previous.end, activity.id);
+    const activities = (state.activities || []).filter(a => a.kind === 'expense' || a.kind === 'both');
+    const categoryIndexes = new Map(activities.map((activity, index) => [activity.id, index]));
+    const categoryInputs = activities.map(activity => ({
+      monthlyBudgetMinor: Math.max(0, minor(Number(state.budgets && state.budgets.categories && state.budgets.categories[activity.id]) || 0)),
+      salaryAllocationMinor: Math.max(0, plannedByCategory[activity.id] || 0)
+    }));
+    const budgetTransactions = [];
+    (state.transactions || []).forEach(tx => {
+      if (!tx || !validISO(tx.date)) return;
+      const isCurrent = txWithin(tx, current.start, current.end);
+      const isPrevious = txWithin(tx, previous.start, previous.end);
+      if (isCurrent && ['income', 'expense', 'refund'].includes(tx.type)) {
+        budgetTransactions.push({
+          amountMinor: minor(tx.amount),
+          categoryIndex: tx.type === 'income' ? null : (categoryIndexes.has(tx.activityId) ? categoryIndexes.get(tx.activityId) : null),
+          periodIndex: 0,
+          typeCode: financialEngine().typeCodes[tx.type]
+        });
+      } else if (isPrevious && ['expense', 'refund'].includes(tx.type)) {
+        budgetTransactions.push({
+          amountMinor: minor(tx.amount),
+          categoryIndex: categoryIndexes.has(tx.activityId) ? categoryIndexes.get(tx.activityId) : null,
+          periodIndex: 1,
+          typeCode: financialEngine().typeCodes[tx.type]
+        });
+      }
+    });
+    const configuredTotalBudget = Math.max(0, minor(state.budgets && state.budgets.total || 0));
+    const metrics = financialEngine().budgetMetrics(categoryInputs, budgetTransactions, ratio.numerator, ratio.denominator, configuredTotalBudget);
+    const incomeBasis = metrics.actualIncomeMinor > 0 ? metrics.actualIncomeMinor : minor(salary.baseSalary);
+    const rows = activities.map((activity, index) => {
+      const value = metrics.rows[index];
+      const spent = major(value.spentMinor);
+      const previousSpent = major(value.previousSpentMinor);
       const evidence = projectionEvidence(state, current.start, periodEnd, today, activity.id, current.end);
       const projected = evidence.projectedMinor === null ? null : major(evidence.projectedMinor);
-      return { id: activity.id, name: activity.name, plannedAllocation: major(plannedMinor), salaryAllocation: major(salaryAllocationMinor), budgetLimit: major(budgetMinor), spent, remaining: major(plannedMinor - minor(spent)), percentUsed: plannedMinor > 0 ? minor(spent) / plannedMinor * 100 : null, projectedSpending: projected, previousSpent, change: major(minor(spent) - minor(previousSpent)), incomeAllocationPct: incomeBasis ? plannedMinor / incomeBasis * 100 : null, spendingShareOfIncome: incomeBasis ? minor(spent) / incomeBasis * 100 : null, canProject: evidence.reliable, projectionEvidence: evidence };
-    }).filter(row => row.plannedAllocation > 0 || row.spent > 0).sort((a, b) => (b.percentUsed || 0) - (a.percentUsed || 0));
-    const grossExpense = financialEngine().sum((state.transactions || []).filter(tx => tx.type === 'expense' && txWithin(tx, current.start, current.end)).map(tx => minor(tx.amount)));
-    const refund = financialEngine().sum((state.transactions || []).filter(tx => tx.type === 'refund' && txWithin(tx, current.start, current.end)).map(tx => minor(tx.amount)));
-    const netSpentMinor = Math.max(0, grossExpense - refund);
-    const configuredTotalBudget = Math.max(0, minor(state.budgets && state.budgets.total || 0));
-    const periodTotalBudget = configuredTotalBudget ? Math.round(configuredTotalBudget * multiplier) : financialEngine().sum(rows.map(row => minor(row.plannedAllocation)));
+      return {
+        id: activity.id, name: activity.name,
+        plannedAllocation: major(value.plannedAllocationMinor),
+        salaryAllocation: major(value.salaryAllocationMinor),
+        budgetLimit: major(value.budgetLimitMinor), spent,
+        remaining: major(value.remainingMinor),
+        percentUsed: value.plannedAllocationMinor > 0 ? value.spentMinor / value.plannedAllocationMinor * 100 : null,
+        projectedSpending: projected, previousSpent,
+        change: major(financialEngine().sum([value.spentMinor, -value.previousSpentMinor])),
+        incomeAllocationPct: incomeBasis ? value.plannedAllocationMinor / incomeBasis * 100 : null,
+        spendingShareOfIncome: incomeBasis ? value.spentMinor / incomeBasis * 100 : null,
+        canProject: evidence.reliable, projectionEvidence: evidence
+      };
+    }).filter(row => row.plannedAllocation > 0 || row.spent > 0)
+      .sort((a, b) => (b.percentUsed || 0) - (a.percentUsed || 0));
     const projection = projectionEvidence(state, current.start, periodEnd, today, null, current.end);
-    const categoryBudgetTotal = financialEngine().sum(rows.map(row => minor(row.budgetLimit)));
     const label = current.type === 'week' ? 'week' : current.type === 'year' ? 'year' : current.type === 'custom' ? 'selected period' : 'month';
     return {
-      range: current, previousRange: previous, periodLabel: label, rows, salary, totalBudget: major(periodTotalBudget), totalSpent: major(netSpentMinor),
-      totalRemaining: major(periodTotalBudget - netSpentMinor), actualIncome: major(actualIncome),
-      totalPercentUsed: periodTotalBudget ? netSpentMinor / periodTotalBudget * 100 : null,
+      range: current, previousRange: previous, periodLabel: label, rows, salary,
+      totalBudget: major(metrics.totalBudgetMinor), totalSpent: major(metrics.totalSpentMinor),
+      totalRemaining: major(metrics.totalRemainingMinor), actualIncome: major(metrics.actualIncomeMinor),
+      totalPercentUsed: metrics.totalBudgetMinor ? metrics.totalSpentMinor / metrics.totalBudgetMinor * 100 : null,
       projectedTotal: projection.projectedMinor === null ? null : major(projection.projectedMinor),
-      canProjectTotal: projection.reliable, projectionEvidence: projection, elapsedDays: projection.elapsed, periodDays: fullDays,
-      categoryBudgetTotal: major(categoryBudgetTotal), categoryBudgetsExceedTotal: periodTotalBudget > 0 && categoryBudgetTotal > periodTotalBudget,
+      canProjectTotal: projection.reliable, projectionEvidence: projection,
+      elapsedDays: projection.elapsed, periodDays: fullDays,
+      categoryBudgetTotal: major(metrics.categoryBudgetTotalMinor),
+      categoryBudgetsExceedTotal: metrics.totalBudgetMinor > 0 && metrics.categoryBudgetTotalMinor > metrics.totalBudgetMinor,
       budgetMultiplier: multiplier, isPartialPeriod: partial
     };
   }

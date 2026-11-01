@@ -29,6 +29,8 @@ target_link_options(pocketwise-engine PRIVATE
   "-Wl,--export=pw_category_buckets"
   "-Wl,--export=pw_cash_projection"
   "-Wl,--export=pw_ratio_round_minor"
+  "-Wl,--export=pw_budget_metrics"
+  "-Wl,--export=pw_debt_amortize"
   "-Wl,--export-memory"
   "-Wl,--initial-memory=2097152"
   "-Wl,--max-memory=268435456"

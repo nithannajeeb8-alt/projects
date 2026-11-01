@@ -42,6 +42,30 @@ typedef struct PWCategoryBucketInput {
   int sign;                  /* +1: expense, -1: refund */
 } PWCategoryBucketInput;
 
+typedef struct PWBudgetCategoryInput {
+  long long monthly_budget_minor;
+  long long salary_allocation_minor;
+} PWBudgetCategoryInput;
+
+typedef struct PWBudgetTransactionInput {
+  long long amount_minor;
+  unsigned int category_index; /* UINT32_MAX means uncategorised */
+  unsigned int period_index;   /* 0: current, 1: previous */
+  int type_code;               /* 1: income, 2: expense, 3: refund */
+  unsigned int reserved;
+} PWBudgetTransactionInput;
+
+typedef struct PWDebtPlanInput {
+  long long balance_minor;
+  unsigned int annual_rate_basis_points; /* 12% APR = 1200 basis points */
+  unsigned int reserved;
+} PWDebtPlanInput;
+
+typedef struct PWDebtPlanOutput {
+  long long balance_minor;
+  long long interest_minor;
+} PWDebtPlanOutput;
+
 unsigned int pw_alloc(unsigned int size);
 void pw_reset(void);
 int pw_aggregate(const PWTransactionInput *transactions,
@@ -72,6 +96,14 @@ int pw_cash_projection(long long opening_minor, const long long *deltas,
                        unsigned int count, long long *output); /* ending, minimum, first shortage, index */
 int pw_ratio_round_minor(long long amount_minor, unsigned int numerator,
                          unsigned int denominator, long long *output);
+int pw_budget_metrics(const PWBudgetCategoryInput *categories, unsigned int category_count,
+                      const PWBudgetTransactionInput *transactions, unsigned int transaction_count,
+                      unsigned int multiplier_numerator, unsigned int multiplier_denominator,
+                      long long configured_total_budget_minor, int has_configured_total_budget,
+                      long long *row_output, long long *summary_output);
+int pw_debt_amortize(const PWDebtPlanInput *debts, unsigned int debt_count,
+                     long long monthly_payment_minor, int strategy_code,
+                     PWDebtPlanOutput *outputs, long long *summary_output);
 
 #ifdef __cplusplus
 }

@@ -13,9 +13,9 @@ if command -v em++ >/dev/null 2>&1; then
     -Wl,--export=pw_alloc -Wl,--export=pw_reset -Wl,--export=pw_aggregate \
     -Wl,--export=pw_equal_split -Wl,--export=pw_percentage_split -Wl,--export=pw_amount_split \
     -Wl,--export=pw_sum_minor -Wl,--export=pw_cash_delta_minor -Wl,--export=pw_account_balance -Wl,--export=pw_debt_remaining \
-    -Wl,--export=pw_salary_allocate -Wl,--export=pw_category_buckets -Wl,--export=pw_cash_projection -Wl,--export=pw_ratio_round_minor \
+    -Wl,--export=pw_salary_allocate -Wl,--export=pw_category_buckets -Wl,--export=pw_cash_projection -Wl,--export=pw_ratio_round_minor -Wl,--export=pw_budget_metrics -Wl,--export=pw_debt_amortize \
     -Wl,--export-memory \
-    -Wl,--initial-memory=2097152 -Wl,--max-memory=268435456 \
+    -Wl,--initial-memory=2097152 -Wl,--max-memory=268435456 -sSTACK_SIZE=131072 \
     -Wl,--strip-all -o "$OUT"
 elif command -v clang++ >/dev/null 2>&1; then
   echo "Emscripten (em++) was not found; building the same freestanding WASM ABI with clang++ instead."
@@ -25,9 +25,9 @@ elif command -v clang++ >/dev/null 2>&1; then
     -Wl,--export=pw_alloc -Wl,--export=pw_reset -Wl,--export=pw_aggregate \
     -Wl,--export=pw_equal_split -Wl,--export=pw_percentage_split -Wl,--export=pw_amount_split \
     -Wl,--export=pw_sum_minor -Wl,--export=pw_cash_delta_minor -Wl,--export=pw_account_balance -Wl,--export=pw_debt_remaining \
-    -Wl,--export=pw_salary_allocate -Wl,--export=pw_category_buckets -Wl,--export=pw_cash_projection -Wl,--export=pw_ratio_round_minor \
+    -Wl,--export=pw_salary_allocate -Wl,--export=pw_category_buckets -Wl,--export=pw_cash_projection -Wl,--export=pw_ratio_round_minor -Wl,--export=pw_budget_metrics -Wl,--export=pw_debt_amortize \
     -Wl,--export-memory \
-    -Wl,--initial-memory=2097152 -Wl,--max-memory=268435456 \
+    -Wl,--initial-memory=2097152 -Wl,--max-memory=268435456 -Wl,-z,stack-size=131072 \
     -Wl,--strip-all -o "$OUT"
 else
   echo "Neither em++ nor a wasm-capable clang++ was found." >&2

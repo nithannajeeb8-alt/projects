@@ -64,7 +64,7 @@
       }
     }
     const exports = result.instance ? result.instance.exports : result.exports;
-    const required = ['pw_alloc', 'pw_reset', 'pw_aggregate', 'pw_equal_split', 'pw_percentage_split', 'pw_amount_split', 'pw_sum_minor', 'pw_cash_delta_minor', 'pw_account_balance', 'pw_debt_remaining', 'pw_salary_allocate', 'pw_category_buckets', 'pw_cash_projection', 'pw_ratio_round_minor'];
+    const required = ['pw_alloc', 'pw_reset', 'pw_aggregate', 'pw_equal_split', 'pw_percentage_split', 'pw_amount_split', 'pw_sum_minor', 'pw_cash_delta_minor', 'pw_account_balance', 'pw_debt_remaining', 'pw_salary_allocate', 'pw_category_buckets', 'pw_cash_projection', 'pw_ratio_round_minor', 'pw_budget_metrics', 'pw_debt_amortize'];
     if (!exports || !exports.memory || required.some(name => typeof exports[name] !== 'function')) {
       throw new Error('Financial engine exports are incomplete.');
     }
@@ -305,6 +305,99 @@
     } catch (error) { throw failure('WebAssembly monetary projection failed: ' + error.message, error); }
   }
 
+  function budgetMetrics(categories, transactions, multiplierNumerator, multiplierDenominator, configuredTotalBudgetMinor) {
+    try {
+      if (!Array.isArray(categories) || categories.length > 5000 || !Array.isArray(transactions) || transactions.length > 1000000 ||
+          !Number.isInteger(multiplierNumerator) || multiplierNumerator < 0 || multiplierNumerator > 4000000000 ||
+          !Number.isInteger(multiplierDenominator) || multiplierDenominator < 1 || multiplierDenominator > 5200000 ||
+          !Number.isSafeInteger(configuredTotalBudgetMinor) || configuredTotalBudgetMinor < 0) {
+        throw new TypeError('Budget calculation input is invalid or too large.');
+      }
+      const categoryBytes = categories.length * 16;
+      const transactionBytes = transactions.length * 24;
+      const outputBytes = categories.length * 64 + 56;
+      const { wasm, inputPtr, outputPtr, buffer } = ensureScratch(categoryBytes + transactionBytes, outputBytes);
+      const input = new Uint32Array(buffer, inputPtr, Math.max(1, (categoryBytes + transactionBytes) / 4));
+      categories.forEach((category, i) => {
+        if (!category || !Number.isSafeInteger(category.monthlyBudgetMinor) || category.monthlyBudgetMinor < 0 ||
+            !Number.isSafeInteger(category.salaryAllocationMinor) || category.salaryAllocationMinor < 0) {
+          throw new TypeError('Invalid budget category at row ' + i + '.');
+        }
+        writeI64(input, i * 2, category.monthlyBudgetMinor);
+        writeI64(input, i * 2 + 1, category.salaryAllocationMinor);
+      });
+      const txWordOffset = categoryBytes / 4;
+      transactions.forEach((tx, i) => {
+        if (!tx || !Number.isSafeInteger(tx.amountMinor) || !Number.isInteger(tx.periodIndex) || ![0, 1].includes(tx.periodIndex) ||
+            !Number.isInteger(tx.typeCode) || ![TYPE_CODES.income, TYPE_CODES.expense, TYPE_CODES.refund].includes(tx.typeCode) ||
+            !(tx.categoryIndex === null || (Number.isInteger(tx.categoryIndex) && tx.categoryIndex >= 0 && tx.categoryIndex < categories.length))) {
+          throw new TypeError('Invalid budget transaction at row ' + i + '.');
+        }
+        const base = txWordOffset + i * 6;
+        writeI64(input, base / 2, tx.amountMinor);
+        input[base + 2] = tx.categoryIndex === null ? 0xFFFFFFFF : tx.categoryIndex >>> 0;
+        input[base + 3] = tx.periodIndex >>> 0;
+        input[base + 4] = tx.typeCode >>> 0;
+        input[base + 5] = 0;
+      });
+      const rowsPtr = outputPtr;
+      const summaryPtr = outputPtr + categories.length * 64;
+      const status = wasm.pw_budget_metrics(inputPtr, categories.length, inputPtr + categoryBytes, transactions.length,
+        multiplierNumerator, multiplierDenominator, BigInt(configuredTotalBudgetMinor), configuredTotalBudgetMinor > 0 ? 1 : 0,
+        rowsPtr, summaryPtr);
+      readStatus(status, 'budget metrics');
+      const output = new Uint32Array(buffer, rowsPtr, Math.max(1, categories.length * 16));
+      const summary = new Uint32Array(buffer, summaryPtr, 14);
+      return {
+        rows: Array.from({ length: categories.length }, (_, i) => ({
+          budgetLimitMinor: readI64(output, i * 8),
+          salaryAllocationMinor: readI64(output, i * 8 + 1),
+          plannedAllocationMinor: readI64(output, i * 8 + 2),
+          spentMinor: readI64(output, i * 8 + 3),
+          previousSpentMinor: readI64(output, i * 8 + 4),
+          remainingMinor: readI64(output, i * 8 + 5)
+        })),
+        grossExpenseMinor: readI64(summary, 0),
+        refundsMinor: readI64(summary, 1),
+        actualIncomeMinor: readI64(summary, 2),
+        totalBudgetMinor: readI64(summary, 3),
+        totalSpentMinor: readI64(summary, 4),
+        totalRemainingMinor: readI64(summary, 5),
+        categoryBudgetTotalMinor: readI64(summary, 6)
+      };
+    } catch (error) { throw failure('WebAssembly budget calculation failed: ' + error.message, error); }
+  }
+
+  function debtAmortize(debts, monthlyPaymentMinor, strategy) {
+    try {
+      if (!Array.isArray(debts) || debts.length > 2000 || !Number.isSafeInteger(monthlyPaymentMinor) || monthlyPaymentMinor <= 0 ||
+          !['snowball', 'avalanche'].includes(strategy)) throw new TypeError('Debt payoff calculation input is invalid or too large.');
+      const count = debts.length;
+      const { wasm, inputPtr, outputPtr, buffer } = ensureScratch(count * 16, count * 16 + 24);
+      const input = new Uint32Array(buffer, inputPtr, Math.max(1, count * 4));
+      debts.forEach((debt, i) => {
+        if (!debt || !Number.isSafeInteger(debt.balanceMinor) || debt.balanceMinor < 0 ||
+            !Number.isInteger(debt.annualRateBasisPoints) || debt.annualRateBasisPoints < 0 || debt.annualRateBasisPoints > 10000000) {
+          throw new TypeError('Invalid debt plan row ' + i + '.');
+        }
+        writeI64(input, i * 2, debt.balanceMinor);
+        input[i * 4 + 2] = debt.annualRateBasisPoints >>> 0;
+        input[i * 4 + 3] = 0;
+      });
+      const summaryPtr = outputPtr + count * 16;
+      const status = wasm.pw_debt_amortize(inputPtr, count, BigInt(monthlyPaymentMinor), strategy === 'avalanche' ? 1 : 0, outputPtr, summaryPtr);
+      readStatus(status, 'debt amortisation');
+      const output = new Uint32Array(buffer, outputPtr, Math.max(1, count * 4));
+      const summary = new Uint32Array(buffer, summaryPtr, 6);
+      return {
+        rows: Array.from({ length: count }, (_, i) => ({ balanceMinor: readI64(output, i * 2), interestMinor: readI64(output, i * 2 + 1) })),
+        months: readI64(summary, 0),
+        interestMinor: readI64(summary, 1),
+        outcome: readI64(summary, 2)
+      };
+    } catch (error) { throw failure('WebAssembly debt-amortisation calculation failed: ' + error.message, error); }
+  }
+
   function aggregate(transactions, toMinor, bucketFor) {
     if (!engine) {
       throw failure(loadError
@@ -405,7 +498,7 @@
     getLoadError: () => loadError,
     aggregate,
     equalSplit, percentageSplit, amountSplit, sum, cashDelta, accountBalance, debtRemaining,
-    salaryAllocate, categoryBuckets, cashProjection, ratioRound,
+    salaryAllocate, categoryBuckets, cashProjection, ratioRound, budgetMetrics, debtAmortize,
     typeCodes: TYPE_CODES
   });
 });

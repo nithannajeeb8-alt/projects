@@ -1,6 +1,6 @@
 {
-  "name": "pocketwise-alpha1",
-  "version": "2.4.19",
+  "name": "pocketwise-alpha2",
+  "version": "2.4.20",
   "private": true,
   "description": "PocketWise local-first finance PWA source and release tooling",
   "scripts": {
