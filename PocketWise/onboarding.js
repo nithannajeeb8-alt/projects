@@ -133,6 +133,7 @@
   }
   function start(force=false){
     if(shown)return;
+    if(document.documentElement.dataset.firstRun==='on')return;
     if(!force){try{if(localStorage.getItem(KEY)==='1')return;}catch{}}
     const modal=document.querySelector('#app-modal');
     if(modal?.open){modal.addEventListener('close',()=>setTimeout(()=>start(force),180),{once:true});return;}

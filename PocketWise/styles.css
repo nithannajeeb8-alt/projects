@@ -3186,3 +3186,305 @@ input[type="range"]{touch-action:pan-x pan-y;}
 .daily-story-scroller * {
   touch-action: pan-x pan-y;
 }
+
+
+/* PocketWise 2.4.33 — native theme canvas + adaptive frosted scroll header.
+   The original 2.4.15 Liquid Glass rules above remain intact. This material only
+   appears after the inner app scroller moves, and fades into the page instead of
+   creating a flat rectangular blur strip. */
+html, body {
+  background-color: var(--bg);
+}
+@media (max-width: 720px) {
+  .main-content > .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 46;
+    isolation: isolate;
+  }
+  .main-content > .topbar::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    pointer-events: none;
+    inset: -1px -16px -34px;
+    opacity: 0;
+    background:
+      radial-gradient(ellipse at 16% 0%, color-mix(in srgb, var(--green) 13%, transparent), transparent 58%),
+      radial-gradient(ellipse at 88% 4%, color-mix(in srgb, var(--surface) 44%, transparent), transparent 64%),
+      linear-gradient(180deg,
+        color-mix(in srgb, var(--bg) 84%, transparent) 0%,
+        color-mix(in srgb, var(--surface) 72%, transparent) 56%,
+        color-mix(in srgb, var(--bg) 28%, transparent) 82%,
+        transparent 100%);
+    -webkit-backdrop-filter: blur(24px) saturate(1.7);
+    backdrop-filter: blur(24px) saturate(1.7);
+    -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 58%, rgba(0,0,0,.76) 76%, transparent 100%);
+    mask-image: linear-gradient(180deg, #000 0%, #000 58%, rgba(0,0,0,.76) 76%, transparent 100%);
+    transition: opacity .22s ease;
+  }
+  .main-content > .topbar.is-scrolled::before { opacity: 1; }
+  .main-content > .topbar.is-scrolled {
+    border-bottom-color: color-mix(in srgb, var(--line) 62%, transparent);
+  }
+
+  /* Liquid Glass retains the 2.4.15 nav/header material and receives a matching
+     soft colour bloom while scrolling, rather than a second opaque surface. */
+  html[data-liquid-glass="on"] .main-content > .topbar.is-scrolled::before {
+    background:
+      radial-gradient(ellipse at 14% 0%, color-mix(in srgb, var(--glass-accent) 46%, transparent), transparent 62%),
+      linear-gradient(180deg, color-mix(in srgb, var(--glass-nav) 82%, transparent) 0%,
+        color-mix(in srgb, var(--glass-card-low) 64%, transparent) 70%, transparent 100%);
+    -webkit-backdrop-filter: blur(28px) saturate(1.85);
+    backdrop-filter: blur(28px) saturate(1.85);
+  }
+}
+@media (max-width: 720px) and (prefers-reduced-transparency: reduce),
+       (max-width: 720px) and (prefers-contrast: more) {
+  .main-content > .topbar::before {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 96%, transparent), transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .main-content > .topbar::before { transition: none; }
+}
+
+/* First-run setup deliberately sits on a calm black canvas, independent of the
+   user's eventual app theme. The app and navigation remain inaccessible beneath it. */
+html[data-first-run="on"],
+html[data-first-run="on"] body { background: #000 !important; }
+html[data-first-run="on"] body { overflow: hidden !important; }
+html[data-first-run="on"] .app-shell,
+html[data-first-run="on"] .mobile-tabbar,
+html[data-first-run="on"] .toast-region,
+html[data-first-run="on"] .app-modal {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+#pw-first-run {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  display: grid;
+  place-items: stretch;
+  overflow: hidden;
+  padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
+  background: #000;
+  color: #f5f6f7;
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+#pw-first-run[hidden] { display: none !important; }
+.pw-first-run-scroll {
+  width: 100%;
+  min-height: 100%;
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: clamp(26px, 5vh, 52px) 22px 28px;
+}
+.pw-first-run-panel {
+  width: min(100%, 540px);
+  min-height: min(690px, calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 54px));
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+.pw-first-run-brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: clamp(34px, 8vh, 70px);
+  color: #f4f6f5;
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -.35px;
+}
+.pw-first-run-mark {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid rgba(34,197,94,.34);
+  border-radius: 12px;
+  background: linear-gradient(145deg, rgba(34,197,94,.18), rgba(34,197,94,.045));
+  color: #35d879;
+  font-size: 18px;
+}
+.pw-first-run-kicker {
+  color: #39d77a;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .17em;
+}
+.pw-first-run-title {
+  max-width: 460px;
+  margin: 12px 0 11px;
+  color: #f5f6f7;
+  font-family: var(--display);
+  font-size: clamp(30px, 8vw, 42px);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -1.4px;
+}
+.pw-first-run-lead {
+  max-width: 460px;
+  margin: 0 0 28px;
+  color: #9ca5a0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.pw-first-run-form,
+.pw-first-run-policy-card {
+  border: 1px solid rgba(255,255,255,.105);
+  border-radius: 22px;
+  background: linear-gradient(150deg, rgba(255,255,255,.055), rgba(255,255,255,.018));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.045), 0 18px 42px rgba(0,0,0,.2);
+}
+.pw-first-run-form { padding: 20px; }
+.pw-first-run-field { display: grid; gap: 9px; margin-bottom: 21px; }
+.pw-first-run-field label {
+  color: #b8c0bb;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .12em;
+}
+.pw-first-run-field input[type="text"] {
+  width: 100%;
+  min-height: 54px;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 14px;
+  padding: 0 15px;
+  background: rgba(0,0,0,.56);
+  color: #f7f8f7;
+  font-size: 16px;
+  outline: none;
+}
+.pw-first-run-field input[type="text"]:focus {
+  border-color: rgba(34,197,94,.66);
+  box-shadow: 0 0 0 3px rgba(34,197,94,.13);
+}
+.pw-first-run-colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 11px;
+  align-items: center;
+}
+.pw-first-run-color {
+  position: relative;
+  display: inline-grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.pw-first-run-color input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+.pw-first-run-color span {
+  width: 25px;
+  height: 25px;
+  border: 2px solid rgba(255,255,255,.22);
+  border-radius: 50%;
+  background: var(--pw-profile-color);
+  box-shadow: 0 0 0 4px transparent;
+  transition: box-shadow .16s ease, transform .16s ease;
+}
+.pw-first-run-color input:checked + span {
+  border-color: #fff;
+  box-shadow: 0 0 0 4px rgba(34,197,94,.22);
+  transform: scale(1.06);
+}
+.pw-first-run-color input:focus-visible + span { outline: 2px solid #fff; outline-offset: 4px; }
+.pw-first-run-note {
+  margin: 18px 0 0;
+  color: #77827b;
+  font-size: 11px;
+  line-height: 1.55;
+}
+.pw-first-run-error {
+  min-height: 17px;
+  margin: 10px 0 0;
+  color: #ff8585;
+  font-size: 12px;
+}
+.pw-first-run-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 23px;
+}
+.pw-first-run-actions .primary-button {
+  width: 100%;
+  min-height: 54px;
+  border-radius: 15px;
+  background: linear-gradient(145deg, #31d475, #16a34a);
+  border: 1px solid rgba(105,255,165,.36);
+  color: #06160c;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.36), 0 10px 26px rgba(34,197,94,.16);
+  font-weight: 800;
+}
+.pw-first-run-actions button:disabled { opacity: .55; }
+.pw-first-run-back {
+  min-height: 46px;
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 13px;
+  padding: 0 17px;
+  background: rgba(255,255,255,.045);
+  color: #dce3de;
+  font-weight: 700;
+}
+.pw-first-run-policy-scroll {
+  max-height: min(45dvh, 430px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 18px 18px 20px;
+  border: 1px solid rgba(255,255,255,.095);
+  border-radius: 18px;
+  background: rgba(255,255,255,.025);
+  color: #c1c9c4;
+  font-size: 12px;
+  line-height: 1.65;
+  -webkit-overflow-scrolling: touch;
+}
+.pw-first-run-policy-scroll h3 {
+  margin: 18px 0 6px;
+  color: #f0f3f1;
+  font-size: 13px;
+  letter-spacing: -.15px;
+}
+.pw-first-run-policy-scroll h3:first-child { margin-top: 0; }
+.pw-first-run-policy-scroll p { margin: 0 0 9px; }
+.pw-first-run-policy-scroll ul { margin: 4px 0 12px; padding-left: 18px; }
+.pw-first-run-policy-scroll li { padding-left: 2px; margin: 0 0 5px; }
+.pw-first-run-policy-scroll strong { color: #e9efeb; }
+.pw-first-run-policy-scroll a { color: #50de8b; }
+.pw-first-run-policy-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 12px;
+  color: #75817a;
+  font-size: 10px;
+}
+.pw-first-run-secondary {
+  color: #8e9b93;
+  font-size: 11px;
+  line-height: 1.5;
+}
+@media (max-width: 390px) {
+  .pw-first-run-scroll { padding-left: 16px; padding-right: 16px; }
+  .pw-first-run-brand { margin-bottom: 34px; }
+  .pw-first-run-form { padding: 17px; }
+  .pw-first-run-policy-scroll { max-height: 41dvh; padding: 15px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-first-run-color span { transition: none; }
+}

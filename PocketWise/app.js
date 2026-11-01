@@ -185,7 +185,7 @@
   const daysAgo = n => { const d = new Date(); d.setDate(d.getDate()-n); return localDate(d); };
   const initialState = () => ({
     version:2, sample:false,
-    settings:{theme:'light',liquidGlass:false,smartUI:false,dailyStory:true,dailyStoryPreferenceSet:false,profileName:'',profileColor:'mint',profileComplete:false,hideBalances:false,alertThreshold:90,notifyBudget:true,notifyPositive:true,notifyBills:true,notifyDebts:true,notifyWeekly:true,quietStart:'21:00',quietEnd:'08:00',lastBackup:null,lastPositiveMonth:null,seenAlerts:[],notifications:[],categoryChart:'doughnut',weeklyAllowance:0,debtPayoffMonthly:0,debtStrategy:'snowball',smartRules:[],merchantRules:[],salaryPlan:{expectedSalary:0,frequency:'monthly',paydayDay:1,paydayDate:null,allocations:[]}},
+    settings:{theme:'light',liquidGlass:false,smartUI:false,dailyStory:true,dailyStoryPreferenceSet:false,profileName:'',profileColor:'mint',profileComplete:false,privacyReviewed:false,firstRunFlowStarted:false,firstRunFlowCompleted:false,hideBalances:false,alertThreshold:90,notifyBudget:true,notifyPositive:true,notifyBills:true,notifyDebts:true,notifyWeekly:true,quietStart:'21:00',quietEnd:'08:00',lastBackup:null,lastPositiveMonth:null,seenAlerts:[],notifications:[],categoryChart:'doughnut',weeklyAllowance:0,debtPayoffMonthly:0,debtStrategy:'snowball',smartRules:[],merchantRules:[],salaryPlan:{expectedSalary:0,frequency:'monthly',paydayDay:1,paydayDate:null,allocations:[]}},
     accounts:[{id:'cash',name:'Cash',type:'cash',openingBalance:0,openingBalanceDate:null},{id:'bank',name:'Bank / UPI',type:'bank',openingBalance:0,openingBalanceDate:null},{id:'card',name:'Card',type:'card',openingBalance:0,openingBalanceDate:null}],
     activities: activityDefaults.map(a=>({...a})),
     budgets:{total:0,categories:{},note:''}, goals:[], reminders:[], pendingRecurringEntries:[], debts:[], transactions:[], billSplits:[], eventPlans:[]
@@ -345,6 +345,15 @@
     downloadBlob(`pocketwise-storage-recovery-${today()}.json`,new Blob([JSON.stringify(recoverySnapshot,null,2)],{type:'application/json'}));
     toast('Storage recovery snapshot exported. Keep it private and do not overwrite your regular backup.');
   }
+  function initAdaptiveHeaderSurface(){
+    const scroller=$('.main-content');
+    const header=$('.main-content > .topbar');
+    if(!scroller||!header||header.dataset.scrollSurfaceReady==='true')return;
+    header.dataset.scrollSurfaceReady='true';
+    const update=()=>header.classList.toggle('is-scrolled',scroller.scrollTop>10);
+    scroller.addEventListener('scroll',update,{passive:true});
+    update();
+  }
   async function initialise(){
     try { localStorage.removeItem('pocketwise-sync-v1'); } catch {}
     db=await openDB();
@@ -356,6 +365,7 @@
     let saved = indexedValid&&localValid?(stamp(localSaved)>stamp(indexedRaw)?localSaved:indexedRaw):(indexedValid?indexedRaw:localValid?localSaved:null);
     const invalidIndexed=indexedRaw!==null&&!indexedValid;
     const invalidLocal=localRaw!==null&&!localValid;
+    const isFreshInstall=!saved;
     if(invalidIndexed||invalidLocal){
       recoverySnapshot={format:'pocketwise-storage-recovery',version:1,capturedAt:new Date().toISOString(),reason:saved?'A malformed storage copy was found; PocketWise loaded the other valid copy when available.':'Neither primary storage copy could be safely loaded. A fresh workspace will open; the original data is preserved in this snapshot.',indexedDB:invalidIndexed?indexedRaw:undefined,localStorageRaw:invalidLocal?localRaw:undefined};
       await preserveRecoverySnapshot(recoverySnapshot);
@@ -371,6 +381,11 @@
       // Add newly shipped categories to existing local data without changing transactions or user categories.
       const known=new Set((state.activities||[]).map(a=>a.id));
       activityDefaults.forEach(a=>{if(!known.has(a.id))state.activities.push({...a});});
+    } else if(isFreshInstall) {
+      // Persist the first-run marker before leaving the startup path, so a reload
+      // between profile setup and privacy acknowledgement resumes the right step.
+      state.settings.firstRunFlowStarted=true;
+      state.settings.firstRunFlowCompleted=false;
     }
     try { await processDueRecurringEntries(false); await persist(); } catch (error) { console.error(error); toast(error.message || 'Could not prepare local storage. Export backups before continuing.', 'error'); }
     if(recoverySnapshot)toast('A storage recovery copy was preserved. Open Settings → Your data to export it before clearing site data.','amber');
@@ -382,7 +397,35 @@
     await evaluateBudgetAlerts(false);
     $('#storage-status').textContent=db?'IndexedDB on device':'Browser storage';
     renderProfile();
-    if(!state.settings.profileComplete) setTimeout(()=>showProfileForm(true),120);
+    initAdaptiveHeaderSurface();
+    if(state.settings.firstRunFlowStarted&&!state.settings.firstRunFlowCompleted&&window.PocketwiseFirstRun){
+      window.PocketwiseFirstRun.start({
+        profileComplete:!!state.settings.profileComplete,
+        privacyReviewed:!!state.settings.privacyReviewed,
+        profileName:state.settings.profileName||'',
+        profileColor:state.settings.profileColor||'mint',
+        saveProfile:async({name,color})=>{
+          const safeName=String(name||'').trim().slice(0,48);
+          if(!safeName)return false;
+          const snapshot=JSON.stringify(state);
+          state.settings.profileName=safeName;
+          state.settings.profileColor=profileColors[color]?color:'mint';
+          state.settings.profileComplete=true;
+          if(!(await persistMutation(snapshot,'Could not save your profile. Your previous settings were restored.')))return false;
+          renderProfile();
+          return true;
+        },
+        acceptPrivacy:async()=>{
+          const snapshot=JSON.stringify(state);
+          state.settings.privacyReviewed=true;
+          state.settings.firstRunFlowCompleted=true;
+          state.settings.firstRunFlowStarted=false;
+          if(!(await persistMutation(snapshot,'Could not save the privacy acknowledgement. Your previous settings were restored.')))return false;
+          applyTheme();
+          return true;
+        }
+      });
+    } else if(!state.settings.profileComplete) setTimeout(()=>showProfileForm(true),120);
     if ('serviceWorker' in navigator) navigator.serviceWorker.ready.then(() => { const status = document.querySelector('#storage-status'); if (status) status.textContent = 'Offline-ready'; }).catch(() => {});if(window.PocketWisePush?.isConfigured?.()&&window.PocketWisePush?.hasInstallation?.())syncBackgroundReminders();
   }
   const activityById = id => state.activities.find(a=>a.id===id) || {id:'other',name:'Other',icon:'more',kind:'both',freq:0};
@@ -437,7 +480,7 @@
   }
   function applyTheme(){
     const pref=state.settings.theme||'light';let actual=pref;if(pref==='system')actual=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
-    document.documentElement.dataset.theme=actual;document.documentElement.dataset.liquidGlass=state.settings.liquidGlass?'on':'off';document.documentElement.dataset.smartUi=state.settings.smartUI?'on':'off';document.documentElement.style.backgroundColor=actual==='dark'?'#000000':'#f6f8f5';document.documentElement.style.colorScheme=actual;try{localStorage.setItem('pocketwise-appearance-v1',JSON.stringify({theme:pref,liquidGlass:!!state.settings.liquidGlass,smartUI:!!state.settings.smartUI}));}catch(_){}const meta=$('meta[name="theme-color"]');if(meta)meta.content=actual==='dark'?'#000000':'#f6f8f5';$('#theme-label').textContent=pref==='system'?'System appearance':`${pref[0].toUpperCase()+pref.slice(1)} appearance`;
+    document.documentElement.dataset.theme=actual;document.documentElement.dataset.liquidGlass=state.settings.liquidGlass?'on':'off';document.documentElement.dataset.smartUi=state.settings.smartUI?'on':'off';document.documentElement.style.backgroundColor=actual==='dark'?'#000000':'#f6f8f5';document.documentElement.style.colorScheme=actual;try{localStorage.setItem('pocketwise-appearance-v1',JSON.stringify({theme:pref,liquidGlass:!!state.settings.liquidGlass,smartUI:!!state.settings.smartUI}));}catch(_){}const meta=$('meta[name="theme-color"]');if(meta)meta.content=actual==='dark'?'#000000':'#f6f8f5';const appleStatus=$('meta[name="apple-mobile-web-app-status-bar-style"]');if(appleStatus)appleStatus.content=actual==='dark'?'black':'default';$('#theme-label').textContent=pref==='system'?'System appearance':`${pref[0].toUpperCase()+pref.slice(1)} appearance`;
     $$('#theme-choice button').forEach(b=>b.classList.toggle('selected',b.dataset.theme===pref));
     if($('#hide-setting'))$('#hide-setting').checked=!!state.settings.hideBalances;
     if($('#liquid-glass-setting'))$('#liquid-glass-setting').checked=!!state.settings.liquidGlass;
@@ -495,7 +538,10 @@
   const profileColors={mint:'#2f8f67',ocean:'#3478c8',plum:'#8756b5',sunset:'#d46b43'};
   function renderProfile(){const name=String(state.settings.profileName||'').trim()||'Personal space';const initial=[...name][0]?.toLocaleUpperCase()||'P';const color=profileColors[state.settings.profileColor]||profileColors.mint;['#profile-avatar','#settings-profile-avatar'].forEach(sel=>{const el=$(sel);if(el){el.textContent=initial;el.style.background=color;el.style.color='#fff';}});const side=$('#profile-sidebar-name'),preview=$('#settings-profile-name');if(side)side.textContent=name;if(preview)preview.textContent=name;}
   function showProfileForm(firstRun=false){const name=String(state.settings.profileName||'');const color=state.settings.profileColor||'mint';const colors=[['mint','Mint','#2f8f67'],['ocean','Ocean','#3478c8'],['plum','Plum','#8756b5'],['sunset','Sunset','#d46b43']];openModal(firstRun?'Make Pocketwise yours':'Edit your profile',`<form id="profile-form" class="modal-body"><p class="muted">Choose the name you want to see in the app. Your avatar uses its first letter.</p><div class="profile-preview-large"><span class="avatar" id="profile-form-avatar" style="background:${profileColors[color]||profileColors.mint}">${escapeHTML(([...name.trim()][0]||'P').toLocaleUpperCase())}</span><span id="profile-form-preview-name">${escapeHTML(name.trim()||'Your name')}</span></div><div class="form-field"><label for="profile-name-input">DISPLAY NAME</label><input id="profile-name-input" name="profileName" type="text" maxlength="48" autocomplete="nickname" placeholder="What should Pocketwise call you?" value="${escapeHTML(name)}" required></div><div class="form-field"><label>AVATAR BACKGROUND</label><div class="profile-color-options" role="radiogroup" aria-label="Avatar background">${colors.map(([id,label,hex])=>`<label class="profile-color-option"><input type="radio" name="profileColor" value="${id}" ${color===id?'checked':''}><span style="--profile-color:${hex}"></span><small>${label}</small></label>`).join('')}</div></div><p class="fine-print">This is a local profile, not an account. No sign-in or server profile is created.</p><div class="form-actions">${firstRun?'':'<button class="secondary-button" type="button" data-cancel-modal>Cancel</button>'}<button class="primary-button" type="submit">${firstRun?'Save profile & continue':'Save profile'}</button></div></form>`,'PROFILE · STORED ON THIS DEVICE');}
-  function showPrivacyPage(){openModal('Privacy & your data',`<div class="modal-body privacy-page-content"><div class="privacy-callout"><strong>Private by design, within browser limits.</strong><p>PocketWise is a website/PWA. Your financial records are stored locally in this browser on this device. This build does not send transaction records to a PocketWise server.</p></div><h3>What is stored?</h3><p>Your transactions, accounts, budgets, debts, reminders, goals, profile name, and appearance settings are stored in local browser storage (IndexedDB and/or localStorage).</p><h3>What that means</h3><ul><li>No PocketWise account or cloud sync is used.</li><li>Other people using the same unlocked device or browser profile may be able to access the app.</li><li>Clearing website data, uninstalling/resetting the browser, or device failure can remove local records.</li><li>Private browsing may not retain data reliably. Export backups regularly.</li><li>Notifications, if enabled, are controlled by the browser and may appear on your lock screen.</li></ul><h3>Shortcut compatibility</h3><p>The linked Apple Shortcut is intended only for the PocketWise website/PWA workflow. It does not integrate with a native iOS or Android finance app. iOS may drop URL parameters when opening an installed PWA, so the Shortcut fallback uses clipboard paste and a review step.</p><h3>Your controls</h3><p>You can export a full backup, export CSV, restore a backup, or clear local records from Settings. Review a transaction before saving it.</p><p class="fine-print">This is an in-app privacy explanation, not legal advice or a guarantee about your browser, device, backups, or third-party services.</p><div class="form-actions"><button class="primary-button" type="button" id="privacy-done">I understand</button></div></div>`,'LOCAL-FIRST · NO POCKETWISE CLOUD SYNC');}
+  function showPrivacyPage(){
+    const policy=window.PocketwisePrivacyPolicy?.markup?.()||'<p>PocketWise stores your records in this browser on this device. Export backups regularly and protect access to your device.</p>';
+    openModal('Privacy & your data',`<div class="modal-body privacy-page-content"><div class="privacy-callout"><strong>Privacy notice · Updated 2 November 2026</strong><p>Review how PocketWise stores records locally, what optional network requests occur, and the controls available to you.</p></div><div class="pw-privacy-policy">${policy}</div><div class="form-actions"><button class="primary-button" type="button" id="privacy-done">I understand</button></div></div>`,'LOCAL-FIRST · STORED IN THIS BROWSER');
+  }
   function updateDateHeader(){const now=new Date();const date=$('#date-eyebrow');if(date)date.textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});}
   function setPage(page){if(!['home','activity','insights','settings'].includes(page))page='home';currentPage=page;const root=document.documentElement,previousScrollBehavior=root.style.scrollBehavior;root.style.scrollBehavior='auto';window.scrollTo(0,0);$$('.page').forEach(p=>p.classList.toggle('active',p.dataset.pagePanel===page));$$('[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===page));const heads={home:'Overview',activity:'Activity',insights:'Insights',settings:'Settings'};$('#page-title').textContent=heads[page];$('#page-title').parentElement.style.display='';try{renderPage(page);syncSmartNavIndicator();}finally{root.style.scrollBehavior=previousScrollBehavior;}}
   function applyHiddenAmounts(){document.body.classList.toggle('hide-amounts',hiddenAmounts||state.settings.hideBalances);$('#hide-balances').setAttribute('aria-label',(hiddenAmounts||state.settings.hideBalances)?'Show balances':'Hide balances');}
@@ -2132,7 +2178,7 @@
       if(openSwipeShell&&openSwipeShell!==clickedSwipeShell)closeTransactionSwipeActions();
       if(event.target.closest('#edit-profile')){showProfileForm(false);return;}
       if(event.target.closest('#open-privacy')){showPrivacyPage();return;}
-      if(event.target.closest('#privacy-done')){closeModal();return;}
+      if(event.target.closest('#privacy-done')){if(!state.settings.privacyReviewed){const privacySnapshot=JSON.stringify(state);state.settings.privacyReviewed=true;if(!(await persistMutation(privacySnapshot,'Could not save the privacy acknowledgement.'))){state.settings.privacyReviewed=false;return;}}closeModal();return;}
       if(event.target.closest('#resume-paste')){await pasteShortcutTransaction();return;}
       if(event.target.closest('#paste-bank-sms-quick')){await pasteBankSms();return;}
       if(event.target.closest('#resume-key')){showShortcutKeyPrompt();return;}
@@ -2278,7 +2324,7 @@
       const submitButtons=[...form.querySelectorAll('button[type="submit"],input[type="submit"]')];
       submitButtons.forEach(button=>{button.disabled=true;button.setAttribute('aria-busy','true');});
       try {
-        if(form.id==='profile-form'){const fd=new FormData(form),name=String(fd.get('profileName')||'').trim(),color=String(fd.get('profileColor')||'mint');if(!name){$('#profile-name-input')?.focus();toast('Enter a display name first.','error');return;}const snapshot=JSON.stringify(state);state.settings.profileName=name.slice(0,48);state.settings.profileColor=profileColors[color]?color:'mint';state.settings.profileComplete=true;if(!(await persistMutation(snapshot,'Could not save your profile. Your previous settings were restored.')))return;renderProfile();closeModal();if(!state.settings.privacyReviewed){showPrivacyPage();const privacySnapshot=JSON.stringify(state);state.settings.privacyReviewed=true;if(!(await persistMutation(privacySnapshot,'Could not save the privacy review status.'))){showPrivacyPage();return;}}else toast('Profile updated.');return;}else if(form.id==='shortcut-key-form'){const raw=String(new FormData(form).get('payload')||'').trim();try{await importShortcutText(raw);}catch(error){const field=$('#shortcut-key-value');toast(error.message||'Could not read that transaction.','error');field?.focus();}return;}else if(form.id==='quick-flow-amount'){const fd=new FormData(form),amount=parseAmount(fd.get('amount'));if(!Number.isFinite(amount)||amount<=0){$('#quick-flow-error').hidden=false;$('#quick-flow-error').textContent='Enter an amount greater than ₹0.';$('#quick-flow-value').focus();return;}quickAddDraft.amount=String(amount);renderQuickAddStep('type');}else if(form.id==='quick-flow-note'){quickAddDraft.note=String(new FormData(form).get('note')||'').trim();quickAddDraft.accountId=$('#quick-flow-account').value;quickAddDraft.paymentMethod=$('#quick-flow-payment').value;await saveQuickAdd();}else if(form.id==='transaction-form'){form.dataset.saveMode=e.submitter?.value==='another'?'another':'save';await saveTransactionForm(form);}else if(form.id==='budget-form')await saveBudget(form);else if(form.id==='debt-form')await saveDebt(form);else if(form.id==='repayment-form')await saveRepayment(form);else if(form.id==='account-form')await addAccountForm(form);else if(form.id==='account-edit-form')await saveAccountEdit(form);else if(form.id==='activity-form')await addActivityForm(form);else if(form.id==='activity-edit-form')await saveActivityEdit(form);else if(form.id==='goal-form')await saveGoal(form);else if(form.id==='goal-contribution-form')await saveGoalContribution(form);else if(form.id==='reminder-form')await saveReminder(form);else if(form.id==='weekly-allowance-form')await saveWeeklyAllowance(form);else if(form.id==='smart-rule-form')await saveSmartRule(form);else if(form.id==='merchant-rule-form')await saveMerchantRule(form);else if(form.id==='activity-advanced-filter-form')await saveActivityFilters(form);else if(form.id==='debt-plan-form')await saveDebtPlan(form);else if(form.id==='finance-salary-plan-form')await saveSalaryPlan(form);
+        if(form.id==='profile-form'){const fd=new FormData(form),name=String(fd.get('profileName')||'').trim(),color=String(fd.get('profileColor')||'mint');if(!name){$('#profile-name-input')?.focus();toast('Enter a display name first.','error');return;}const snapshot=JSON.stringify(state);state.settings.profileName=name.slice(0,48);state.settings.profileColor=profileColors[color]?color:'mint';state.settings.profileComplete=true;if(!(await persistMutation(snapshot,'Could not save your profile. Your previous settings were restored.')))return;renderProfile();closeModal();if(!state.settings.privacyReviewed){showPrivacyPage();}else toast('Profile updated.');return;}else if(form.id==='shortcut-key-form'){const raw=String(new FormData(form).get('payload')||'').trim();try{await importShortcutText(raw);}catch(error){const field=$('#shortcut-key-value');toast(error.message||'Could not read that transaction.','error');field?.focus();}return;}else if(form.id==='quick-flow-amount'){const fd=new FormData(form),amount=parseAmount(fd.get('amount'));if(!Number.isFinite(amount)||amount<=0){$('#quick-flow-error').hidden=false;$('#quick-flow-error').textContent='Enter an amount greater than ₹0.';$('#quick-flow-value').focus();return;}quickAddDraft.amount=String(amount);renderQuickAddStep('type');}else if(form.id==='quick-flow-note'){quickAddDraft.note=String(new FormData(form).get('note')||'').trim();quickAddDraft.accountId=$('#quick-flow-account').value;quickAddDraft.paymentMethod=$('#quick-flow-payment').value;await saveQuickAdd();}else if(form.id==='transaction-form'){form.dataset.saveMode=e.submitter?.value==='another'?'another':'save';await saveTransactionForm(form);}else if(form.id==='budget-form')await saveBudget(form);else if(form.id==='debt-form')await saveDebt(form);else if(form.id==='repayment-form')await saveRepayment(form);else if(form.id==='account-form')await addAccountForm(form);else if(form.id==='account-edit-form')await saveAccountEdit(form);else if(form.id==='activity-form')await addActivityForm(form);else if(form.id==='activity-edit-form')await saveActivityEdit(form);else if(form.id==='goal-form')await saveGoal(form);else if(form.id==='goal-contribution-form')await saveGoalContribution(form);else if(form.id==='reminder-form')await saveReminder(form);else if(form.id==='weekly-allowance-form')await saveWeeklyAllowance(form);else if(form.id==='smart-rule-form')await saveSmartRule(form);else if(form.id==='merchant-rule-form')await saveMerchantRule(form);else if(form.id==='activity-advanced-filter-form')await saveActivityFilters(form);else if(form.id==='debt-plan-form')await saveDebtPlan(form);else if(form.id==='finance-salary-plan-form')await saveSalaryPlan(form);
       } catch(error) { console.error('Pocketwise form action failed.',error); toast(error.message||'That change could not be saved. Please try again.','error'); }
       finally { if(form.isConnected){delete form.dataset.submitting;submitButtons.forEach(button=>{if(button.isConnected){button.disabled=false;button.removeAttribute('aria-busy');}});} }
     });
