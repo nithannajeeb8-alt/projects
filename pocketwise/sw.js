@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pocketwise-shell-v2.4.18-alpha.1-extended-cpp-core';
+const CACHE_NAME = 'pocketwise-shell-v2.4.19-alpha.1-hardened';
 const PADDLE_RUNTIME_CACHE = 'pocketwise-paddle-runtime-v243';
 const PDF_RENDERER_URL = 'https://cdn.jsdelivr.net/npm/html2pdf.js@0.14.0/dist/html2pdf.bundle.min.js';
 const IOS_PDF_RENDERER_URL = 'https://cdn.jsdelivr.net/npm/html3pdf@0.12.2/dist/html3pdf.bundle.min.js';
@@ -8,6 +8,7 @@ const asset = path => new URL(path, BASE_URL).href;
 const APP_SHELL = [
   BASE_URL,
   asset('index.html'),
+  asset('theme-init.js'),
   asset('styles.css'),
   asset('wasm/pocketwise-engine.js'),
   asset('wasm/financial-core-bootstrap.js'),

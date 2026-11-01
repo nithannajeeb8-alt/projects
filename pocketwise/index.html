@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-peIdg2/LlUI87peh99ck0sPKU8hai9t+Dc9z48aM5zs=' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://esm.run; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' https://cdn.jsdelivr.net https://esm.run https://paddle-model-ecology.bj.bcebos.com https://huggingface.co https://*.huggingface.co https://hf.co https://*.xethub.hf.co blob:; worker-src 'self' blob: https://cdn.jsdelivr.net https://esm.run; frame-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://esm.run; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com data:; img-src 'self' data: blob: https://images.unsplash.com; connect-src 'self' https://cdn.jsdelivr.net https://esm.run https://paddle-model-ecology.bj.bcebos.com https://huggingface.co https://*.huggingface.co https://hf.co https://*.xethub.hf.co blob:; worker-src 'self' blob: https://cdn.jsdelivr.net https://esm.run; frame-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
   <meta name="referrer" content="no-referrer">
   <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="theme-color" content="#000000">
   <meta name="description" content="A private, offline-first personal finance companion for everyday money, budgets and lending.">
-  <script>(function(){var root=document.documentElement,meta=null,settings=null,appearance=null;try{meta=document.querySelector('meta[name="theme-color"]');}catch(_){}try{var raw=localStorage.getItem('pocketwise-state-v1');if(raw){var saved=JSON.parse(raw);settings=saved&&saved.settings&&typeof saved.settings==='object'?saved.settings:null;}}catch(_){}try{var rawAppearance=localStorage.getItem('pocketwise-appearance-v1');if(rawAppearance)appearance=JSON.parse(rawAppearance);}catch(_){}var validTheme=function(v){return v==='light'||v==='dark'||v==='system';};var preference=appearance&&validTheme(appearance.theme)?appearance.theme:(settings&&validTheme(settings.theme)?settings.theme:'light');var liquidGlass=appearance&&typeof appearance.liquidGlass==='boolean'?appearance.liquidGlass:!!(settings&&settings.liquidGlass===true);var smartUI=appearance&&typeof appearance.smartUI==='boolean'?appearance.smartUI:!!(settings&&settings.smartUI===true);var systemDark=false;try{systemDark=!!(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);}catch(_){}var actual=preference==='system'?(systemDark?'dark':'light'):preference;root.dataset.theme=actual;root.dataset.liquidGlass=liquidGlass?'on':'off';root.dataset.smartUi=smartUI?'on':'off';if(meta)meta.content=actual==='dark'?'#000000':'#f6f8f5';})();</script>
+  <script src="theme-init.js"></script>
   <title>Pocketwise · Money, made clearer</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/icons/icon.svg" type="image/svg+xml">
@@ -247,6 +247,7 @@
           <footer class="settings-build-footer" aria-label="PocketWise hosting and engine information">
             <a href="https://nithan.in" target="_blank" rel="noopener noreferrer">Hosted on nithan.in</a>
             <span>Core financial engine built with C++ · WebAssembly</span>
+            <span>© 2026 PocketWise · Proprietary software. All rights reserved.</span>
           </footer>
         </div>
       </section>

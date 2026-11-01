@@ -1,0 +1,14 @@
+{
+  "name": "pocketwise-alpha1",
+  "version": "2.4.19",
+  "private": true,
+  "description": "PocketWise local-first finance PWA source and release tooling",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "build:wasm": "bash scripts/build-wasm.sh",
+    "build:production": "bash scripts/build-production.sh"
+  },
+  "devDependencies": {
+    "terser": "5.43.1"
+  }
+}
