@@ -13,6 +13,9 @@
     'statement-import.js'
   ];
 
+  const MIN_SPLASH_DURATION_MS = 2000;
+  const splashStartedAt = Date.now();
+  let hideTimer = null;
   let scriptsStarted = false;
   let scriptsLoaded = false;
   let appReady = false;
@@ -24,7 +27,7 @@
   gate.setAttribute('aria-label', 'Pocketwise is starting');
   gate.style.cssText = [
     'position:fixed', 'inset:0', 'z-index:2147483647', 'display:grid', 'place-items:center',
-    'padding:24px', 'box-sizing:border-box', 'background:#f6f8f5', 'color:#172019',
+    'padding:24px', 'box-sizing:border-box', 'background:#000000', 'color:#f7f8fa',
     'font:16px/1.5 system-ui,-apple-system,BlinkMacSystemFont,sans-serif', 'text-align:center'
   ].join(';');
 
@@ -35,8 +38,8 @@
   const brandMark = document.createElement('div');
   brandMark.className = 'pw-splash-mark';
   brandMark.setAttribute('aria-hidden', 'true');
-  brandMark.style.cssText = 'width:76px;height:76px;display:grid;place-items:center;color:#172019;margin-bottom:19px';
-  brandMark.innerHTML = '<svg viewBox="0 0 40 40" width="100%" height="100%" aria-hidden="true"><path d="M7 13a4 4 0 0 1 4-4h21v5H11a4 4 0 0 0-4 4v-5Z" fill="currentColor" opacity=".72"/><path d="M7 18a4 4 0 0 1 4-4h22v16a4 4 0 0 1-4 4H11a4 4 0 0 1-4-4V18Z" fill="currentColor"/><path d="M25 20h7a3 3 0 0 1 3 3v3a3 3 0 0 1-3 3h-7a3 3 0 0 1-3-3v-3a3 3 0 0 1 3-3Z" fill="#000000"/><circle cx="26.5" cy="24.5" r="1.2" fill="currentColor"/></svg>';
+  brandMark.style.cssText = 'width:76px;height:76px;display:grid;place-items:center;overflow:hidden;border-radius:18px;margin-bottom:19px';
+  brandMark.innerHTML = '<img src="assets/icons/icon-192.PNG" alt="" width="76" height="76" decoding="async" fetchpriority="high" style="display:block;width:76px;height:76px;object-fit:contain">';
 
   const title = document.createElement('h1');
   title.textContent = 'Pocketwise';
@@ -60,7 +63,7 @@
   action.type = 'button';
   action.textContent = 'Retry';
   action.hidden = true;
-  action.style.cssText = 'margin:20px 0 0;padding:12px 18px;border:0;border-radius:12px;background:#172019;color:#fff;font:600 15px system-ui;cursor:pointer';
+  action.style.cssText = 'margin:20px 0 0;padding:12px 18px;border:0;border-radius:12px;background:#f7f8fa;color:#10131a;font:600 15px system-ui;cursor:pointer';
 
   card.append(brandMark, title, tagline, spinner, message, details, action);
   gate.appendChild(card);
@@ -70,14 +73,24 @@
   const splashThemeStyle = document.createElement('style');
   splashThemeStyle.textContent = [
     '@keyframes pw-splash-spin{to{transform:rotate(360deg)}}',
-    ':root[data-theme="dark"] #pocketwise-financial-core-gate{background:#000;color:#f7f8fa}',
-    ':root[data-theme="dark"] #pocketwise-financial-core-gate .pw-splash-mark{color:#f7f8fa}',
-    ':root[data-theme="dark"] #pocketwise-financial-core-gate button{background:#f7f8fa;color:#10131a}'
+    '#pocketwise-financial-core-gate{background:#000000!important;color:#f7f8fa!important}',
+    '#pocketwise-financial-core-gate button{background:#f7f8fa;color:#10131a}'
   ].join('');
   document.head.appendChild(splashThemeStyle);
 
   function maybeHideSplash() {
-    if (scriptsLoaded && appReady && !runtimeFailure && gate.isConnected) gate.remove();
+    if (!scriptsLoaded || !appReady || runtimeFailure || !gate.isConnected) return;
+    const remaining = MIN_SPLASH_DURATION_MS - (Date.now() - splashStartedAt);
+    if (remaining > 0) {
+      if (hideTimer === null) {
+        hideTimer = setTimeout(() => {
+          hideTimer = null;
+          maybeHideSplash();
+        }, remaining);
+      }
+      return;
+    }
+    gate.remove();
   }
 
   function showFailure(error, failureType) {
