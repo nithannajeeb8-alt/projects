@@ -300,7 +300,13 @@
       lines=String(options.text).split(/\r?\n/).filter(Boolean).map(function(text,index){return{text:text,score:.5,box:{x0:0,y0:index*20,x1:100,y1:index*20+16}};});
     }
     lines=lines.map(function(l,index){l.index=index;return l;});
-    var upi=extractVpa(lines),party=detectParty(lines,upi),references=extractRefs(lines),sourceApp=detectSourceApp(lines),amounts=amountCandidates(lines);
+    var upi=extractVpa(lines),references=extractRefs(lines),sourceApp=detectSourceApp(lines),amounts=amountCandidates(lines);
+    var mergedOCRText=lines.map(function(line){return line.text;}).join('\n');
+    var cppParty=root.PocketWiseWasm&&typeof root.PocketWiseWasm.extractMerchant==='function'
+      ?root.PocketWiseWasm.extractMerchant(mergedOCRText):null;
+    /* The browser build has the required Wasm engine before OCR is enabled.
+       The JS detector remains only for standalone parser tests and older fixtures. */
+    var party=cppParty?{name:cppParty.name,confidence:cppParty.confidence,direction:cppParty.direction}:detectParty(lines,upi);
     var amount=amounts.length&&amounts[0].confidence>=.60?amounts[0]:null;
     var ambiguousAmount=!!(amount&&amounts.length>1&&amounts[1].value!==amount.value&&Math.abs(amount.confidence-amounts[1].confidence)<.055);
     var warnings=[];

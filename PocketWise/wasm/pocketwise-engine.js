@@ -64,7 +64,7 @@
       }
     }
     const exports = result.instance ? result.instance.exports : result.exports;
-    const required = ['pw_alloc', 'pw_reset', 'pw_aggregate', 'pw_equal_split', 'pw_percentage_split', 'pw_amount_split', 'pw_sum_minor', 'pw_cash_delta_minor', 'pw_account_balance', 'pw_debt_remaining', 'pw_salary_allocate', 'pw_category_buckets', 'pw_cash_projection', 'pw_ratio_round_minor', 'pw_budget_metrics', 'pw_debt_amortize'];
+    const required = ['pw_alloc', 'pw_reset', 'pw_aggregate', 'pw_equal_split', 'pw_percentage_split', 'pw_amount_split', 'pw_sum_minor', 'pw_cash_delta_minor', 'pw_account_balance', 'pw_debt_remaining', 'pw_salary_allocate', 'pw_category_buckets', 'pw_cash_projection', 'pw_ratio_round_minor', 'pw_budget_metrics', 'pw_debt_amortize', 'pw_reliability_order', 'pw_reliability_update', 'pw_extract_merchant'];
     if (!exports || !exports.memory || required.some(name => typeof exports[name] !== 'function')) {
       throw new Error('Financial engine exports are incomplete.');
     }
@@ -398,6 +398,96 @@
     } catch (error) { throw failure('WebAssembly debt-amortisation calculation failed: ' + error.message, error); }
   }
 
+  function extractMerchant(text) {
+    try {
+      const bytes = new TextEncoder().encode(String(text || ''));
+      if (!bytes.length || bytes.length > 200000) return null;
+      const outputCapacity = 128;
+      const { wasm, inputPtr, outputPtr, buffer } = ensureScratch(bytes.length, outputCapacity + 8);
+      new Uint8Array(buffer, inputPtr, bytes.length).set(bytes);
+      const confidencePtr = outputPtr + outputCapacity;
+      const directionPtr = confidencePtr + 4;
+      const status = wasm.pw_extract_merchant(inputPtr, bytes.length, outputPtr, outputCapacity, confidencePtr, directionPtr);
+      if (status === 2) return null;
+      readStatus(status, 'merchant extraction');
+      const memory = new Uint8Array(buffer, outputPtr, outputCapacity);
+      let end = memory.indexOf(0);
+      if (end < 0) end = memory.length;
+      const name = new TextDecoder().decode(memory.subarray(0, end)).trim();
+      const words = new Int32Array(buffer, confidencePtr, 2);
+      if (!name || words[0] <= 0) return null;
+      return { name, confidence: Math.min(1, words[0] / 100), direction: words[1] === 1 ? 'outgoing' : words[1] === 2 ? 'incoming' : 'unknown', source: 'cpp-wasm' };
+    } catch (error) {
+      if (error && error.pocketWiseFinancialCore) throw error;
+      throw failure('WebAssembly merchant extraction failed: ' + (error && error.message ? error.message : 'unknown engine error'), error);
+    }
+  }
+
+  function orderProviders(candidates, nowMs) {
+    if (!Array.isArray(candidates) || candidates.length > 64) throw new TypeError('Provider route list is invalid or too large.');
+    if (!candidates.length) return [];
+    try {
+      const { wasm, inputPtr, outputPtr, buffer } = ensureScratch(candidates.length * 40, candidates.length * 4);
+      const view = new DataView(buffer);
+      candidates.forEach((candidate, index) => {
+        if (!candidate || !Number.isInteger(candidate.id) || candidate.id < 0 || candidate.id > 0xFFFFFFFF ||
+            !Number.isInteger(candidate.priority) || !Number.isSafeInteger(candidate.cooldownUntilMs || 0)) {
+          throw new TypeError('Invalid provider route at index ' + index + '.');
+        }
+        const base = inputPtr + index * 40;
+        const health = candidate.health || {};
+        let flags = 0;
+        if (candidate.supported !== false) flags |= 1;
+        if (candidate.available !== false) flags |= 2;
+        if (candidate.enabled !== false) flags |= 4;
+        view.setUint32(base, candidate.id >>> 0, true);
+        view.setInt32(base + 4, candidate.priority | 0, true);
+        view.setUint32(base + 8, flags >>> 0, true);
+        view.setUint32(base + 12, Math.max(0, Number(health.consecutiveFailures) || 0) >>> 0, true);
+        view.setUint32(base + 16, Math.max(0, Number(health.averageLatencyMs) || 0) >>> 0, true);
+        view.setUint32(base + 20, Math.max(0, Number(health.lastOutcome) || 0) >>> 0, true);
+        view.setBigUint64(base + 24, BigInt(Math.max(0, Math.trunc(candidate.cooldownUntilMs || health.cooldownUntilMs || 0))), true);
+        view.setUint32(base + 32, candidate.fallbackAffinity ? 1 : 0, true);
+      });
+      const status = wasm.pw_reliability_order(inputPtr, candidates.length, BigInt(Math.max(0, Math.trunc(nowMs || Date.now()))), outputPtr);
+      if (status < 0 || status > candidates.length) throw new Error('C++ provider route selection returned an invalid count.');
+      const count = status;
+      const indices = new Uint32Array(buffer, outputPtr, count);
+      return Array.from(indices, index => candidates[index]).filter(Boolean);
+    } catch (error) {
+      if (error && error.pocketWiseFinancialCore) throw error;
+      throw failure('WebAssembly provider route selection failed: ' + (error && error.message ? error.message : 'unknown engine error'), error);
+    }
+  }
+
+  function updateProviderHealth(health, outcome, latencyMs, nowMs, baseCooldownMs, maxCooldownMs) {
+    const value = Object.assign({ consecutiveFailures: 0, successCount: 0, failureCount: 0, averageLatencyMs: 0, lastOutcome: 0, circuitState: 0, cooldownUntilMs: 0 }, health || {});
+    try {
+      const { wasm, inputPtr, buffer } = ensureScratch(32, 4);
+      const view = new DataView(buffer);
+      view.setUint32(inputPtr, value.consecutiveFailures >>> 0, true);
+      view.setUint32(inputPtr + 4, value.successCount >>> 0, true);
+      view.setUint32(inputPtr + 8, value.failureCount >>> 0, true);
+      view.setUint32(inputPtr + 12, value.averageLatencyMs >>> 0, true);
+      view.setUint32(inputPtr + 16, value.lastOutcome >>> 0, true);
+      view.setUint32(inputPtr + 20, value.circuitState >>> 0, true);
+      view.setBigUint64(inputPtr + 24, BigInt(Math.max(0, Math.trunc(value.cooldownUntilMs))), true);
+      const status = wasm.pw_reliability_update(inputPtr, outcome >>> 0, Math.max(0, Math.trunc(latencyMs || 0)) >>> 0,
+        BigInt(Math.max(0, Math.trunc(nowMs || Date.now()))), Math.max(1, Math.trunc(baseCooldownMs || 30000)) >>> 0,
+        Math.max(1, Math.trunc(maxCooldownMs || 21600000)) >>> 0);
+      readStatus(status, 'provider health update');
+      return {
+        consecutiveFailures: view.getUint32(inputPtr, true), successCount: view.getUint32(inputPtr + 4, true),
+        failureCount: view.getUint32(inputPtr + 8, true), averageLatencyMs: view.getUint32(inputPtr + 12, true),
+        lastOutcome: view.getUint32(inputPtr + 16, true), circuitState: view.getUint32(inputPtr + 20, true),
+        cooldownUntilMs: Number(view.getBigUint64(inputPtr + 24, true))
+      };
+    } catch (error) {
+      if (error && error.pocketWiseFinancialCore) throw error;
+      throw failure('WebAssembly provider health update failed: ' + (error && error.message ? error.message : 'unknown engine error'), error);
+    }
+  }
+
   function aggregate(transactions, toMinor, bucketFor) {
     if (!engine) {
       throw failure(loadError
@@ -499,6 +589,7 @@
     aggregate,
     equalSplit, percentageSplit, amountSplit, sum, cashDelta, accountBalance, debtRemaining,
     salaryAllocate, categoryBuckets, cashProjection, ratioRound, budgetMetrics, debtAmortize,
+    extractMerchant, orderProviders, updateProviderHealth,
     typeCodes: TYPE_CODES
   });
 });

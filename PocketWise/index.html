@@ -1,11 +1,33 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" style="background:#000!important;color-scheme:dark">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://esm.run; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com data:; img-src 'self' data: blob: https://images.unsplash.com; connect-src 'self' https://cdn.jsdelivr.net https://esm.run https://paddle-model-ecology.bj.bcebos.com https://huggingface.co https://*.huggingface.co https://hf.co https://*.xethub.hf.co blob:; worker-src 'self' blob: https://cdn.jsdelivr.net https://esm.run; frame-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
   <meta name="referrer" content="no-referrer">
   <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="theme-color" content="#000000">
+  <link rel="preload" as="image" href="assets/icons/splash-mark-white.png" fetchpriority="high">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Pocketwise">
+  <meta name="color-scheme" content="dark">
+  <style id="pw-critical-startup-style">
+    html,body{min-height:100%;margin:0;background:#000!important;color-scheme:dark}
+    #pocketwise-boot-splash{position:fixed;inset:0;z-index:2147483647;background:#000;color:#fff;display:block;overflow:hidden;pointer-events:auto}
+    #pw-splash-mark{position:absolute;left:50%;top:46%;width:124px;height:124px;transform:translate(-50%,-50%);display:grid;place-items:center}
+    #pw-splash-mark img{display:block;width:124px;height:124px;object-fit:contain}
+    #pw-splash-brand-lockup{display:flex;align-items:center;justify-content:center;gap:9px}
+    #pw-splash-versanya-mark{display:block;width:29px;height:29px;flex:0 0 29px}
+    #pw-splash-brand{position:absolute;left:0;right:0;bottom:calc(82px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;text-align:center}
+    #pw-splash-from{font-size:14px;line-height:1.2;letter-spacing:.08em;color:#73808d;font-weight:400}
+    #pw-splash-versanya{font-size:23px;line-height:1.2;letter-spacing:-.035em;color:#f5f6f8;font-weight:600}
+    #pw-splash-error{position:absolute;left:24px;right:24px;top:calc(50% + 88px);text-align:center;color:#f2f3f5;font:13px/1.45 system-ui,-apple-system,BlinkMacSystemFont,sans-serif}
+    #pw-splash-details{display:block;margin-top:8px;color:#d7a0a0;overflow-wrap:anywhere}
+    #pw-splash-retry{margin-top:16px;padding:11px 18px;border:0;border-radius:11px;background:#f5f6f8;color:#101115;font:600 14px system-ui;cursor:pointer}
+    @media(prefers-reduced-motion:no-preference){#pw-splash-mark img{animation:pw-splash-mark-in .28s ease-out both}}
+    @keyframes pw-splash-mark-in{from{opacity:.75;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+    [hidden]{display:none!important}
+  </style>
   <meta name="description" content="A private, offline-first personal finance companion for everyday money, budgets and lending.">
   <script src="theme-init.js"></script>
   <title>Pocketwise · Money, made clearer</title>
@@ -16,7 +38,16 @@
   <link rel="stylesheet" href="styles.css">
   <script src="viewport-guard.js" defer></script>
 </head>
-<body>
+<body style="margin:0;min-height:100%;background:#000!important;color-scheme:dark">
+  <section id="pocketwise-boot-splash" role="status" aria-live="polite" aria-label="Pocketwise by Versanya is starting">
+    <div id="pw-splash-mark" aria-hidden="true"><img src="assets/icons/splash-mark-white.png" width="124" height="124" alt="" fetchpriority="high" decoding="async"></div>
+    <div id="pw-splash-error" hidden>
+      <span id="pw-splash-message">Pocketwise is getting ready…</span>
+      <span id="pw-splash-details" hidden></span>
+      <button id="pw-splash-retry" type="button" hidden>Reload Pocketwise</button>
+    </div>
+    <div id="pw-splash-brand" aria-label="from Versanya"><span id="pw-splash-from">from</span><div id="pw-splash-brand-lockup"><svg id="pw-splash-versanya-mark" viewBox="0 0 40 40" aria-hidden="true"><path d="M4 7h8l8 19 8-19h8L23 34h-6L4 7Z" fill="#f5f6f8"/><path d="M22 7h6l-8 19h-6L22 7Z" fill="#73808d" opacity=".9"/></svg><strong id="pw-splash-versanya">VERSANYA</strong></div></div>
+  </section>
   <div class="app-shell">
     <aside class="sidebar" aria-label="Main navigation">
       <a class="brand" href="#home" aria-label="Pocketwise home">

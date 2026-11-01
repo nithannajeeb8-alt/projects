@@ -14,6 +14,7 @@ fi
 
 # Always compile and audit the C++ core before building a publishable package.
 bash "$ROOT/scripts/build-wasm.sh"
+(cd "$ROOT" && sha256sum wasm/pocketwise-engine.wasm > WASM-SHA256.txt)
 
 # Regression tests run against the unminified development source before release output is generated.
 node --test "$ROOT"/tests/*.test.js

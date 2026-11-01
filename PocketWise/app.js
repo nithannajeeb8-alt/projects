@@ -1806,80 +1806,103 @@
   async function renderPDFBlobFromHTML(html,filename){
     const ios=isIOSShareContext();
     const rendererURL=ios?IOS_PDF_RENDERER_URL:PDF_RENDERER_URL;
-    const frame=document.createElement('iframe');
-    frame.setAttribute('title','PDF rendering surface');
-    frame.setAttribute('aria-hidden','true');
-    frame.tabIndex=-1;
-    // Keep the rendering document in the layout/paint tree. iOS WebKit can
-    // fail to initialise html2canvas in a far-offscreen srcdoc iframe.
-    // Opacity prevents a visual flash without using display:none/visibility:hidden.
-    frame.style.cssText='position:fixed;left:0;top:0;width:794px;height:1123px;border:0;opacity:0;pointer-events:none;z-index:-1';
-    document.body.appendChild(frame);
-    try{
-      const source=String(html||'');
-      if(!/<head(?:\s[^>]*)?>/i.test(source)||!/<\/head>/i.test(source))throw new Error('The report document is missing its head section.');
+    const source=String(html||'');
+    const renderWithRenderer=async function(url,pageWise,context){
+      const signal=context&&context.signal;
+      const frame=document.createElement('iframe');
+      frame.setAttribute('title','PDF rendering surface');
+      frame.setAttribute('aria-hidden','true');
+      frame.tabIndex=-1;
+      // Keep the rendering document in the layout/paint tree. iOS WebKit can
+      // fail to initialise html2canvas in a far-offscreen srcdoc iframe.
+      // Opacity prevents a visual flash without using display:none/visibility:hidden.
+      frame.style.cssText='position:fixed;left:0;top:0;width:794px;height:1123px;border:0;opacity:0;pointer-events:none;z-index:-1';
+      document.body.appendChild(frame);
+      const makeAbortError=()=>{const error=new Error('PDF rendering was cancelled after its provider route timed out or was replaced.');error.name='AbortError';return error;};
+      let rejectAbort;
+      const aborted=new Promise((resolve,reject)=>{rejectAbort=reject;});
+      const onAbort=()=>{try{frame.remove();}catch(_){};rejectAbort(makeAbortError());};
+      if(signal?.aborted)onAbort();
+      else signal?.addEventListener('abort',onAbort,{once:true});
+      const work=(async()=>{
+        try{
+          if(!/<head(?:\s[^>]*)?>/i.test(source)||!/<\/head>/i.test(source))throw new Error('The report document is missing its head section.');
+          // Use the same-origin blank frame, then wait for the renderer script's
+          // own load event before touching the html2pdf global.
+          const doc=frame.contentDocument;
+          if(!doc)throw new Error('The PDF rendering document is unavailable.');
+          doc.open();doc.write(source);doc.close();
+          await new Promise((resolve,reject)=>{
+            let settled=false;
+            const finish=error=>{
+              if(settled)return;settled=true;window.clearTimeout(timeout);
+              signal?.removeEventListener('abort',abortDuringLoad);
+              if(error)reject(error);else resolve();
+            };
+            const abortDuringLoad=()=>finish(makeAbortError());
+            const timeout=window.setTimeout(()=>finish(new Error('PDF renderer loading timed out. Check the connection and retry.')),20000);
+            signal?.addEventListener('abort',abortDuringLoad,{once:true});
+            const script=doc.createElement('script');script.src=url;script.crossOrigin='anonymous';script.async=true;
+            script.onload=()=>{
+              const renderer=frame.contentWindow?.html2pdf;
+              if(typeof renderer!=='function')finish(new Error('The PDF renderer script loaded but did not expose html2pdf.'));
+              else finish();
+            };
+            script.onerror=()=>finish(new Error('Could not load the PDF renderer from its cached or network source.'));
+            doc.head.appendChild(script);
+          });
+          const win=frame.contentWindow;
+          if(!win||!doc||typeof win.html2pdf!=='function')throw new Error('The PDF renderer did not initialize.');
+          try{await Promise.race([doc.fonts?.ready||Promise.resolve(),new Promise(resolve=>window.setTimeout(resolve,3000))]);}catch(_){}
+          const root=doc.querySelector('.report-page,.report,.receipt-paper,main')||doc.body;
+          if(!root)throw new Error('The report content could not be found in the PDF rendering document.');
+          const scale=getPDFRenderScale(root,ios);
+          const width=Math.max(794,Math.ceil(root.scrollWidth||root.getBoundingClientRect().width||794));
+          const height=Math.max(1123,Math.ceil(root.scrollHeight||root.getBoundingClientRect().height||1123));
+          const options={
+            margin:[10,10,12,10],filename,
+            image:{type:'jpeg',quality:ios?0.88:0.96},
+            html2canvas:{scale,useCORS:true,allowTaint:false,logging:false,backgroundColor:'#ffffff',windowWidth:width,windowHeight:height,imageTimeout:15000},
+            jsPDF:{unit:'mm',format:'a4',orientation:'portrait',compress:true},
+            pagebreak:{mode:['css','legacy'],avoid:['.brand','.report-brand-row','.summary','.report-note','.note','.report-footer','.receipt-brand','.receipt-fields']}
+          };
+          const worker=win.html2pdf().set(options).from(root);
+          let result;
+          if(pageWise){
+            // html3pdf paginates first and renders each A4 page into its own canvas.
+            if(typeof worker.toCanvases!=='function')throw new Error('The iOS page-wise PDF renderer is missing its page-splitting support.');
+            result=await worker.toCanvases().toPdf().outputPdf('blob');
+          }else{
+            // Preserve html2pdf for desktop/Android and as a secondary iOS route.
+            result=await worker.outputPdf('blob');
+          }
+          const blob=result instanceof Blob?result:new Blob([result],{type:'application/pdf'});
+          return await assertValidPDFBlob(blob);
+        }finally{try{frame.remove();}catch(_){}}
+      })();
+      try{return await Promise.race([work,aborted]);}
+      finally{signal?.removeEventListener('abort',onAbort);try{frame.remove();}catch(_){}}
+    };
 
-      // Do not use a frame navigation event as a proxy for a remote renderer script.
-      // On iOS, the initial about:blank/srcdoc load can race the real document
-      // load. Write the report into the same-origin blank frame, then wait for
-      // the renderer script's own load event before touching its global.
-      const doc=frame.contentDocument;
-      if(!doc)throw new Error('The PDF rendering document is unavailable.');
-      doc.open();
-      doc.write(source);
-      doc.close();
-
-      await new Promise((resolve,reject)=>{
-        let settled=false;
-        const timeout=window.setTimeout(()=>finish(new Error('PDF renderer loading timed out. Check the connection and retry.')),20000);
-        const finish=error=>{
-          if(settled)return;
-          settled=true;
-          window.clearTimeout(timeout);
-          if(error)reject(error);else resolve();
-        };
-        const script=doc.createElement('script');
-        script.src=rendererURL;
-        script.crossOrigin='anonymous';
-        script.async=true;
-        script.onload=()=>{
-          const renderer=frame.contentWindow?.html2pdf;
-          if(typeof renderer!=='function')finish(new Error('The PDF renderer script loaded but did not expose html2pdf.'));
-          else finish();
-        };
-        script.onerror=()=>finish(new Error('Could not load the PDF renderer from its cached or network source.'));
-        doc.head.appendChild(script);
-      });
-
-      const win=frame.contentWindow;
-      if(!win||!doc||typeof win.html2pdf!=='function')throw new Error('The PDF renderer did not initialize.');
-      try{await Promise.race([doc.fonts?.ready||Promise.resolve(),new Promise(resolve=>window.setTimeout(resolve,3000))]);}catch(_){}
-      const root=doc.querySelector('.report-page,.report,.receipt-paper,main')||doc.body;
-      if(!root)throw new Error('The report content could not be found in the PDF rendering document.');
-      const scale=getPDFRenderScale(root,ios);
-      const width=Math.max(794,Math.ceil(root.scrollWidth||root.getBoundingClientRect().width||794));
-      const height=Math.max(1123,Math.ceil(root.scrollHeight||root.getBoundingClientRect().height||1123));
-      const options={
-        margin:[10,10,12,10],
-        filename,
-        image:{type:'jpeg',quality:ios?0.88:0.96},
-        html2canvas:{scale,useCORS:true,allowTaint:false,logging:false,backgroundColor:'#ffffff',windowWidth:width,windowHeight:height,imageTimeout:15000},
-        jsPDF:{unit:'mm',format:'a4',orientation:'portrait',compress:true},
-        pagebreak:{mode:['css','legacy'],avoid:['.brand','.report-brand-row','.summary','.report-note','.note','.report-footer','.receipt-brand','.receipt-fields']}
-      };
-      const worker=win.html2pdf().set(options).from(root);
-      let result;
-      if(ios){
-        // html3pdf paginates first and renders each A4 page into its own canvas.
-        if(typeof worker.toCanvases!=='function')throw new Error('The iOS page-wise PDF renderer is missing its page-splitting support.');
-        result=await worker.toCanvases().toPdf().outputPdf('blob');
-      }else{
-        // Preserve the existing html2pdf path for desktop and Android.
-        result=await worker.outputPdf('blob');
-      }
-      const blob=result instanceof Blob?result:new Blob([result],{type:'application/pdf'});
-      return await assertValidPDFBlob(blob);
-    }finally{frame.remove();}
+    const system=window.PocketWiseSystem;
+    if(system&&typeof system.run==='function'){
+      const providers=ios?[
+        {id:201,priority:120,label:'iOS page-wise PDF renderer',timeoutMs:150000,supported:true,available:true,enabled:true,
+          run:(input,context)=>renderWithRenderer(IOS_PDF_RENDERER_URL,true,context),
+          assess:blob=>({ok:!!blob&&blob.size>=500,reason:'The page-wise renderer did not produce a valid PDF.'})},
+        {id:202,priority:100,label:'Standard PDF renderer',timeoutMs:150000,supported:true,available:true,enabled:true,
+          run:(input,context)=>renderWithRenderer(PDF_RENDERER_URL,false,context),
+          assess:blob=>({ok:!!blob&&blob.size>=500,reason:'The standard renderer did not produce a valid PDF.'})}
+      ]:[
+        {id:202,priority:110,label:'Standard PDF renderer',timeoutMs:150000,supported:true,available:true,enabled:true,
+          run:(input,context)=>renderWithRenderer(PDF_RENDERER_URL,false,context),
+          assess:blob=>({ok:!!blob&&blob.size>=500,reason:'The standard renderer did not produce a valid PDF.'})}
+      ];
+      const routed=await system.run('pdf-export',providers,{html:source,filename,ios},{timeoutMs:150000,keepLastResort:false});
+      return await assertValidPDFBlob(routed.result);
+    }
+    // Compatibility for isolated tests/embedded hosts without the adaptive router.
+    return renderWithRenderer(rendererURL,ios,null);
   }
   function canSharePDFFile(file){
     try{return !!file&&typeof File==='function'&&typeof navigator.share==='function'&&typeof navigator.canShare==='function'&&navigator.canShare({files:[file]});}
@@ -2393,13 +2416,15 @@
       || text.match(/\b(?:debited|credited|spent|received|paid)\b(?:\s+(?:by|with|of|for))?\s*(?:INR|Rs\.?|₹)?\s*([\d,]+(?:\.\d{1,2})?)/i);
     const amount=parseAmount(String(amountMatch?.[1]||'').replace(/,/g,''));
     if(!(amount>0))throw new Error('Could not find the amount. Copy the full bank message and try again.');
-    const credit=/\b(?:credited|received|deposited)\b/i.test(text)&&!/\b(?:debited|spent|paid|purchase)\b/i.test(text);
+    const wasmParty=window.PocketWiseWasm&&typeof window.PocketWiseWasm.extractMerchant==='function'
+      ?window.PocketWiseWasm.extractMerchant(text):null;
+    const textCredit=/\b(?:credited|received|deposited)\b/i.test(text)&&!/\b(?:debited|spent|paid|purchase)\b/i.test(text);
+    const credit=wasmParty?.direction==='incoming'?true:wasmParty?.direction==='outgoing'?false:textCredit;
     const type=credit?'income':'expense';
-    // Prefer the destination/source explicitly named in common bank wording.
-    let merchant='';
-    const merchantPatterns=[/\b(?:trf|transfer|transferred)\s+to\s+(.+?)(?=\s+(?:ref(?:no|erence)?|upi|txn|transaction|on\s+date|dated)\b|[.;]|$)/i,/\b(?:to|at|from)\s+([A-Z0-9][A-Z0-9 &._'/-]{1,45}?)(?=\s+(?:ref(?:no|erence)?|upi|txn|transaction|on\s+date|on\s+\d|dated)\b|[.;]|$)/i,/\b(?:merchant|payee)\s*[:=-]\s*([^,;.]+)/i];
-    for(const re of merchantPatterns){const hit=text.match(re);if(hit?.[1]){merchant=hit[1].trim().replace(/\s+/g,' ');break;}}
-    if(!merchant)merchant='Bank transaction';
+    // Merchant/payee inference is exclusively handled by the C++/Wasm narration grammar.
+    // A generic JS `to <words>` regex mislabels prose such as “log in to your account” as a merchant.
+    // Keep the transaction review useful without inventing a payee when confidence is insufficient.
+    const merchant=wasmParty&&Number(wasmParty.confidence)>=.55?String(wasmParty.name||'').trim():'Bank transaction';
     const refMatch=text.match(/\b(?:ref(?:erence)?\s*(?:no\.?|number)?|utr|rrn)\s*[:#-]?\s*([A-Z0-9-]{6,})/i);
     const reference=refMatch?.[1]||'';
     let date=today();
@@ -2630,27 +2655,30 @@
     const failed=/\b(?:failed|declined|unsuccessful|reversed|reversal)\b/i.test(text);
     const pending=/\b(?:pending|processing|initiated|awaiting confirmation)\b/i.test(text);
     const status=failed?'failed':pending?'pending':/\b(?:successful|success|completed|paid successfully|transaction successful)\b/i.test(text)?'successful':'unknown';
+    /* Merchant/payee extraction is a C++/Wasm domain rule. JS only supplies OCR
+       text and chooses the stronger normalized field for the existing review UI. */
+    const wasmParty=window.PocketWiseWasm&&typeof window.PocketWiseWasm.extractMerchant==='function'
+      ?window.PocketWiseWasm.extractMerchant(text):null;
     const spatialIncoming=spatial?.direction==='incoming'&&!outgoing;
-    const type=transfer?'transfer':((incoming&&!outgoing)||spatialIncoming)?'income':'expense';
-    const partyStop=String.raw`(?:on|at|via|UPI|RRN|UTR|Ref(?:erence)?(?:\s*No)?|A\/c|from)`;
-    const to=text.match(new RegExp(String.raw`\bto\s+([^,.;\n]+?)(?=\s+${partyStop}\b|[,.]|$)`,'i'));
-    const from=text.match(new RegExp(String.raw`\bfrom\s+([^,.;\n]+?)(?=\s+${partyStop}\b|[,.]|$)`,'i'));
-    const screenParty=text.match(/\b(?:paid|sent|payment)\s+to\s*[:：-]?\s*([^\n\r]+?)(?=\s{2,}|\n|\r|\b(?:UPI\s*ID|UPI\s*transaction|transaction\s*ID|reference|bank\s*reference|\d{1,2}[:.]\d{2}\s*(?:am|pm))\b|$)/i);
-    // A VPA is a payment address, not a person's display name. Remove it from
-    // any captured party text and leave the name unconfirmed when no name remains.
-    const partyCandidate=(screenParty?.[1]||(incoming?(from||to):(to||from))?.[1]||'').trim();
-    const party=String(spatial?.party?.confidence>=.62?spatial.party.name:partyCandidate)
+    const cxxIncoming=wasmParty?.direction==='incoming'&&!outgoing;
+    const cxxOutgoing=wasmParty?.direction==='outgoing';
+    const parsedIncoming=wasmParty?.direction==='incoming'?true:wasmParty?.direction==='outgoing'?false:(incoming||spatialIncoming)&&!outgoing;
+    const type=transfer?'transfer':parsedIncoming?'income':'expense';
+    const spatialParty=spatial?.party&&Number(spatial.party.confidence)>=.62?String(spatial.party.name||'').trim():'';
+    const partyCandidate=wasmParty&&Number(wasmParty.confidence)>=.55?wasmParty.name:spatialParty;
+    const party=String(partyCandidate||'')
       .replace(/[A-Z0-9._-]+@[A-Z0-9.-]+/ig,' ')
       .replace(/\s+/g,' ')
       .replace(/^\s*(?:UPI\s*ID|VPA)\s*[:：-]?\s*/i,'')
       .replace(/^[-|·,:;\s]+|[-|·,:;\s]+$/g,'')
       .replace(/\s*(?:₹|Rs\.?|INR)\s*[\d,]+(?:\.\d{1,2})?.*$/i,'')
       .trim().slice(0,100);
+    const partyConfidence=wasmParty&&party===String(wasmParty.name||'').trim()?Number(wasmParty.confidence||0):Number(spatial?.party?.confidence||0);
     const sourceApp=String(spatial?.sourceApp?.name||'');
     const upiProvider=String(spatial?.upi?.provider||'');
     const amountConfidence=spatialAmount?Number(spatialAmount.confidence):(contextualAmount?.[1]?0.72:currencyAmount?.[1]?0.64:0);
     const fieldConfidence=spatial?.fieldConfidence||{};
-    const confidence=(amountText?0.40:0)+(ref?0.16:0)+(party?0.14:0)+(date?0.08:0)+(status!=='unknown'?0.06:0)+Math.min(.08,amountConfidence*.08)+Math.min(.04,Number(fieldConfidence.party||0)*.04)+Math.min(.04,Number(fieldConfidence.upi||0)*.04);
+    const confidence=(amountText?0.40:0)+(ref?0.16:0)+(party?0.14:0)+(date?0.08:0)+(status!=='unknown'?0.06:0)+Math.min(.08,amountConfidence*.08)+Math.min(.04,partyConfidence*.04)+Math.min(.04,Number(fieldConfidence.upi||0)*.04);
     const reviewReasons=Array.isArray(spatial?.warnings)?spatial.warnings.slice(0,8):[];
     const needsReview=status==='unknown'||!party||!ref||!amountText||!!spatial?.needsReview||!!spatialAmount&&spatialAmount.confidence<.78;
     return {amount,type,date,reference:ref,referenceType,utr,transactionId,upi,upiProvider,sourceApp,accountSuffix:acct,party,status,confidence:Math.min(0.99,confidence),needsReview,reviewReasons,raw:text};

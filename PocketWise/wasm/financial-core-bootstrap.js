@@ -1,8 +1,10 @@
-/* Required Wasm startup gate. The application does not execute until the C++ financial core is ready. */
+/* Required C++/Wasm and subsystem startup gate. The native first-paint shell is in index.html. */
 (function () {
   'use strict';
 
   const APP_SCRIPTS = [
+    'reliability-store.js',
+    'system-orchestrator.js',
     'finance-analytics.js',
     'wasm/shared-costs-api.js',
     'app.js',
@@ -12,7 +14,6 @@
     'local-ai.js',
     'statement-import.js'
   ];
-
   const MIN_SPLASH_DURATION_MS = 2000;
   const splashStartedAt = Date.now();
   let hideTimer = null;
@@ -20,66 +21,15 @@
   let scriptsLoaded = false;
   let appReady = false;
   let runtimeFailure = null;
-  const gate = document.createElement('section');
-  gate.id = 'pocketwise-financial-core-gate';
-  gate.setAttribute('role', 'status');
-  gate.setAttribute('aria-live', 'polite');
-  gate.setAttribute('aria-label', 'Pocketwise is starting');
-  gate.style.cssText = [
-    'position:fixed', 'inset:0', 'z-index:2147483647', 'display:grid', 'place-items:center',
-    'padding:24px', 'box-sizing:border-box', 'background:#000000', 'color:#f7f8fa',
-    'font:16px/1.5 system-ui,-apple-system,BlinkMacSystemFont,sans-serif', 'text-align:center'
-  ].join(';');
 
-  const card = document.createElement('div');
-  card.className = 'pw-splash-content';
-  card.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;width:min(100%,320px);box-sizing:border-box';
-
-  const brandMark = document.createElement('div');
-  brandMark.className = 'pw-splash-mark';
-  brandMark.setAttribute('aria-hidden', 'true');
-  brandMark.style.cssText = 'width:76px;height:76px;display:grid;place-items:center;overflow:hidden;border-radius:18px;margin-bottom:19px';
-  brandMark.innerHTML = '<img src="assets/icons/icon-192.PNG" alt="" width="76" height="76" decoding="async" fetchpriority="high" style="display:block;width:76px;height:76px;object-fit:contain">';
-
-  const title = document.createElement('h1');
-  title.textContent = 'Pocketwise';
-  title.style.cssText = 'margin:0;font-size:25px;line-height:1.2;letter-spacing:-.035em;font-weight:700;color:inherit';
-  const tagline = document.createElement('p');
-  tagline.textContent = 'money, made clearer';
-  tagline.style.cssText = 'margin:7px 0 0;font-size:12px;letter-spacing:.075em;text-transform:lowercase;color:currentColor;opacity:.62';
-
-  const spinner = document.createElement('span');
-  spinner.className = 'pw-splash-spinner';
-  spinner.setAttribute('aria-hidden', 'true');
-  spinner.style.cssText = 'width:20px;height:20px;box-sizing:border-box;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;opacity:.55;margin-top:42px;animation:pw-splash-spin .8s linear infinite';
-
-  const message = document.createElement('p');
-  message.textContent = 'Getting your workspace ready…';
-  message.style.cssText = 'margin:12px 0 0;color:inherit;opacity:.58;font-size:12px';
-  const details = document.createElement('p');
-  details.hidden = true;
-  details.style.cssText = 'margin:14px 0 0;color:#b42318;font-size:13px;overflow-wrap:anywhere;max-width:320px';
-  const action = document.createElement('button');
-  action.type = 'button';
-  action.textContent = 'Retry';
-  action.hidden = true;
-  action.style.cssText = 'margin:20px 0 0;padding:12px 18px;border:0;border-radius:12px;background:#f7f8fa;color:#10131a;font:600 15px system-ui;cursor:pointer';
-
-  card.append(brandMark, title, tagline, spinner, message, details, action);
-  gate.appendChild(card);
-  document.body.appendChild(gate);
-
-  /* The visual is an overlay only. Existing app markup and its layout are untouched. */
-  const splashThemeStyle = document.createElement('style');
-  splashThemeStyle.textContent = [
-    '@keyframes pw-splash-spin{to{transform:rotate(360deg)}}',
-    '#pocketwise-financial-core-gate{background:#000000!important;color:#f7f8fa!important}',
-    '#pocketwise-financial-core-gate button{background:#f7f8fa;color:#10131a}'
-  ].join('');
-  document.head.appendChild(splashThemeStyle);
+  const gate = document.getElementById('pocketwise-boot-splash');
+  const errorPanel = document.getElementById('pw-splash-error');
+  const message = document.getElementById('pw-splash-message');
+  const details = document.getElementById('pw-splash-details');
+  const action = document.getElementById('pw-splash-retry');
 
   function maybeHideSplash() {
-    if (!scriptsLoaded || !appReady || runtimeFailure || !gate.isConnected) return;
+    if (!scriptsLoaded || !appReady || runtimeFailure || !gate || !gate.isConnected) return;
     const remaining = MIN_SPLASH_DURATION_MS - (Date.now() - splashStartedAt);
     if (remaining > 0) {
       if (hideTimer === null) {
@@ -90,26 +40,34 @@
       }
       return;
     }
+    gate.setAttribute('aria-busy', 'false');
     gate.remove();
   }
 
   function showFailure(error, failureType) {
-    if (!gate.isConnected) document.body.appendChild(gate);
-    title.textContent = failureType === 'app' ? 'Pocketwise couldn’t finish loading' : 'Pocketwise couldn’t start';
-    message.textContent = failureType === 'runtime'
-      ? 'Pocketwise couldn’t finish a required calculation. Reload the app before relying on financial figures.'
-      : failureType === 'app'
-        ? 'Pocketwise couldn’t prepare your workspace. Your saved records have not been cleared. Reload to try again.'
-        : failureType === 'asset'
-          ? 'Pocketwise couldn’t load a required app file. Check your deployment and reload to try again.'
-          : 'Pocketwise couldn’t prepare the app. Check your connection and reload to try again.';
-    details.textContent = error && error.message ? error.message : String(error || 'Unknown engine error.');
-    details.hidden = false;
-    action.disabled = false;
-    action.textContent = 'Reload Pocketwise';
-    action.hidden = false;
+    if (!gate) return;
+    if (errorPanel) errorPanel.hidden = false;
+    if (message) {
+      message.textContent = failureType === 'app'
+        ? 'Pocketwise couldn’t finish loading your workspace.'
+        : failureType === 'runtime'
+          ? 'A required calculation could not finish. Reload before relying on financial figures.'
+          : failureType === 'asset'
+            ? 'A required Pocketwise file could not be loaded. Check the deployment and reload.'
+            : 'Pocketwise couldn’t start. Check the app files and reload.';
+    }
+    if (details) {
+      details.textContent = error && error.message ? error.message : String(error || 'Unknown startup error.');
+      details.hidden = false;
+    }
+    if (action) {
+      action.disabled = false;
+      action.textContent = 'Reload Pocketwise';
+      action.hidden = false;
+      action.onclick = () => location.reload();
+    }
     gate.setAttribute('role', 'alert');
-    action.onclick = () => location.reload();
+    gate.setAttribute('aria-busy', 'false');
   }
 
   function loadScript(path) {
@@ -125,18 +83,13 @@
 
   async function start() {
     if (scriptsStarted) return;
-    action.disabled = true;
-    action.textContent = 'Retrying…';
-    message.textContent = 'Getting your workspace ready…';
-    details.hidden = true;
     try {
       if (!window.PocketWiseWasm || typeof window.PocketWiseWasm.load !== 'function') {
         throw new Error('The WebAssembly bridge script is missing.');
       }
       await window.PocketWiseWasm.load();
-      if (!window.PocketWiseWasm.isReady()) throw new Error('The WebAssembly engine did not enter the ready state.');
+      if (!window.PocketWiseWasm.isReady()) throw new Error('The C++ WebAssembly engine did not enter the ready state.');
     } catch (error) {
-      action.disabled = false;
       showFailure(error, 'wasm');
       return;
     }
@@ -146,14 +99,11 @@
     try {
       for (const path of APP_SCRIPTS) await loadScript(path);
       scriptsLoaded = true;
-      message.textContent = 'Almost ready…';
       maybeHideSplash();
     } catch (error) {
-      action.disabled = false;
       showFailure(error, 'asset');
     }
   }
-
 
   window.addEventListener('pocketwise:app-ready', () => {
     appReady = true;

@@ -183,7 +183,9 @@
         sandboxReadyPromise = null;
         sandboxReadyResolve = null;
         if (sandboxFrame === frame) sandboxFrame = null;
-        reject(new Error('The isolated OCR runtime could not be loaded.'));
+        const error=new Error('The isolated OCR runtime worker frame failed to load.');
+        error.name='OCRRuntimeCrashError';error.pocketWiseProviderCrash=true;
+        reject(error);
       }, { once: true });
       frame.src = new URL(SANDBOX_FILE, SCRIPT_BASE || document.baseURI).href;
       document.body.appendChild(frame);
@@ -487,9 +489,7 @@
     };
   }
 
-  async function recognize(input, onStatus) {
-    if (!input) throw new TypeError('PaddleOCR requires a receipt image.');
-    const source = await toCanvas(input);
+  async function recognizeLegacy(source, onStatus) {
     const backends = backendOrder();
     let tinyFailure = null, fallbackFailure = null, usableFallback = null;
 
@@ -542,6 +542,199 @@
     throw new Error('The lightweight OCR and PaddleOCR Small fallback could not complete. ' + (detail || 'Connect once to install/cache the models, then retry.') + ' You can also choose the screenshot again or enter the payment details manually.');
   }
 
+  function bridgeIsAvailable(value) {
+    if (value === false || value == null) return false;
+    if (typeof value === 'object' && Object.prototype.hasOwnProperty.call(value, 'available')) return value.available === true;
+    return !!value;
+  }
+
+  function nativeBridge() {
+    const direct = window.PocketWiseNativeOCR;
+    if (direct && typeof direct.recognize === 'function') return direct;
+    const plugins = window.Capacitor && window.Capacitor.Plugins;
+    const plugin = plugins && (plugins.PocketWiseNativeOCR || plugins.PocketWiseOCR);
+    if (plugin && typeof plugin.recognize === 'function') return plugin;
+    /* A WKWebView host may expose Vision through WKScriptMessageHandlerWithReply.
+       A normal Safari-installed PWA has no such handler and will never enter this path. */
+    const handler = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.PocketWiseNativeOCR;
+    if (handler && typeof handler.postMessage === 'function') {
+      return {
+        engineName: 'Apple Vision (native bridge)',
+        isAvailable: async function () { return true; },
+        recognize: function (payload) {
+          const reply = handler.postMessage(payload);
+          if (!reply || typeof reply.then !== 'function') {
+            const error = new Error('The iOS native OCR bridge must use WKScriptMessageHandlerWithReply.');
+            error.name = 'NotSupportedError'; error.reliabilityOutcome = 'unsupported'; throw error;
+          }
+          return reply;
+        }
+      };
+    }
+    return null;
+  }
+
+  function nativePolygon(item, width, height) {
+    if (Array.isArray(item && item.poly) && item.poly.length >= 4) return item.poly;
+    const bounds = item && (item.boundingBox || item.bounds || item.frame);
+    if (bounds && Number.isFinite(Number(bounds.x)) && Number.isFinite(Number(bounds.y))) {
+      const x = Number(bounds.x), y = Number(bounds.y);
+      const w = Number(bounds.width || bounds.w || 0), h = Number(bounds.height || bounds.h || 0);
+      if (w > 0 && h > 0) return [[x,y],[x+w,y],[x+w,y+h],[x,y+h]];
+    }
+    if (Array.isArray(item && item.cornerPoints) && item.cornerPoints.length >= 4) {
+      return item.cornerPoints.map(point => Array.isArray(point) ? [Number(point[0]), Number(point[1])] : [Number(point.x), Number(point.y)]);
+    }
+    return null;
+  }
+
+  function flattenNativeItems(raw, width, height) {
+    const direct = Array.isArray(raw && raw.items) ? raw.items : [];
+    const nested = [];
+    (Array.isArray(raw && raw.blocks) ? raw.blocks : []).forEach(block => {
+      (block.lines || []).forEach(line => {
+        if (Array.isArray(line.elements) && line.elements.length) {
+          line.elements.forEach(element => nested.push(Object.assign({}, element, {
+            text: element.text || line.text, score: element.confidence ?? line.confidence,
+            boundingBox: element.boundingBox || line.boundingBox
+          })));
+        } else nested.push(line);
+      });
+    });
+    const rows = direct.length ? direct : nested;
+    let items = rows.map(item => ({
+      text: String(item && (item.text || item.value) || '').trim(),
+      score: clamp(Number(item && (item.score ?? item.confidence)) || .65, 0, 1),
+      poly: nativePolygon(item, width, height)
+    })).filter(item => item.text && item.poly);
+    const text = String(raw && raw.text || items.map(item => item.text).join('\n') || '').trim();
+    if (!items.length && text) {
+      const lines = text.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+      const lineHeight = Math.max(18, height / Math.max(lines.length, 1));
+      items = lines.map((line, index) => {
+        const top = Math.min(height - 2, index * lineHeight);
+        return { text: line, score: clamp(Number(raw && raw.confidence) || .60, .45, 1), poly: [[0,top],[Math.max(2,width - 1),top],[Math.max(2,width - 1),Math.min(height,top + lineHeight * .82)],[0,Math.min(height,top + lineHeight * .82)]] };
+      });
+    }
+    return { text: text || items.map(item => item.text).join('\n').trim(), items };
+  }
+
+  async function runNativeProvider(source, onStatus) {
+    const bridge = nativeBridge();
+    if (!bridge) {
+      const error = new Error('A native OCR bridge is not installed in this PWA.');
+      error.name = 'NotSupportedError'; error.reliabilityOutcome = 'unsupported'; throw error;
+    }
+    if (typeof bridge.isAvailable === 'function' && !bridgeIsAvailable(await bridge.isAvailable())) {
+      const error = new Error('The native OCR provider is not available on this device.');
+      error.name = 'NotSupportedError'; error.reliabilityOutcome = 'unsupported'; throw error;
+    }
+    report(onStatus, 'Trying the device’s native on-device text recognizer…');
+    const imageDataUrl = source.toDataURL('image/jpeg', .92);
+    const raw = await bridge.recognize({
+      imageDataUrl,
+      mimeType: 'image/jpeg',
+      width: source.width,
+      height: source.height,
+      languageHints: ['en', 'hi'],
+      purpose: 'payment-receipt',
+      requestId: 'pw-ocr-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,8)
+    });
+    if (!raw || raw.error) {
+      const error = new Error(String(raw && raw.error || 'Native OCR returned no result.'));
+      if (raw && raw.code === 'UNAVAILABLE') { error.name = 'NotSupportedError'; error.reliabilityOutcome = 'unsupported'; }
+      throw error;
+    }
+    const normalised = flattenNativeItems(raw, source.width, source.height);
+    if (!normalised.text || !normalised.items.length) throw new Error('The native OCR provider returned no readable text regions.');
+    return Object.assign(normalised, {
+      engine: String(raw.engine || bridge.engineName || 'Native on-device OCR'),
+      model: String(raw.model || bridge.providerName || 'native-ocr'),
+      backend: 'native',
+      image: { width: source.width, height: source.height, tiles: 1 },
+      metrics: raw.metrics || []
+    });
+  }
+
+  function makePaddleProvider(profileName, backend, id, priority, onStatus) {
+    const label = MODEL_PROFILES[profileName].label + ' / ' + (backend === 'wasm' ? 'WASM' : 'auto backend');
+    return {
+      id, priority, label, timeoutMs: 180000, keepLastResort: true,
+      supported: typeof WebAssembly === 'object', available: true, enabled: true,
+      run: async function (source, context) {
+        const engine = await createEngine(profileName, onStatus, backend);
+        const result = await recognizeWithEngine(engine, source, onStatus, profileName);
+        result.engine = MODEL_PROFILES[profileName].label + ' (local AI)';
+        result.model = 'PP-OCRv6_' + profileName;
+        result.backend = backend;
+        result.providerId = id;
+        return result;
+      },
+      assess: function (result) {
+        const assessment = assessTinyResult(result);
+        return { ok: !assessment.useFallback, reason: assessment.reasons.join(', ') || 'The payment fields passed OCR quality checks.', detail: assessment };
+      }
+    };
+  }
+
+  async function recognizeAdaptive(source, onStatus) {
+    const system = window.PocketWiseSystem;
+    if (!system || typeof system.run !== 'function') return recognizeLegacy(source, onStatus);
+
+    const backends = backendOrder();
+    const providers = [];
+    const bridge = nativeBridge();
+    let preferredProviderId = backends[0] === 'wasm' ? 12 : 10;
+    if (bridge) {
+      let nativeAvailable = true;
+      try { if (typeof bridge.isAvailable === 'function') nativeAvailable = bridgeIsAvailable(await bridge.isAvailable()); }
+      catch (_) { nativeAvailable = false; }
+      if (nativeAvailable) {
+        providers.push({
+          id: 1, priority: 160, label: bridge.engineName || bridge.providerName || 'Native on-device OCR',
+          timeoutMs: 90000, keepLastResort: true, supported: true, available: true, enabled: true,
+          run: input => runNativeProvider(input, onStatus),
+          assess: result => {
+            const assessment = assessTinyResult(result);
+            return { ok: !assessment.useFallback, reason: assessment.reasons.join(', ') || 'Native OCR quality checks passed.', detail: assessment };
+          }
+        });
+        preferredProviderId = 1;
+      }
+    }
+    if (backends.includes('auto')) {
+      providers.push(makePaddleProvider('tiny', 'auto', 10, 110, onStatus));
+      providers.push(makePaddleProvider('small', 'auto', 11, 100, onStatus));
+    }
+    if (backends.includes('wasm')) {
+      providers.push(makePaddleProvider('tiny', 'wasm', 12, 90, onStatus));
+      providers.push(makePaddleProvider('small', 'wasm', 13, 80, onStatus));
+    }
+
+    const routed = await system.run('payment-ocr', providers, source, {
+      timeoutMs: 180000,
+      keepLastResort: true,
+      onStatus: onStatus
+    });
+    const result = routed && routed.result;
+    if (!result || !result.text) throw new Error('All available local OCR methods failed to return readable payment text. Choose another screenshot or enter the payment details manually.');
+    const failedAttempts = (routed.attempts || []).filter(attempt => attempt.outcome !== 'success');
+    result.fallbackUsed = !!(routed.fallbackUsed || routed.providerId !== preferredProviderId);
+    result.fallbackReason = failedAttempts.map(attempt => attempt.label + ': ' + attempt.reason).filter(Boolean).join('; ').slice(0, 300);
+    result.needsReview = !!routed.needsReview || !!(routed.assessment && routed.assessment.ok === false);
+    result.provider = routed.provider || result.engine;
+    result.providerId = routed.providerId;
+    result.providerAttempts = routed.attempts || [];
+    result.qualityAssessment = routed.assessment && routed.assessment.detail || null;
+    return result;
+  }
+
+  async function recognize(input, onStatus) {
+    if (!input) throw new TypeError('PocketWise OCR requires a receipt image.');
+    const source = await toCanvas(input);
+    return recognizeAdaptive(source, onStatus);
+  }
+
   window.PocketWisePaddleWebOCR = Object.freeze({
     recognize: recognize,
     // Exposed for deterministic geometry regression tests; the app UI does not call this.
@@ -549,6 +742,15 @@
     getModelConfig: function (name) { const profile = MODEL_PROFILES[name]; return profile ? Object.assign({}, profile) : null; },
     assessTinyResult: assessTinyResult,
     getBackendOrder: backendOrder,
+    getProviderPlan: function () {
+      const plan = [];
+      if (nativeBridge()) plan.push({ id: 1, label: 'Native on-device OCR', platformBridge: true });
+      backendOrder().forEach(function (backend) {
+        plan.push({ id: backend === 'wasm' ? 12 : 10, label: 'PP-OCRv6 Tiny', backend: backend });
+        plan.push({ id: backend === 'wasm' ? 13 : 11, label: 'PP-OCRv6 Small', backend: backend });
+      });
+      return plan;
+    },
     clearEngine: async function () {
       if (enginePromise) { try { const engine = await enginePromise; if (engine && typeof engine.dispose === 'function') await engine.dispose(); } catch (_) {} }
       enginePromise = null;

@@ -1,8 +1,8 @@
 {
   "name": "pocketwise-alpha2",
-  "version": "2.4.21",
+  "version": "2.4.24",
   "private": true,
-  "description": "PocketWise local-first finance PWA source and release tooling with branded minimum-duration startup splash",
+  "description": "PocketWise local-first finance PWA source and release tooling with adaptive local OCR routing, device-scoped reliability memory, and branded startup splash",
   "scripts": {
     "test": "node --test tests/*.test.js",
     "build:wasm": "bash scripts/build-wasm.sh",

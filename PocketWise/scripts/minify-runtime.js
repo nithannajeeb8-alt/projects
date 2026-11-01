@@ -9,6 +9,8 @@ const root = path.resolve(rootArg);
 const dist = path.resolve(distArg);
 const runtimeFiles = [
   'theme-init.js',
+  'reliability-store.js',
+  'system-orchestrator.js',
   'viewport-guard.js',
   'pwa.js',
   'clipboard-import.js',

@@ -198,7 +198,8 @@
         const proposed=await window.PocketwiseLocalAI.mapColumns(headers,sampleRows);const valid=parser().validateMapping(proposed,headers.length);
         if(!valid){setStatus('The model suggestion was incomplete or unsafe. Choose the columns manually.','warn');return;}
         host.querySelectorAll('[data-map-field]').forEach(select=>{const value=valid[select.dataset.mapField];select.value=value===null?'':String(value);});
-        setStatus('Qwen suggestion ready. Check the selected columns, then tap “Use these columns”.','success');
+        const route=window.PocketwiseLocalAI.getLastMappingRoute?.();
+        setStatus(route?.fallbackUsed ? 'Qwen was unavailable or unreliable on this device. PocketWise used its deterministic local parser instead. Check every selected column before applying.' : 'Qwen suggestion ready. Check the selected columns, then tap “Use these columns”.','success');
       }catch(error){setStatus(`Local AI mapping failed: ${error.message||error}. Manual column mapping remains available.`,'error');}
       finally{if(aiButton.isConnected){aiButton.disabled=false;aiButton.textContent='Use local AI';}}
     };

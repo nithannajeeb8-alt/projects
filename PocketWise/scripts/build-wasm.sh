@@ -14,6 +14,7 @@ if command -v em++ >/dev/null 2>&1; then
     -Wl,--export=pw_equal_split -Wl,--export=pw_percentage_split -Wl,--export=pw_amount_split \
     -Wl,--export=pw_sum_minor -Wl,--export=pw_cash_delta_minor -Wl,--export=pw_account_balance -Wl,--export=pw_debt_remaining \
     -Wl,--export=pw_salary_allocate -Wl,--export=pw_category_buckets -Wl,--export=pw_cash_projection -Wl,--export=pw_ratio_round_minor -Wl,--export=pw_budget_metrics -Wl,--export=pw_debt_amortize \
+    -Wl,--export=pw_reliability_order -Wl,--export=pw_reliability_update -Wl,--export=pw_extract_merchant \
     -Wl,--export-memory \
     -Wl,--initial-memory=2097152 -Wl,--max-memory=268435456 -sSTACK_SIZE=131072 \
     -Wl,--strip-all -o "$OUT"
@@ -26,6 +27,7 @@ elif command -v clang++ >/dev/null 2>&1; then
     -Wl,--export=pw_equal_split -Wl,--export=pw_percentage_split -Wl,--export=pw_amount_split \
     -Wl,--export=pw_sum_minor -Wl,--export=pw_cash_delta_minor -Wl,--export=pw_account_balance -Wl,--export=pw_debt_remaining \
     -Wl,--export=pw_salary_allocate -Wl,--export=pw_category_buckets -Wl,--export=pw_cash_projection -Wl,--export=pw_ratio_round_minor -Wl,--export=pw_budget_metrics -Wl,--export=pw_debt_amortize \
+    -Wl,--export=pw_reliability_order -Wl,--export=pw_reliability_update -Wl,--export=pw_extract_merchant \
     -Wl,--export-memory \
     -Wl,--initial-memory=2097152 -Wl,--max-memory=268435456 -Wl,-z,stack-size=131072 \
     -Wl,--strip-all -o "$OUT"

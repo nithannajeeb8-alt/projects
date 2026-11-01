@@ -66,6 +66,27 @@ typedef struct PWDebtPlanOutput {
   long long interest_minor;
 } PWDebtPlanOutput;
 
+typedef struct PWProviderRouteInput {
+  unsigned int provider_id;
+  int priority;
+  unsigned int flags; /* bit 0 supported, bit 1 currently available, bit 2 enabled */
+  unsigned int consecutive_failures;
+  unsigned int average_latency_ms;
+  unsigned int last_outcome;
+  unsigned long long cooldown_until_ms;
+  unsigned int fallback_affinity; /* previously successful route from a cooled-down provider */
+} PWProviderRouteInput;
+
+typedef struct PWProviderHealth {
+  unsigned int consecutive_failures;
+  unsigned int success_count;
+  unsigned int failure_count;
+  unsigned int average_latency_ms;
+  unsigned int last_outcome;
+  unsigned int circuit_state; /* 0 closed, 1 open */
+  unsigned long long cooldown_until_ms;
+} PWProviderHealth;
+
 unsigned int pw_alloc(unsigned int size);
 void pw_reset(void);
 int pw_aggregate(const PWTransactionInput *transactions,
@@ -104,6 +125,20 @@ int pw_budget_metrics(const PWBudgetCategoryInput *categories, unsigned int cate
 int pw_debt_amortize(const PWDebtPlanInput *debts, unsigned int debt_count,
                      long long monthly_payment_minor, int strategy_code,
                      PWDebtPlanOutput *outputs, long long *summary_output);
+
+/* Adaptive provider routing. Storage is owned by the browser adapter; the
+   deterministic decision and circuit-breaker arithmetic live in this core. */
+int pw_reliability_order(const PWProviderRouteInput *routes, unsigned int count,
+                         unsigned long long now_ms, unsigned int *ordered_indices);
+int pw_reliability_update(PWProviderHealth *health, unsigned int outcome,
+                          unsigned int latency_ms, unsigned long long now_ms,
+                          unsigned int base_cooldown_ms, unsigned int max_cooldown_ms);
+
+/* Conservative extraction of the payee/merchant from UPI and payment text.
+   direction: 0 unknown, 1 outgoing/debit, 2 incoming/credit. */
+int pw_extract_merchant(const char *text, unsigned int text_length,
+                         char *output, unsigned int output_capacity,
+                         int *confidence_percent, int *direction);
 
 #ifdef __cplusplus
 }

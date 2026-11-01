@@ -43,8 +43,9 @@
     });
     worker.addEventListener('error',event=>{
       const message=String(event.message||'The local AI worker failed.').slice(0,400);loadState='error';try{localStorage.removeItem(READY_KEY);}catch(_){}settingStatus(`Local AI unavailable: ${message} Manual column mapping remains available.`);setActionButtons();
-      if(loadPromise){loadPromise.reject(new Error(message));loadPromise=null;}releaseWorker();
-      for(const [id,request] of requests){if(request.timer)clearTimeout(request.timer);request.reject(new Error(message));requests.delete(id);}
+      const crashError=new Error(message);crashError.name='WorkerCrashError';crashError.pocketWiseProviderCrash=true;
+      if(loadPromise){loadPromise.reject(crashError);loadPromise=null;}releaseWorker();
+      for(const [id,request] of requests){if(request.timer)clearTimeout(request.timer);request.reject(crashError);requests.delete(id);}
     });
     return worker;
   }
@@ -86,15 +87,67 @@
       try{await clearModelCache();}catch(error){settingStatus(`Could not fully remove model cache: ${error.message||error}. PocketWise transaction data was not changed.`);setActionButtons();}
     });
   }
-  async function mapColumns(headers,sampleRows=[]){
+  let lastMappingRoute = null;
+  async function mapColumnsWithQwen(headers, sampleRows = []) {
     currentIntent='map';await ensureLoaded('map');const w=ensureWorker(),id=++seq;
     const safeHeaders=(headers||[]).slice(0,80).map(v=>String(v).slice(0,100));
     const safeRows=(Array.isArray(sampleRows)?sampleRows:[]).slice(0,8).map(row=>(Array.isArray(row)?row:[]).slice(0,12).map(v=>String(v??'').slice(0,100)));
     return new Promise((resolve,reject)=>{
-      const timer=setTimeout(()=>{const request=requests.get(id);if(request){requests.delete(id);request.reject(new Error('The local AI took too long to respond. Use manual column mapping instead.'));releaseWorker();}},90000);
+      const timer=setTimeout(()=>{const request=requests.get(id);if(request){requests.delete(id);request.reject(new Error('The local AI took too long to respond. Use deterministic local column detection instead.'));releaseWorker();}},90000);
       requests.set(id,{resolve,reject,timer});w.postMessage({type:'mapColumns',id,headers:safeHeaders,sampleRows:safeRows});
     });
   }
-  window.PocketwiseLocalAI={ensureLoaded,mapColumns,isLoaded:()=>loadState==='ready',isDownloaded,modelName:'Qwen2.5-1.5B-Instruct-q4f16_1-MLC',initializeSettings};
+  function validateMappingProposal(mapping, headers) {
+    const parser = window.PWStatementParser;
+    if (!parser || typeof parser.validateMapping !== 'function') return { ok: false, reason: 'Statement validation is unavailable.' };
+    const checked = parser.validateMapping(mapping, headers.length, headers);
+    return checked ? { ok: true, mapping: checked } : { ok: false, reason: 'The suggested mapping did not pass the required date, description and amount/debit/credit checks.' };
+  }
+  async function mapColumns(headers, sampleRows = []) {
+    const safeHeaders=(headers||[]).slice(0,80).map(v=>String(v).slice(0,100));
+    const safeRows=(Array.isArray(sampleRows)?sampleRows:[]).slice(0,8).map(row=>(Array.isArray(row)?row:[]).slice(0,12).map(v=>String(v??'').slice(0,100)));
+    const parser = window.PWStatementParser;
+    const deterministic = () => {
+      if (!parser || typeof parser.mapHeaders !== 'function') throw new Error('The deterministic statement parser is unavailable. Use manual column mapping.');
+      return parser.mapHeaders(safeHeaders);
+    };
+    const system = window.PocketWiseSystem;
+    if (!system || typeof system.run !== 'function') {
+      if (isDownloaded() && navigator.gpu) return mapColumnsWithQwen(safeHeaders, safeRows);
+      return deterministic();
+    }
+    const providers = [
+      {
+        id: 101, priority: 110, label: 'Qwen2.5 local AI', timeoutMs: 90000,
+        // Qwen downloads are explicitly user-triggered from Settings. Do not silently
+        // start an ~880 MB model download just because a statement was imported.
+        supported: !!(navigator && navigator.gpu), available: isDownloaded(), enabled: true,
+        run: async input => mapColumnsWithQwen(input.headers, input.sampleRows),
+        assess: (result, input) => validateMappingProposal(result, input.headers)
+      },
+      {
+        id: 102, priority: 70, label: 'Deterministic local statement parser', timeoutMs: 5000,
+        supported: true, available: true, enabled: true, keepLastResort: true,
+        run: input => deterministic(),
+        assess: (result, input) => validateMappingProposal(result, input.headers)
+      }
+    ];
+    const routed = await system.run('statement-column-mapping', providers, { headers: safeHeaders, sampleRows: safeRows }, {
+      timeoutMs: 90000,
+      keepLastResort: true,
+      onStatus: message => settingStatus(message)
+    });
+    const validation = validateMappingProposal(routed && routed.result, safeHeaders);
+    if (!validation.ok) throw new Error(validation.reason);
+    lastMappingRoute = {
+      providerId: routed.providerId,
+      provider: routed.provider,
+      fallbackUsed: !!routed.fallbackUsed,
+      needsReview: !!routed.needsReview,
+      attempts: (routed.attempts || []).map(item => ({ providerId: item.providerId, outcome: item.outcome, latencyMs: item.latencyMs, reason: String(item.reason || '').slice(0, 160) }))
+    };
+    return validation.mapping;
+  }
+  window.PocketwiseLocalAI={ensureLoaded,mapColumns,getLastMappingRoute:()=>lastMappingRoute,isLoaded:()=>loadState==='ready',isDownloaded,modelName:'Qwen2.5-1.5B-Instruct-q4f16_1-MLC',initializeSettings};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initializeSettings,{once:true});else initializeSettings();
 })();
