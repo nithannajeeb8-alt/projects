@@ -3270,3 +3270,122 @@ html[data-theme="dark"] .card {
 .daily-story-scroller * {
   touch-action: pan-x pan-y;
 }
+
+/* PocketWise 2.4.29 — compact mobile page and section headers.
+   Reduce header height and heading scale consistently across all five tabs while
+   leaving card bodies, content controls, navigation and data visualisations alone. */
+@media (max-width: 720px) {
+  .topbar {
+    margin-bottom: 12px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+  .mobile-brand {
+    font-size: 14px;
+    line-height: 1.1;
+  }
+  .page-heading {
+    margin-top: 8px;
+    gap: 9px;
+  }
+  .page-heading h1 {
+    font-size: 21px;
+    line-height: 1.12;
+    letter-spacing: -.7px;
+  }
+  .page-heading .eyebrow {
+    font-size: 11px;
+    line-height: 1.15;
+  }
+  .page-heading p {
+    font-size: 11px;
+    line-height: 1.3;
+  }
+
+  .section-header {
+    gap: 10px;
+    margin-bottom: 11px;
+  }
+  .section-header h2,
+  .insights-controls h2 {
+    font-size: 18px;
+    line-height: 1.2;
+    letter-spacing: -.45px;
+  }
+  .section-kicker {
+    font-size: 9px;
+    line-height: 1.2;
+    letter-spacing: .11em;
+  }
+  .section-header p {
+    margin-top: 4px;
+    font-size: 11px;
+    line-height: 1.35;
+  }
+  .card-topline { gap: 9px; }
+  .card-topline .section-kicker { font-size: 9px; }
+
+  .daily-story-region { margin: 12px 0 11px; }
+  .daily-story-strip-heading {
+    gap: 10px;
+    margin: 0 2px 8px;
+  }
+  .daily-story-strip-heading h2 {
+    font-size: 9px;
+    letter-spacing: .12em;
+  }
+  .daily-story-date-pill { font-size: 9px; }
+
+  .settings-intro { margin: 6px 0 14px; }
+  .settings-intro h2 {
+    margin-top: 3px;
+    font-size: 20px;
+    line-height: 1.15;
+    letter-spacing: -.55px;
+  }
+  .settings-intro p {
+    margin-top: 5px;
+    font-size: 11px;
+    line-height: 1.35;
+  }
+  .settings-section-title {
+    gap: 10px;
+    padding-bottom: 11px;
+    margin-bottom: 3px;
+  }
+  .settings-section-title h3 {
+    font-size: 13px;
+    line-height: 1.2;
+    letter-spacing: -.25px;
+  }
+  .settings-section-title p {
+    margin-top: 3px;
+    font-size: 9px;
+    line-height: 1.35;
+  }
+  .settings-section-title > .settings-icon {
+    flex-basis: 32px;
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+  }
+  .planner-section-header { gap: 10px; }
+  .event-planner-section-heading { gap: 8px; }
+}
+
+@media (max-width: 390px) {
+  .topbar { padding-top: 9px; padding-bottom: 9px; }
+  .page-heading h1 { font-size: 20px; }
+  .section-header h2,
+  .insights-controls h2 { font-size: 17px; }
+}
+
+/* PocketWise 2.4.30 — align the mobile header with the status-bar canvas.
+   The document root already switches between --bg for light and dark themes.
+   Use that exact opaque canvas on the topbar so the safe-area strip and the
+   Pocketwise brand/header area read as one continuous surface. */
+@media (max-width: 720px) {
+  .topbar {
+    background: var(--bg) !important;
+  }
+}
