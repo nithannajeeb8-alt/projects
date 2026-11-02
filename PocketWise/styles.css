@@ -4337,6 +4337,22 @@ html[data-theme="gradient"] .sample-banner {
 }
 html[data-theme="gradient"] .quick-action,
 html[data-theme="gradient"] .quick-choice { border-radius:19px; }
+html[data-theme="gradient"] .budget-numbers {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  min-height:54px;
+  padding:11px 14px;
+  border-radius:15px;
+  box-sizing:border-box;
+}
+html[data-theme="gradient"] .debt-summaries>div {
+  min-height:58px;
+  padding:8px 10px;
+  border-radius:15px;
+  box-sizing:border-box;
+}
 html[data-theme="gradient"] .transaction-row,
 html[data-theme="gradient"] .activity-row,
 html[data-theme="gradient"] .transaction-item,
@@ -4684,9 +4700,102 @@ html[data-theme="gradient"] .switch input:checked+span { background:var(--gradie
 
 /* Responsive material tuning: the blur remains, while paddings/radii follow the compact UI. */
 @media (max-width:720px) {
-  html[data-theme="gradient"] .topbar { background:linear-gradient(145deg,rgba(255,255,255,.62),rgba(255,255,255,.43)); border-radius:0 0 20px 20px; }
+  html[data-theme="gradient"] .topbar {
+    background:linear-gradient(145deg,rgba(255,255,255,.86),rgba(255,255,255,.74));
+    border-radius:0 0 20px 20px;
+    border-bottom:1px solid rgba(255,255,255,.76);
+    box-shadow:0 8px 24px rgba(35,24,31,.055);
+    -webkit-backdrop-filter:blur(26px) saturate(165%);
+    backdrop-filter:blur(26px) saturate(165%);
+  }
   html[data-theme="gradient"] .sidebar { background:rgba(255,255,255,.66); }
-  html[data-theme="gradient"] .mobile-tabbar { left:12px; right:12px; bottom:calc(8px + env(safe-area-inset-bottom)); width:auto; min-height:68px; padding:6px 8px; gap:3px; }
+
+  /* In Gradient mode the collapsed header is a true compact row. Do not translate
+     the expanded two-row heading through the hidden brand row: that made ghost text
+     and content bleed visible during iOS scroll transitions. Keep the sticky root
+     filter-free for Safari; the inner surface provides the frosted material. */
+  html[data-theme="gradient"] .main-content > .topbar.is-scrolled {
+    height:56px !important;
+    min-height:56px !important;
+    flex:0 0 56px !important;
+    margin-bottom:0 !important;
+    padding:0 16px !important;
+    background:transparent !important;
+    border:0 !important;
+    box-shadow:none !important;
+    pointer-events:none;
+  }
+  html[data-theme="gradient"] .main-content > .topbar.is-scrolled::before {
+    top:0;
+    left:0;
+    right:0;
+    bottom:0;
+    opacity:1;
+    transform:none;
+    background:rgba(255,255,255,.88) !important;
+    border-bottom:1px solid rgba(255,255,255,.82);
+    box-shadow:0 7px 22px rgba(35,24,31,.075);
+    -webkit-backdrop-filter:blur(24px) saturate(165%) !important;
+    backdrop-filter:blur(24px) saturate(165%) !important;
+    -webkit-mask-image:none !important;
+    mask-image:none !important;
+  }
+  html[data-theme="gradient"] .main-content > .topbar.is-scrolled .mobile-brand {
+    display:none !important;
+    opacity:0 !important;
+    transform:none !important;
+  }
+  html[data-theme="gradient"] .main-content > .topbar.is-scrolled .page-heading {
+    position:absolute;
+    top:50%;
+    left:16px;
+    right:106px;
+    width:auto;
+    min-width:0;
+    margin:0;
+    padding:0;
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    gap:0;
+    transform:translate3d(0,-50%,0) !important;
+    pointer-events:auto;
+  }
+  html[data-theme="gradient"] .main-content > .topbar.is-scrolled .page-heading h1 {
+    display:block;
+    max-width:100%;
+    min-width:0;
+    margin:0;
+    font-size:22px;
+    line-height:1.12;
+    letter-spacing:-.7px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  html[data-theme="gradient"] .main-content > .topbar.is-scrolled .page-heading .eyebrow {
+    display:none !important;
+  }
+  html[data-theme="gradient"] .main-content > .topbar.is-scrolled .top-actions {
+    position:absolute;
+    top:9px;
+    right:16px;
+    display:flex;
+    align-items:center;
+    gap:7px;
+    margin:0;
+    transform:none;
+    pointer-events:auto;
+  }
+  html[data-theme="gradient"] .main-content > .topbar.is-scrolled .top-actions .icon-button {
+    width:38px;
+    height:38px;
+    min-width:38px;
+    min-height:38px;
+  }
+  /* Only classic navigation owns edge offsets. Smart UI has a centred transform-based
+     rail in the 2.4.43 geometry block; overriding left/right here shifted it off-screen. */
+  html[data-theme="gradient"][data-smart-ui="off"] .mobile-tabbar { left:12px; right:12px; bottom:calc(8px + env(safe-area-inset-bottom)); width:auto; min-height:68px; padding:6px 8px; gap:3px; }
   html[data-theme="gradient"] .appearance-theme-row { align-items:flex-start; flex-direction:column; gap:9px; }
   html[data-theme="gradient"] #theme-choice { width:100%; max-width:none; }
   html[data-theme="gradient"] .gradient-preset-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
@@ -4699,7 +4808,7 @@ html[data-theme="gradient"] .switch input:checked+span { background:var(--gradie
 @media (max-width:390px) {
   html[data-theme="gradient"] .gradient-preset-grid { grid-template-columns:minmax(0,1fr); }
   html[data-theme="gradient"] .gradient-preset { min-height:58px; }
-  html[data-theme="gradient"] .mobile-tabbar { left:8px; right:8px; padding-left:6px; padding-right:6px; }
+  html[data-theme="gradient"][data-smart-ui="off"] .mobile-tabbar { left:8px; right:8px; padding-left:6px; padding-right:6px; }
 }
 
 /* A graceful non-filter fallback still retains a translucent material. */
@@ -4787,3 +4896,11 @@ html[data-theme="gradient"] .switch input:checked+span { background:var(--gradie
   html[data-theme="gradient"] .icon-button,
   html[data-theme="gradient"] .round-subtle { transition:none !important; }
 }
+
+/* PocketWise 2.4.50 — narrow-phone Smart UI anchor correction.
+   The original 2.4.15 stylesheet remains byte-for-byte intact. The old max-390
+   edge insets conflicted with translateX(-50%) and pushed the fixed dock off-screen. */
+@media (max-width:390px) {
+  html[data-smart-ui="on"] .mobile-tabbar { left:50%; right:auto; }
+}
+
