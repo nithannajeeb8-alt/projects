@@ -1,6 +1,0 @@
-import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { encrypt } from "@/lib/crypto";
-import { exchangeGoogleCode, startMailboxWatch } from "@/lib/gmail";
-import { setSession } from "@/lib/session";
-export async function GET(request:NextRequest) { try { const code=request.nextUrl.searchParams.get("code"), state=request.nextUrl.searchParams.get("state"); if (!code || !state || state !== request.cookies.get("google-oauth-state")?.value) return NextResponse.redirect(new URL("/?error=oauth_state",request.url)); const account=await exchangeGoogleCode(code); const user=await db.user.upsert({where:{email:account.email},update:{name:account.name,refreshTokenEncrypted:encrypt(account.refreshToken),accessTokenEncrypted:account.accessToken ? encrypt(account.accessToken) : undefined,tokenExpiry:account.expiry},create:{email:account.email,name:account.name,refreshTokenEncrypted:encrypt(account.refreshToken),accessTokenEncrypted:account.accessToken ? encrypt(account.accessToken) : undefined,tokenExpiry:account.expiry}}); await setSession(user.id); await startMailboxWatch(user.id); const response=NextResponse.redirect(new URL("/",request.url)); response.cookies.delete("google-oauth-state"); return response; } catch { return NextResponse.redirect(new URL("/?error=google_connect",request.url)); } }

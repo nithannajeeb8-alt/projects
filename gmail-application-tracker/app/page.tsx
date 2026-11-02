@@ -1,4 +1,0 @@
-import { db } from "@/lib/db";
-import { currentUserId } from "@/lib/session";
-import Dashboard from "./workspace";
-export default async function Page() { const id=await currentUserId(); if (!id) return <main className="landing"><p className="eyebrow">PRIVATE · REVIEW-FIRST · GMAIL</p><h1>Application Sender</h1><p>Prepare individual application emails, review them, send from your own Gmail account, and see replies in one place.</p><a className="button" href="/api/auth/google">Connect Gmail securely</a><p className="note">You approve every email. This app never asks for your Gmail password, scrapes addresses, or sends a multi-recipient blast.</p></main>; const user=await db.user.findUniqueOrThrow({where:{id}}); const campaigns=await db.campaign.findMany({where:{userId:id},include:{recipients:true},orderBy:{createdAt:"desc"}}); return <Dashboard email={user.email} campaigns={JSON.parse(JSON.stringify(campaigns))}/>; }
