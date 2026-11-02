@@ -3188,63 +3188,77 @@ input[type="range"]{touch-action:pan-x pan-y;}
 }
 
 
-/* PocketWise 2.4.33 — native theme canvas + adaptive frosted scroll header.
-   The original 2.4.15 Liquid Glass rules above remain intact. This material only
-   appears after the inner app scroller moves, and fades into the page instead of
-   creating a flat rectangular blur strip. */
-html, body {
-  background-color: var(--bg);
-}
+/* PocketWise 2.4.36 — Safari-safe compact-header surface.
+   The sticky header itself never uses backdrop-filter. WebKit has documented
+   compositing problems with sticky/fixed top bars and backdrop filtering.
+   A theme-aware material layer provides depth without a second live blur. */
+html, body { background-color: var(--bg); }
 @media (max-width: 720px) {
   .main-content > .topbar {
     position: sticky;
     top: 0;
     z-index: 46;
     isolation: isolate;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
   }
+
+  html[data-liquid-glass="on"] .main-content > .topbar {
+    background: linear-gradient(145deg, var(--glass-nav), var(--glass-card-low));
+    border-bottom-color: var(--glass-border);
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
   .main-content > .topbar::before {
     content: "";
     position: absolute;
     z-index: -1;
     pointer-events: none;
-    inset: -1px -16px -34px;
+    top: 0;
+    left: -16px;
+    right: -16px;
+    height: 56px;
     opacity: 0;
+    transform: translate3d(0,-4px,0);
     background:
-      radial-gradient(ellipse at 16% 0%, color-mix(in srgb, var(--green) 13%, transparent), transparent 58%),
-      radial-gradient(ellipse at 88% 4%, color-mix(in srgb, var(--surface) 44%, transparent), transparent 64%),
+      radial-gradient(ellipse at 14% 0%, color-mix(in srgb, var(--green) 11%, transparent), transparent 62%),
       linear-gradient(180deg,
-        color-mix(in srgb, var(--bg) 84%, transparent) 0%,
-        color-mix(in srgb, var(--surface) 72%, transparent) 56%,
-        color-mix(in srgb, var(--bg) 28%, transparent) 82%,
-        transparent 100%);
-    -webkit-backdrop-filter: blur(24px) saturate(1.7);
-    backdrop-filter: blur(24px) saturate(1.7);
-    -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 58%, rgba(0,0,0,.76) 76%, transparent 100%);
-    mask-image: linear-gradient(180deg, #000 0%, #000 58%, rgba(0,0,0,.76) 76%, transparent 100%);
-    transition: opacity .22s ease;
-  }
-  .main-content > .topbar.is-scrolled::before { opacity: 1; }
-  .main-content > .topbar.is-scrolled {
-    border-bottom-color: color-mix(in srgb, var(--line) 62%, transparent);
+        color-mix(in srgb, var(--bg) 97%, var(--surface)) 0%,
+        color-mix(in srgb, var(--surface) 91%, transparent) 100%);
+    border-bottom: 1px solid color-mix(in srgb, var(--line) 78%, transparent);
+    transition: opacity .18s ease, transform .22s cubic-bezier(.22,1,.36,1);
   }
 
-  /* Liquid Glass retains the 2.4.15 nav/header material and receives a matching
-     soft colour bloom while scrolling, rather than a second opaque surface. */
+  .main-content > .topbar.is-scrolled::before {
+    opacity: 1;
+    transform: translate3d(0,0,0);
+  }
+
+  .main-content > .topbar.is-scrolled {
+    background: transparent;
+    pointer-events: none;
+  }
+
+  .main-content > .topbar.is-scrolled .page-heading,
+  .main-content > .topbar.is-scrolled .top-actions {
+    pointer-events: auto;
+  }
+
   html[data-liquid-glass="on"] .main-content > .topbar.is-scrolled::before {
     background:
-      radial-gradient(ellipse at 14% 0%, color-mix(in srgb, var(--glass-accent) 46%, transparent), transparent 62%),
-      linear-gradient(180deg, color-mix(in srgb, var(--glass-nav) 82%, transparent) 0%,
-        color-mix(in srgb, var(--glass-card-low) 64%, transparent) 70%, transparent 100%);
-    -webkit-backdrop-filter: blur(28px) saturate(1.85);
-    backdrop-filter: blur(28px) saturate(1.85);
+      radial-gradient(ellipse at 14% 0%, color-mix(in srgb, var(--glass-accent) 42%, transparent), transparent 64%),
+      linear-gradient(180deg, var(--glass-nav) 0%, color-mix(in srgb, var(--glass-card-low) 90%, transparent) 100%);
+    border-bottom-color: var(--glass-border);
   }
 }
+
 @media (max-width: 720px) and (prefers-reduced-transparency: reduce),
        (max-width: 720px) and (prefers-contrast: more) {
-  .main-content > .topbar::before {
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-    background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 96%, transparent), transparent);
+  .main-content > .topbar::before,
+  html[data-liquid-glass="on"] .main-content > .topbar::before {
+    background: var(--surface);
+    border-bottom-color: var(--line);
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -3490,106 +3504,122 @@ html[data-first-run="on"] .app-modal {
 }
 
 
-/* PocketWise 2.4.34 — compact mobile header after scrolling.
-   Reuse the existing is-scrolled state and the original header markup. At rest,
-   the full brand/date header remains unchanged. Once content moves, keep only the
-   active page title at left and the existing utility buttons at right. */
+/* PocketWise 2.4.36 — compact mobile header with stable, reversible motion.
+   The expanded header keeps its original flow size. The visible content moves
+   using transforms/opacity only; no display, height or scroll-anchor changes. */
 @media (max-width: 720px) {
   .main-content > .topbar {
-    transition:
-      padding .22s cubic-bezier(.2,.75,.25,1),
-      margin-bottom .22s cubic-bezier(.2,.75,.25,1),
-      border-color .18s ease,
-      background-color .18s ease;
+    display: block;
+    box-sizing: border-box;
+    height: 102px;
+    min-height: 102px;
+    flex: 0 0 102px;
+    margin: 0 -16px 12px;
+    padding: 0 16px;
+    overflow: visible;
   }
 
-  .main-content > .topbar.is-scrolled {
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas: "heading actions";
-    align-items: center;
-    column-gap: 12px;
-    row-gap: 0;
-    min-height: 52px;
-    margin-bottom: 10px;
-    padding-top: 7px;
-    padding-bottom: 7px;
-  }
-
-  .main-content > .topbar.is-scrolled .mobile-brand {
-    display: none;
-  }
-
-  .main-content > .topbar.is-scrolled .page-heading {
-    grid-area: heading;
+  .main-content > .topbar .mobile-brand {
+    position: absolute;
+    top: 10px;
+    left: 16px;
     display: flex;
     align-items: center;
-    justify-content: flex-start;
+    min-width: 0;
+    margin: 0;
+    opacity: 1;
+    transform: translate3d(0,0,0);
+    pointer-events: auto;
+    transition: opacity .16s ease, transform .22s cubic-bezier(.22,1,.36,1);
+  }
+
+  .main-content > .topbar .top-actions {
+    position: absolute;
+    top: 7px;
+    right: 16px;
+    display: flex;
+    align-items: center;
+    justify-self: auto;
+    gap: 7px;
+    margin: 0;
+    transform: translate3d(0,0,0);
+  }
+
+  .main-content > .topbar .top-actions .icon-button {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    min-height: 38px;
+    border-radius: 12px;
+  }
+
+  .main-content > .topbar .page-heading {
+    position: absolute;
+    top: 59px;
+    left: 16px;
+    right: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     width: auto;
     min-width: 0;
     margin: 0;
     padding: 0;
-    gap: 0;
+    gap: 12px;
+    transform: translate3d(0,0,0);
+    transition: transform .22s cubic-bezier(.22,1,.36,1);
   }
 
-  .main-content > .topbar.is-scrolled .page-heading h1 {
+  .main-content > .topbar .page-heading h1 {
     min-width: 0;
-    font-size: 18px;
+    margin: 0;
+    font-size: 23px;
     line-height: 1.15;
-    letter-spacing: -.45px;
+    letter-spacing: -.8px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    transition: font-size .2s cubic-bezier(.2,.75,.25,1), letter-spacing .2s ease;
+  }
+
+  .main-content > .topbar .page-heading .eyebrow {
+    display: block;
+    flex: 0 0 auto;
+    opacity: 1;
+    transform: translate3d(0,0,0);
+    pointer-events: auto;
+    transition: opacity .14s ease, transform .18s cubic-bezier(.22,1,.36,1);
+  }
+
+  .main-content > .topbar.is-scrolled .mobile-brand {
+    opacity: 0;
+    transform: translate3d(0,-8px,0);
+    pointer-events: none;
+  }
+
+  .main-content > .topbar.is-scrolled .page-heading {
+    transform: translate3d(0,-48px,0);
+    gap: 0;
   }
 
   .main-content > .topbar.is-scrolled .page-heading .eyebrow {
-    display: none;
-  }
-
-  .main-content > .topbar.is-scrolled .top-actions {
-    grid-area: actions;
-    justify-self: end;
-    align-self: center;
-    gap: 6px;
-    margin: 0;
-  }
-
-  .main-content > .topbar.is-scrolled .top-actions .top-add {
-    display: none !important;
-  }
-
-  .main-content > .topbar.is-scrolled .top-actions .icon-button {
-    width: 36px;
-    height: 36px;
-    min-width: 36px;
-    min-height: 36px;
-    padding: 0;
-    border-radius: 11px;
-  }
-
-  .main-content > .topbar.is-scrolled .top-actions .icon-wrap {
-    width: 18px;
-    height: 18px;
-  }
-
-  .main-content > .topbar.is-scrolled .top-actions .icon-fallback {
-    width: 17px;
-    height: 17px;
+    opacity: 0;
+    transform: translate3d(6px,0,0);
+    pointer-events: none;
   }
 }
 
 @media (max-width: 390px) {
-  .main-content > .topbar.is-scrolled {
-    margin-left: -12px;
-    margin-right: -12px;
-    padding-left: 12px;
-    padding-right: 12px;
-  }
+  .main-content > .topbar { margin-left: -12px; margin-right: -12px; }
+  .main-content > .topbar .mobile-brand,
+  .main-content > .topbar .page-heading { left: 12px; }
+  .main-content > .topbar .top-actions { right: 12px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .main-content > .topbar,
-  .main-content > .topbar .page-heading h1 {
+  .main-content > .topbar *,
+  .main-content > .topbar::before {
     transition: none !important;
+    animation: none !important;
   }
 }

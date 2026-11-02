@@ -345,14 +345,62 @@
     downloadBlob(`pocketwise-storage-recovery-${today()}.json`,new Blob([JSON.stringify(recoverySnapshot,null,2)],{type:'application/json'}));
     toast('Storage recovery snapshot exported. Keep it private and do not overwrite your regular backup.');
   }
+  let resetAdaptiveHeaderSurface=()=>{};
   function initAdaptiveHeaderSurface(){
     const scroller=$('.main-content');
     const header=$('.main-content > .topbar');
     if(!scroller||!header||header.dataset.scrollSurfaceReady==='true')return;
     header.dataset.scrollSurfaceReady='true';
-    const update=()=>header.classList.toggle('is-scrolled',scroller.scrollTop>10);
+
+    // The inner .main-content element is the real iPhone scroll viewport.
+    // Keep scroll work cheap: read one number, then write only on state changes.
+    // A wide hysteresis band prevents bounce/trackpad noise from reopening the header.
+    const collapseAt=56;
+    const expandAt=20;
+    const mobileQuery=window.matchMedia('(max-width: 720px)');
+    const brand=header.querySelector('.mobile-brand');
+    const date=header.querySelector('.page-heading .eyebrow');
+    let collapsed=false;
+    header.setAttribute('data-header-state','expanded');
+    if(brand)brand.setAttribute('aria-hidden','false');
+    if(date)date.setAttribute('aria-hidden','false');
+
+    const applyState=()=>{
+      const isChanged=header.classList.contains('is-scrolled')!==collapsed;
+      if(!isChanged)return;
+      header.classList.toggle('is-scrolled',collapsed);
+      header.setAttribute('data-header-state',collapsed?'compact':'expanded');
+      if(brand)brand.setAttribute('aria-hidden',collapsed?'true':'false');
+      if(date)date.setAttribute('aria-hidden',collapsed?'true':'false');
+    };
+    const update=()=>{
+      if(!mobileQuery.matches){
+        collapsed=false;
+        applyState();
+        return;
+      }
+      const scrollTop=Math.max(0,Number(scroller.scrollTop)||0);
+      if(!collapsed&&scrollTop>=collapseAt)collapsed=true;
+      else if(collapsed&&scrollTop<=expandAt)collapsed=false;
+      applyState();
+    };
+    resetAdaptiveHeaderSurface=()=>{
+      collapsed=false;
+      if(header.classList.contains('is-scrolled'))header.classList.remove('is-scrolled');
+      header.setAttribute('data-header-state','expanded');
+      if(brand)brand.setAttribute('aria-hidden','false');
+      if(date)date.setAttribute('aria-hidden','false');
+    };
+    const onViewportChange=()=>{
+      if(!mobileQuery.matches)resetAdaptiveHeaderSurface();
+      else update();
+    };
+
     scroller.addEventListener('scroll',update,{passive:true});
-    update();
+    window.addEventListener('resize',onViewportChange,{passive:true});
+    if(typeof mobileQuery.addEventListener==='function')mobileQuery.addEventListener('change',onViewportChange);
+    else if(typeof mobileQuery.addListener==='function')mobileQuery.addListener(onViewportChange);
+    onViewportChange();
   }
   async function initialise(){
     try { localStorage.removeItem('pocketwise-sync-v1'); } catch {}
@@ -543,7 +591,7 @@
     openModal('Privacy & your data',`<div class="modal-body privacy-page-content"><div class="privacy-callout"><strong>Privacy notice · Updated 2 November 2026</strong><p>Review how PocketWise stores records locally, what optional network requests occur, and the controls available to you.</p></div><div class="pw-privacy-policy">${policy}</div><div class="form-actions"><button class="primary-button" type="button" id="privacy-done">I understand</button></div></div>`,'LOCAL-FIRST · STORED IN THIS BROWSER');
   }
   function updateDateHeader(){const now=new Date();const date=$('#date-eyebrow');if(date)date.textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});}
-  function setPage(page){if(!['home','activity','insights','settings'].includes(page))page='home';currentPage=page;const root=document.documentElement,previousScrollBehavior=root.style.scrollBehavior;root.style.scrollBehavior='auto';window.scrollTo(0,0);$$('.page').forEach(p=>p.classList.toggle('active',p.dataset.pagePanel===page));$$('[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===page));const heads={home:'Overview',activity:'Activity',insights:'Insights',settings:'Settings'};$('#page-title').textContent=heads[page];$('#page-title').parentElement.style.display='';try{renderPage(page);syncSmartNavIndicator();}finally{root.style.scrollBehavior=previousScrollBehavior;}}
+  function setPage(page){if(!['home','activity','insights','settings'].includes(page))page='home';currentPage=page;const root=document.documentElement,previousScrollBehavior=root.style.scrollBehavior;root.style.scrollBehavior='auto';const scroller=$('.main-content');if(scroller)scroller.scrollTop=0;else window.scrollTo(0,0);resetAdaptiveHeaderSurface();$$('.page').forEach(p=>p.classList.toggle('active',p.dataset.pagePanel===page));$$('[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===page));const heads={home:'Overview',activity:'Activity',insights:'Insights',settings:'Settings'};$('#page-title').textContent=heads[page];$('#page-title').parentElement.style.display='';try{renderPage(page);syncSmartNavIndicator();}finally{root.style.scrollBehavior=previousScrollBehavior;}}
   function applyHiddenAmounts(){document.body.classList.toggle('hide-amounts',hiddenAmounts||state.settings.hideBalances);$('#hide-balances').setAttribute('aria-label',(hiddenAmounts||state.settings.hideBalances)?'Show balances':'Hide balances');}
   // Compute the two outer-ring segments from this month's totals. In a loss
   // state the complete outer arc becomes red, so a large leftover grey section
