@@ -3973,91 +3973,6 @@ html.pw-screen-restricted .app-shell, html.pw-screen-restricted .mobile-tabbar {
 @media (prefers-reduced-motion:reduce) { .quick-paste-grid>button, .pw-upload-button { transition:none !important; } }
 
 
-/* PocketWise 2.4.44 — match the floating glass navigation reference.
-   Keep the dock geometry fixed; only the selected surface is reshaped. */
-@media (max-width: 720px) {
-  html[data-smart-ui="on"] .mobile-tabbar,
-  html[data-theme="dark"][data-smart-ui="on"] .mobile-tabbar,
-  html[data-liquid-glass="on"][data-smart-ui="on"] .mobile-tabbar,
-  html[data-theme="dark"][data-liquid-glass="on"][data-smart-ui="on"] .mobile-tabbar {
-    border: 0 !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    -webkit-backdrop-filter: none !important;
-    backdrop-filter: none !important;
-    overflow: visible !important;
-  }
-
-  html[data-smart-ui="on"] .mobile-tabbar::before,
-  html[data-theme="dark"][data-smart-ui="on"] .mobile-tabbar::before,
-  html[data-liquid-glass="on"][data-smart-ui="on"] .mobile-tabbar::before,
-  html[data-theme="dark"][data-liquid-glass="on"][data-smart-ui="on"] .mobile-tabbar::before {
-    background: linear-gradient(180deg, rgba(43,45,49,.80), rgba(17,18,21,.88)) !important;
-    border: 1px solid rgba(255,255,255,.13) !important;
-    border-top-color: rgba(255,255,255,.18) !important;
-    border-radius: 999px;
-    box-shadow: 0 14px 36px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.10), inset 0 -1px 0 rgba(0,0,0,.38) !important;
-    -webkit-backdrop-filter: blur(28px) saturate(155%) !important;
-    backdrop-filter: blur(28px) saturate(155%) !important;
-  }
-
-  /* The 42px selection sits inside the 52px collapsed capsule. Scale is
-     horizontal only, so the active tile is a soft rounded rectangle, not a disk. */
-  html[data-smart-ui="on"] .smart-nav-indicator,
-  html[data-theme="dark"][data-smart-ui="on"] .smart-nav-indicator,
-  html[data-liquid-glass="on"][data-smart-ui="on"] .smart-nav-indicator,
-  html[data-theme="dark"][data-liquid-glass="on"][data-smart-ui="on"] .smart-nav-indicator {
-    height: 42px !important;
-    translate: 0 2px;
-    scale: 1.10 1;
-    border: 1px solid rgba(255,255,255,.085) !important;
-    border-radius: 999px;
-    background: linear-gradient(180deg, rgba(137,141,148,.42), rgba(112,116,123,.35)) !important;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.13), inset 0 -1px 0 rgba(0,0,0,.13) !important;
-    -webkit-backdrop-filter: blur(12px) saturate(125%);
-    backdrop-filter: blur(12px) saturate(125%);
-  }
-
-  html[data-smart-ui="on"] .mobile-tab,
-  html[data-theme="dark"][data-smart-ui="on"] .mobile-tab,
-  html[data-liquid-glass="on"][data-smart-ui="on"] .mobile-tab,
-  html[data-theme="dark"][data-liquid-glass="on"][data-smart-ui="on"] .mobile-tab {
-    color: rgba(255,255,255,.91) !important;
-    background: transparent !important;
-    border-color: transparent !important;
-    box-shadow: none !important;
-  }
-
-  html[data-smart-ui="on"] .mobile-tab.active,
-  html[data-theme="dark"][data-smart-ui="on"] .mobile-tab.active,
-  html[data-liquid-glass="on"][data-smart-ui="on"] .mobile-tab.active,
-  html[data-theme="dark"][data-liquid-glass="on"][data-smart-ui="on"] .mobile-tab.active {
-    color: #fff !important;
-  }
-
-  html[data-smart-ui="on"] .mobile-tab small { display: none !important; }
-}
-
-@media (max-width: 720px) and (prefers-reduced-transparency: reduce),
-       (max-width: 720px) and (prefers-contrast: more) {
-  html[data-smart-ui="on"] .mobile-tabbar::before,
-  html[data-liquid-glass="on"][data-smart-ui="on"] .mobile-tabbar::before {
-    background: rgba(18,19,22,.97) !important;
-    border-color: rgba(255,255,255,.25) !important;
-    -webkit-backdrop-filter: none !important;
-    backdrop-filter: none !important;
-  }
-
-  html[data-smart-ui="on"] .smart-nav-indicator,
-  html[data-liquid-glass="on"][data-smart-ui="on"] .smart-nav-indicator {
-    background: rgba(135,139,146,.64) !important;
-    border-color: rgba(255,255,255,.2) !important;
-    -webkit-backdrop-filter: none !important;
-    backdrop-filter: none !important;
-  }
-}
-
-
 /* 2.4.44 · currency values remain legible without forcing cards to grow. */
 .balance-number.pw-large-money,
 .money-stats strong.pw-large-money,
@@ -4110,3 +4025,146 @@ html.pw-screen-restricted .app-shell, html.pw-screen-restricted .mobile-tabbar {
 .balance-number.pw-large-money { font-size:clamp(25px,6.5vw,35px) !important; }
 .goal-amount.pw-large-money { font-size:clamp(12px,3vw,16px) !important; }
 .goal-insight-grid strong.pw-large-money { font-size:clamp(9px,2.8vw,13px) !important; }
+
+
+/* PocketWise 2.4.46 — Smart UI restoration and Android settings alignment.
+   Keep platform-specific layout adjustments after the protected original design. */
+@media (max-width: 700px) {
+  html.is-android .quick-paste-grid.single-action {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: stretch;
+  }
+  html.is-android .quick-paste-grid.single-action > #paste-bank-sms-quick {
+    grid-column: 1 / -1 !important;
+    justify-self: stretch;
+    width: 100%;
+    max-width: none;
+    text-align: center;
+    min-height: 48px;
+    margin-inline: auto;
+  }
+  html.is-android #pw-toggle-sms {
+    display: flex;
+    width: fit-content;
+    max-width: 100%;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    min-height: 48px;
+    padding: 10px 14px;
+    margin: 10px auto;
+  }
+  html.is-android #pw-parse-payment {
+    width: 100%;
+    min-height: 48px;
+    text-align: center;
+  }
+  .settings-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .settings-layout > .settings-appearance-card { order: -2; }
+  .settings-layout > .settings-reminders-card { order: -1; }
+  .settings-layout > .settings-profile-card { order: 0; }
+  .settings-layout > .daily-story-settings-card { order: 1; }
+  .settings-layout > .settings-activities-card { order: 2; }
+  .settings-layout > .settings-card:nth-child(6) { order: 3; }
+  .settings-layout > .data-card { order: 4; }
+  .settings-layout > .danger-card { order: 5; }
+  .settings-layout .settings-section-title h3 {
+    font-size: 16px;
+    line-height: 1.3;
+  }
+  .settings-layout .settings-section-title p,
+  .settings-layout .settings-description {
+    font-size: 12px;
+    line-height: 1.45;
+  }
+  .settings-layout .setting-row strong,
+  .settings-layout .setting-row label,
+  .settings-layout .setting-row-title {
+    font-size: 14px;
+    line-height: 1.35;
+  }
+  .settings-layout .setting-row small,
+  .settings-layout .setting-row .muted {
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .settings-layout button,
+  .settings-layout .setting-action,
+  .settings-layout select,
+  .settings-layout input:not([type="checkbox"]):not([type="radio"]) {
+    min-height: 48px;
+  }
+  .settings-layout .setting-row > button,
+  .settings-layout .setting-row > .setting-action {
+    flex: 0 0 auto;
+    min-width: 48px;
+    min-height: 48px;
+    margin-inline-start: auto;
+  }
+  .settings-layout .switch,
+  .settings-layout .switch-label,
+  .settings-layout label:has(input[type="checkbox"]) {
+    min-width: 48px;
+    min-height: 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .settings-layout .switch span {
+    inset: auto;
+    width: 40px;
+    height: 24px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+  .settings-layout .switch span:before {
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+  }
+  .settings-layout .switch input:checked + span:before {
+    transform: translateX(16px);
+  }
+  .settings-layout .segmented button {
+    min-height: 48px;
+    padding: 9px 12px;
+    font-size: 12px;
+  }
+  .settings-layout .quiet-hours {
+    gap: 8px;
+    font-size: 12px;
+  }
+  .settings-layout .quiet-hours input {
+    min-height: 48px;
+    width: 96px;
+    padding: 8px;
+    font-size: 12px;
+  }
+  .settings-layout .setting-inline output {
+    font-size: 12px;
+  }
+  .settings-layout .backup-status strong {
+    font-size: 13px;
+  }
+  .settings-layout .backup-status small,
+  .settings-layout .fine-print {
+    font-size: 12px;
+  }
+}
+@media (max-width: 380px) {
+  .settings-layout .setting-row > button,
+  .settings-layout .setting-row > .setting-action {
+    min-width: 48px;
+    font-size: 12px;
+  }
+}
+html.is-android #apple-image-shortcut-setting {
+  display: none !important;
+}
