@@ -1,8 +1,8 @@
 {
   "name": "pocketwise-alpha2",
-  "version": "2.4.33",
+  "version": "2.4.44",
   "private": true,
-  "description": "PocketWise local-first finance PWA with restored 2.4.15 Liquid Glass styling, adaptive mobile header, theme-aware iOS status area and first-run privacy onboarding",
+  "description": "PocketWise local-first finance PWA with mobile UX refinement, stable Smart UI navigation and improved savings goals",
   "scripts": {
     "test": "node --test tests/*.test.js",
     "build:wasm": "bash scripts/build-wasm.sh",

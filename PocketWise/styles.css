@@ -3814,3 +3814,299 @@ html[data-first-run="on"] .app-modal {
     will-change: auto;
   }
 }
+
+
+/* PocketWise 2.4.44 · Mobile-first visual hierarchy and layout hardening */
+@media (max-width:720px) {
+  .main-content { padding-bottom:calc(136px + env(safe-area-inset-bottom,0px)) !important; }
+  .app-footer { display:none !important; }
+  .quick-flow h3 { font-size:clamp(27px,7vw,34px); line-height:1.08; letter-spacing:-.045em; margin:14px 0 8px; }
+  .quick-flow > .muted { max-width:34ch; font-size:13px; line-height:1.45; margin:0 0 18px; }
+  .quick-flow .quick-next { min-height:58px; margin-top:12px; font-size:16px; font-weight:800; }
+  .quick-paste-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:9px; }
+  .quick-paste-grid > button { display:flex; align-items:center; justify-content:center; min-width:0; min-height:42px; padding:8px 7px; border-radius:13px; font-size:11px; line-height:1.2; white-space:normal; }
+  #paste-shortcut-quick { grid-column:1; }
+  #paste-bank-sms-quick { grid-column:2; }
+  .quick-paste-grid.single-action > button { grid-column:1/-1; }
+  .quick-manual-key { display:block; width:100%; margin-top:10px; font-size:12px; }
+  .quick-cancel { margin-top:10px; }
+  .pw-import { gap:14px; }
+  .pw-import-intro { margin:0 0 2px; }
+  .pw-import-intro .section-kicker { display:block; margin-bottom:7px; }
+  .pw-import-intro h3 { margin:0 0 6px; font-size:25px; letter-spacing:-.04em; }
+  .pw-import-intro p { margin:0; max-width:34ch; color:var(--muted); font-size:12px; line-height:1.45; }
+  .pw-import .pw-statement-entry { min-height:52px; padding:10px 12px; font-size:12px; }
+  .pw-upload-zone { padding:10px; border-radius:18px; }
+  .pw-upload-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+  .pw-upload-button { min-width:0; min-height:120px; padding:12px 7px; border-radius:14px; gap:6px; }
+  .pw-upload-symbol { width:34px; height:34px; border-radius:11px; font-size:21px; }
+  .pw-upload-button strong { font-size:11px; }
+  .pw-upload-button small { font-size:9px; text-align:center; }
+  #pw-run-ocr { width:100%; min-height:48px; }
+  .pw-import .fine-print { margin:2px 0 0; }
+  .receipt-picker-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  .receipt-picker-actions button { min-width:0; min-height:43px; padding:8px 6px; font-size:11px; }
+  .receipt-picker small { display:block; margin-top:7px; line-height:1.4; }
+  .event-planner-hub { gap:10px !important; }
+  .event-planner-hub .shared-cost-intro { padding:13px 14px; }
+  .event-planner-hub .shared-cost-intro p { font-size:11px; line-height:1.45; }
+  .event-planner-hub #event-plan-new { min-height:48px; }
+  .event-planner-choice .quick-choice-icon, #start-event-planner .quick-choice-icon { width:36px !important; height:36px !important; min-width:36px !important; font-size:16px !important; border-radius:11px !important; }
+  .event-planner-form { gap:13px; }
+  .event-planner-form .shared-cost-intro { padding:12px 14px; }
+  .event-planner-form .shared-cost-intro p { margin:4px 0 0; font-size:10px; line-height:1.4; }
+  .event-planner-section { padding:12px; border-radius:15px; }
+  .event-planner-section-heading { align-items:center; gap:8px; }
+  .event-planner-section-heading small { display:block; max-width:34ch; font-size:10px; line-height:1.4; }
+  .event-category-card, .event-group-card { padding:10px; }
+  .event-planner-form .form-grid { gap:10px; }
+  .settings-layout { max-width:100%; }
+  .settings-card { padding:15px 14px; border-radius:17px; }
+  .settings-section-title { display:grid; grid-template-columns:38px minmax(0,1fr); align-items:center; gap:10px; padding-bottom:12px; }
+  .settings-icon { width:36px; height:36px; border-radius:11px; }
+  .settings-section-title h3 { font-size:14px; line-height:1.25; }
+  .settings-section-title p { margin-top:3px; font-size:10px; line-height:1.4; }
+  .setting-row { align-items:center; gap:10px; padding:12px 0; }
+  .setting-row > div:first-child { flex:1 1 auto; min-width:0; }
+  .setting-row strong { font-size:11px; line-height:1.35; }
+  .setting-row small { max-width:44ch; font-size:9px; line-height:1.45; }
+  .setting-row > button, .setting-row > a, .setting-row > span.status-pill { flex:0 0 auto; max-width:46%; }
+  .pw-local-ai-actions { display:flex; flex-wrap:wrap; gap:6px; }
+  .pw-local-ai-actions button { min-height:36px; padding:7px 9px; font-size:10px; }
+  .goal-card-item { display:grid; gap:11px; padding:14px; border:1px solid var(--line); border-radius:16px; background:var(--surface); }
+  .goal-card-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+  .goal-title-group { display:grid; gap:5px; min-width:0; }
+  .goal-title-group > strong { font-size:14px; line-height:1.3; overflow-wrap:anywhere; }
+  .goal-amount { font-size:13px; font-weight:800; font-variant-numeric:tabular-nums; text-align:right; }
+  .goal-priority { width:max-content; padding:3px 7px; border-radius:8px; font-size:9px; font-weight:750; background:var(--surface-2); color:var(--muted); }
+  .goal-priority.priority-high { color:var(--red); background:color-mix(in srgb,var(--red) 10%,var(--surface)); }
+  .goal-priority.priority-medium { color:var(--green); background:var(--green-soft); }
+  .goal-progress-track { height:9px; overflow:hidden; background:var(--surface-3); border-radius:20px; }
+  .goal-progress-track span { display:block; height:100%; background:linear-gradient(90deg,var(--green),color-mix(in srgb,var(--green) 68%,#8ad9a8)); border-radius:inherit; }
+  .goal-amount-meta { display:flex; align-items:center; justify-content:space-between; gap:7px; color:var(--muted); font-size:9px; }
+  .goal-amount-meta strong { color:var(--ink); font-size:10px; font-variant-numeric:tabular-nums; }
+  .goal-milestones { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+  .goal-milestone { display:flex; align-items:center; gap:5px; color:var(--muted); font-size:9px; }
+  .goal-milestone i { width:7px; height:7px; border:1px solid var(--line-strong,var(--line)); border-radius:50%; background:transparent; }
+  .goal-milestone.reached { color:var(--green); font-weight:750; }
+  .goal-milestone.reached i { background:var(--green); border-color:var(--green); box-shadow:0 0 0 3px var(--green-soft); }
+  .goal-insight-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; padding:10px 0; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+  .goal-insight-grid > div { display:grid; align-content:start; gap:4px; min-width:0; }
+  .goal-insight-grid small { color:var(--muted); font-size:8px; line-height:1.35; }
+  .goal-insight-grid strong { font-size:10px; line-height:1.3; overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
+  .goal-pace.ahead, .goal-pace.complete { color:var(--green); }
+  .goal-pace.on-track { color:var(--ink); }
+  .goal-pace.behind { color:var(--red); }
+  .goal-due-label { color:var(--muted); font-size:9px; }
+  .goal-card-footer { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+  .goal-actions { display:flex; align-items:center; gap:6px; }
+  .goal-actions .mini-button { width:34px; height:34px; }
+  .goal-contribution-summary { display:grid; gap:3px; padding:13px; border-radius:14px; background:var(--green-soft); }
+  .goal-contribution-summary small { color:var(--muted); font-size:10px; }
+  .goal-contribution-summary strong { font-size:22px; font-variant-numeric:tabular-nums; }
+  .goal-contribution-summary span { color:var(--muted); font-size:10px; }
+  .goal-history-heading { display:flex; justify-content:space-between; align-items:center; margin:15px 0 8px; font-size:12px; }
+  .goal-history-heading span { color:var(--muted); font-size:10px; }
+  .goal-history-list { display:grid; gap:0; }
+  .goal-history-item { display:grid; grid-template-columns:28px minmax(0,1fr) auto; align-items:center; gap:9px; padding:10px 0; border-bottom:1px solid var(--line); }
+  .goal-history-sign { display:grid; place-items:center; width:27px; height:27px; border-radius:9px; font-weight:800; }
+  .goal-history-sign.contribution { color:var(--green); background:var(--green-soft); }
+  .goal-history-sign.withdraw { color:var(--red); background:color-mix(in srgb,var(--red) 10%,var(--surface)); }
+  .goal-history-item span:nth-child(2) { display:grid; gap:3px; min-width:0; }
+  .goal-history-item strong, .goal-history-item b { font-size:11px; }
+  .goal-history-item small { color:var(--muted); font-size:9px; overflow-wrap:anywhere; }
+  .goal-history-item b { font-variant-numeric:tabular-nums; }
+}
+@media (max-width:390px) {
+  .quick-paste-grid { gap:6px; }
+  .quick-paste-grid > button { font-size:10px; padding-inline:5px; }
+  .pw-upload-actions { gap:7px; }
+  .pw-upload-button { min-height:108px; }
+  .goal-insight-grid { gap:5px; }
+  .goal-insight-grid strong { font-size:9px; }
+  .goal-amount-meta { font-size:8px; }
+}
+/* Native date/time controls stay inside the modal grid on iOS, Android and desktop. */
+.form-grid, .form-field, .transaction-entry-section, .modal-body, .app-modal { min-width:0; }
+.form-field input[type="date"], .form-field input[type="datetime-local"], .form-field input[type="time"], .form-field input[type="month"], .form-grid input[type="date"], .form-grid input[type="datetime-local"] { display:block; width:100%; min-width:0; max-width:100%; box-sizing:border-box; }
+.form-field input[type="date"], .form-field input[type="datetime-local"] { overflow:hidden; text-overflow:clip; }
+.app-modal { box-sizing:border-box; max-width:calc(100vw - 24px); }
+.event-planner-form input, .event-planner-form select { min-width:0; max-width:100%; box-sizing:border-box; }
+/* A calmer floating dock: no stacked edge strokes around a translucent capsule. */
+@media (max-width:720px) {
+  html[data-smart-ui="on"] .mobile-tabbar { border:0 !important; background:transparent !important; box-shadow:none !important; overflow:visible !important; }
+  html[data-smart-ui="on"] .mobile-tabbar::before { border:1px solid color-mix(in srgb,var(--ink) 12%,transparent) !important; border-top-color:color-mix(in srgb,var(--ink) 16%,transparent) !important; box-shadow:0 12px 32px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.08) !important; -webkit-backdrop-filter:blur(26px) saturate(155%) !important; backdrop-filter:blur(26px) saturate(155%) !important; }
+  html[data-smart-ui="on"] .smart-nav-indicator { border:1px solid color-mix(in srgb,var(--green) 20%,transparent) !important; box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 3px 12px rgba(0,0,0,.14) !important; }
+  html[data-liquid-glass="on"][data-smart-ui="on"] .mobile-tabbar::before { border-color:color-mix(in srgb,var(--ink) 10%,transparent) !important; box-shadow:0 12px 34px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.065) !important; }
+  html[data-liquid-glass="on"][data-smart-ui="on"] .smart-nav-indicator { border-color:transparent !important; box-shadow:0 3px 12px rgba(0,0,0,.13) !important; }
+}
+@media (prefers-reduced-transparency:reduce), (prefers-contrast:more) {
+  html[data-smart-ui="on"] .mobile-tabbar::before { -webkit-backdrop-filter:none !important; backdrop-filter:none !important; background:var(--surface) !important; border-color:var(--line-strong,var(--line)) !important; }
+  html[data-smart-ui="on"] .smart-nav-indicator { -webkit-backdrop-filter:none !important; backdrop-filter:none !important; }
+}
+.pw-large-money { font-variant-numeric:tabular-nums; letter-spacing:-.035em !important; }
+.balance-number.pw-large-money { font-size:clamp(25px,6.5vw,35px) !important; line-height:1.1; }
+.money-stats strong.pw-large-money, .metric-card>strong.pw-large-money, .goal-insight-grid strong.pw-large-money { font-size:clamp(14px,3.7vw,19px) !important; line-height:1.2; }
+.goal-amount.pw-large-money { font-size:clamp(12px,3vw,16px) !important; }
+[data-money].pw-large-money { overflow-wrap:anywhere; }
+/* Consistent settings section grid and labels. */
+.settings-section-title { display:grid; grid-template-columns:42px minmax(0,1fr); align-items:center; gap:12px; }
+.settings-section-title>div { min-width:0; }
+.setting-row>div:first-child { min-width:0; }
+.setting-row strong { line-height:1.35; }
+/* Event planner icon scale and denser structural hierarchy outside phone widths too. */
+#start-event-planner .quick-choice-icon { width:38px !important; height:38px !important; min-width:38px !important; font-size:17px !important; }
+.event-planner-hub { gap:14px; }
+.event-planner-hub .shared-cost-intro p, .event-planner-form .shared-cost-intro p { line-height:1.45; }
+.event-planner-section { min-width:0; }
+/* Accessible desktop notice is independent from the app shell and receives keyboard focus. */
+.pw-screen-limit[hidden] { display:none !important; }
+.pw-screen-limit { position:fixed; inset:0; z-index:2147483646; display:grid; place-items:center; box-sizing:border-box; padding:clamp(18px,4vw,40px); overflow:auto; overscroll-behavior:contain; color:var(--ink); background:var(--page,var(--bg,var(--surface))); background-image:radial-gradient(ellipse at 50% 18%,color-mix(in srgb,var(--green) 12%,transparent),transparent 55%); }
+.pw-screen-limit-card { width:min(100%,430px); box-sizing:border-box; padding:clamp(24px,4vw,36px); border:1px solid var(--line); border-radius:25px; background:color-mix(in srgb,var(--surface) 92%,transparent); box-shadow:0 24px 80px rgba(0,0,0,.18); -webkit-backdrop-filter:blur(24px) saturate(1.25); backdrop-filter:blur(24px) saturate(1.25); }
+.pw-screen-limit-mark { display:grid; place-items:center; width:44px; height:44px; margin-bottom:22px; border-radius:14px; background:var(--green); color:#071b0e; font-weight:900; letter-spacing:-.06em; }
+.pw-screen-limit-kicker { margin:0 0 9px; color:var(--green); font-size:10px; font-weight:850; letter-spacing:.13em; }
+.pw-screen-limit-card h1 { margin:0; font-size:clamp(26px,4vw,34px); line-height:1.12; letter-spacing:-.04em; }
+.pw-screen-limit-card p:not(.pw-screen-limit-kicker) { color:var(--muted); font-size:14px; line-height:1.6; }
+.pw-screen-limit-card .pw-screen-limit-hint { padding-top:14px; border-top:1px solid var(--line); font-size:12px !important; }
+html.pw-screen-restricted, html.pw-screen-restricted body { min-height:100%; overflow:hidden !important; }
+html.pw-screen-restricted .app-shell, html.pw-screen-restricted .mobile-tabbar { visibility:hidden !important; pointer-events:none !important; }
+@media (prefers-reduced-motion:reduce) { .quick-paste-grid>button, .pw-upload-button { transition:none !important; } }
+
+
+/* PocketWise 2.4.44 — match the floating glass navigation reference.
+   Keep the dock geometry fixed; only the selected surface is reshaped. */
+@media (max-width: 720px) {
+  html[data-smart-ui="on"] .mobile-tabbar,
+  html[data-theme="dark"][data-smart-ui="on"] .mobile-tabbar,
+  html[data-liquid-glass="on"][data-smart-ui="on"] .mobile-tabbar,
+  html[data-theme="dark"][data-liquid-glass="on"][data-smart-ui="on"] .mobile-tabbar {
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    overflow: visible !important;
+  }
+
+  html[data-smart-ui="on"] .mobile-tabbar::before,
+  html[data-theme="dark"][data-smart-ui="on"] .mobile-tabbar::before,
+  html[data-liquid-glass="on"][data-smart-ui="on"] .mobile-tabbar::before,
+  html[data-theme="dark"][data-liquid-glass="on"][data-smart-ui="on"] .mobile-tabbar::before {
+    background: linear-gradient(180deg, rgba(43,45,49,.80), rgba(17,18,21,.88)) !important;
+    border: 1px solid rgba(255,255,255,.13) !important;
+    border-top-color: rgba(255,255,255,.18) !important;
+    border-radius: 999px;
+    box-shadow: 0 14px 36px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.10), inset 0 -1px 0 rgba(0,0,0,.38) !important;
+    -webkit-backdrop-filter: blur(28px) saturate(155%) !important;
+    backdrop-filter: blur(28px) saturate(155%) !important;
+  }
+
+  /* The 42px selection sits inside the 52px collapsed capsule. Scale is
+     horizontal only, so the active tile is a soft rounded rectangle, not a disk. */
+  html[data-smart-ui="on"] .smart-nav-indicator,
+  html[data-theme="dark"][data-smart-ui="on"] .smart-nav-indicator,
+  html[data-liquid-glass="on"][data-smart-ui="on"] .smart-nav-indicator,
+  html[data-theme="dark"][data-liquid-glass="on"][data-smart-ui="on"] .smart-nav-indicator {
+    height: 42px !important;
+    translate: 0 2px;
+    scale: 1.10 1;
+    border: 1px solid rgba(255,255,255,.085) !important;
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(137,141,148,.42), rgba(112,116,123,.35)) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.13), inset 0 -1px 0 rgba(0,0,0,.13) !important;
+    -webkit-backdrop-filter: blur(12px) saturate(125%);
+    backdrop-filter: blur(12px) saturate(125%);
+  }
+
+  html[data-smart-ui="on"] .mobile-tab,
+  html[data-theme="dark"][data-smart-ui="on"] .mobile-tab,
+  html[data-liquid-glass="on"][data-smart-ui="on"] .mobile-tab,
+  html[data-theme="dark"][data-liquid-glass="on"][data-smart-ui="on"] .mobile-tab {
+    color: rgba(255,255,255,.91) !important;
+    background: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+  }
+
+  html[data-smart-ui="on"] .mobile-tab.active,
+  html[data-theme="dark"][data-smart-ui="on"] .mobile-tab.active,
+  html[data-liquid-glass="on"][data-smart-ui="on"] .mobile-tab.active,
+  html[data-theme="dark"][data-liquid-glass="on"][data-smart-ui="on"] .mobile-tab.active {
+    color: #fff !important;
+  }
+
+  html[data-smart-ui="on"] .mobile-tab small { display: none !important; }
+}
+
+@media (max-width: 720px) and (prefers-reduced-transparency: reduce),
+       (max-width: 720px) and (prefers-contrast: more) {
+  html[data-smart-ui="on"] .mobile-tabbar::before,
+  html[data-liquid-glass="on"][data-smart-ui="on"] .mobile-tabbar::before {
+    background: rgba(18,19,22,.97) !important;
+    border-color: rgba(255,255,255,.25) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  html[data-smart-ui="on"] .smart-nav-indicator,
+  html[data-liquid-glass="on"][data-smart-ui="on"] .smart-nav-indicator {
+    background: rgba(135,139,146,.64) !important;
+    border-color: rgba(255,255,255,.2) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}
+
+
+/* 2.4.44 · currency values remain legible without forcing cards to grow. */
+.balance-number.pw-large-money,
+.money-stats strong.pw-large-money,
+.metric-card > strong.pw-large-money,
+.goal-amount.pw-large-money,
+.goal-insight-grid strong.pw-large-money,
+[data-money].pw-large-money {
+  font-size: clamp(18px, 4.8vw, 27px) !important;
+  line-height: 1.08 !important;
+  letter-spacing: -.045em !important;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+.transaction-amount strong.pw-large-money,
+.daily-story-transaction-amount.pw-large-money,
+.detail-cell strong.pw-large-money {
+  font-size: 10px !important;
+  letter-spacing: -.025em !important;
+}
+.transaction-amount-field .amount-input.pw-large-money,
+.amount-input.pw-large-money {
+  font-size: clamp(19px, 5.2vw, 25px) !important;
+  letter-spacing: -.035em !important;
+}
+.quick-flow-value.pw-large-money,
+.quick-flow-value.pw-large-money:focus {
+  font-size: clamp(27px, 8vw, 36px) !important;
+  letter-spacing: -.04em !important;
+}
+.form-grid > *,
+.form-field,
+.transaction-entry-section,
+.receipt-picker { min-width: 0; }
+.form-field input[type="date"],
+.form-field input[type="datetime-local"],
+.form-field input[type="time"],
+.form-field input[type="month"] {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+@media (max-width: 380px) {
+  .form-field input[type="date"],
+  .form-field input[type="datetime-local"] { font-size: 12px; padding-inline: 8px; }
+  .goal-insight-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Keep the smallest savings metrics compact even when the amount crosses six digits. */
+.balance-number.pw-large-money { font-size:clamp(25px,6.5vw,35px) !important; }
+.goal-amount.pw-large-money { font-size:clamp(12px,3vw,16px) !important; }
+.goal-insight-grid strong.pw-large-money { font-size:clamp(9px,2.8vw,13px) !important; }

@@ -9,6 +9,7 @@ const root = path.resolve(rootArg);
 const dist = path.resolve(distArg);
 const runtimeFiles = [
   'theme-init.js',
+  'first-run-onboarding.js',
   'reliability-store.js',
   'system-orchestrator.js',
   'viewport-guard.js',
