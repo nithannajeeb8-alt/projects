@@ -3188,11 +3188,11 @@ input[type="range"]{touch-action:pan-x pan-y;}
 }
 
 
-/* PocketWise 2.4.36 — Safari-safe compact-header surface.
-   The sticky header itself never uses backdrop-filter. WebKit has documented
-   compositing problems with sticky/fixed top bars and backdrop filtering.
-   A theme-aware material layer provides depth without a second live blur. */
-html, body { background-color: var(--bg); }
+/* PocketWise 2.4.37 — green frosted scroll-edge material.
+   Keep the sticky element itself filter-free for Safari chrome sampling. The
+   inset pseudo-element is the material layer: it blurs the content scrolling
+   beneath it, carries PocketWise emerald tint, and fades out instead of drawing
+   a separator. Its lower overscan softens card edges passing under the header. */
 @media (max-width: 720px) {
   .main-content > .topbar {
     position: sticky;
@@ -3204,8 +3204,6 @@ html, body { background-color: var(--bg); }
   }
 
   html[data-liquid-glass="on"] .main-content > .topbar {
-    background: linear-gradient(145deg, var(--glass-nav), var(--glass-card-low));
-    border-bottom-color: var(--glass-border);
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
   }
@@ -3216,18 +3214,28 @@ html, body { background-color: var(--bg); }
     z-index: -1;
     pointer-events: none;
     top: 0;
-    left: -16px;
-    right: -16px;
-    height: 56px;
+    left: 0;
+    right: 0;
+    bottom: -34px;
     opacity: 0;
-    transform: translate3d(0,-4px,0);
+    transform: translate3d(0,-5px,0);
     background:
-      radial-gradient(ellipse at 14% 0%, color-mix(in srgb, var(--green) 11%, transparent), transparent 62%),
+      radial-gradient(ellipse 88% 72% at 17% 0%,
+        color-mix(in srgb, var(--green) 23%, transparent) 0%,
+        transparent 72%),
       linear-gradient(180deg,
-        color-mix(in srgb, var(--bg) 97%, var(--surface)) 0%,
-        color-mix(in srgb, var(--surface) 91%, transparent) 100%);
-    border-bottom: 1px solid color-mix(in srgb, var(--line) 78%, transparent);
-    transition: opacity .18s ease, transform .22s cubic-bezier(.22,1,.36,1);
+        color-mix(in srgb, var(--bg) 88%, var(--green) 12%) 0%,
+        color-mix(in srgb, var(--bg) 84%, transparent) 48%,
+        color-mix(in srgb, var(--bg) 58%, transparent) 76%,
+        transparent 100%);
+    border: 0;
+    -webkit-backdrop-filter: blur(16px) saturate(170%);
+    backdrop-filter: blur(16px) saturate(170%);
+    -webkit-mask-image: linear-gradient(180deg,
+      #000 0%, #000 58%, rgba(0,0,0,.82) 78%, transparent 100%);
+    mask-image: linear-gradient(180deg,
+      #000 0%, #000 58%, rgba(0,0,0,.82) 78%, transparent 100%);
+    transition: opacity .22s ease, transform .28s cubic-bezier(.22,1,.36,1);
   }
 
   .main-content > .topbar.is-scrolled::before {
@@ -3236,7 +3244,9 @@ html, body { background-color: var(--bg); }
   }
 
   .main-content > .topbar.is-scrolled {
-    background: transparent;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
     pointer-events: none;
   }
 
@@ -3244,23 +3254,31 @@ html, body { background-color: var(--bg); }
   .main-content > .topbar.is-scrolled .top-actions {
     pointer-events: auto;
   }
-
-  html[data-liquid-glass="on"] .main-content > .topbar.is-scrolled::before {
-    background:
-      radial-gradient(ellipse at 14% 0%, color-mix(in srgb, var(--glass-accent) 42%, transparent), transparent 64%),
-      linear-gradient(180deg, var(--glass-nav) 0%, color-mix(in srgb, var(--glass-card-low) 90%, transparent) 100%);
-    border-bottom-color: var(--glass-border);
-  }
 }
 
 @media (max-width: 720px) and (prefers-reduced-transparency: reduce),
        (max-width: 720px) and (prefers-contrast: more) {
-  .main-content > .topbar::before,
-  html[data-liquid-glass="on"] .main-content > .topbar::before {
-    background: var(--surface);
-    border-bottom-color: var(--line);
+  .main-content > .topbar.is-scrolled::before {
+    background:
+      radial-gradient(ellipse at 18% 0%, color-mix(in srgb, var(--green) 15%, transparent), transparent 70%),
+      color-mix(in srgb, var(--bg) 96%, var(--green) 4%);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    -webkit-mask-image: none;
+    mask-image: none;
   }
 }
+
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  @media (max-width: 720px) {
+    .main-content > .topbar.is-scrolled::before {
+      background:
+        radial-gradient(ellipse at 18% 0%, color-mix(in srgb, var(--green) 18%, transparent), transparent 70%),
+        color-mix(in srgb, var(--bg) 90%, transparent);
+    }
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .main-content > .topbar::before { transition: none; }
 }
