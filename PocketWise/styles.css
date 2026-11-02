@@ -3488,3 +3488,108 @@ html[data-first-run="on"] .app-modal {
 @media (prefers-reduced-motion: reduce) {
   .pw-first-run-color span { transition: none; }
 }
+
+
+/* PocketWise 2.4.34 — compact mobile header after scrolling.
+   Reuse the existing is-scrolled state and the original header markup. At rest,
+   the full brand/date header remains unchanged. Once content moves, keep only the
+   active page title at left and the existing utility buttons at right. */
+@media (max-width: 720px) {
+  .main-content > .topbar {
+    transition:
+      padding .22s cubic-bezier(.2,.75,.25,1),
+      margin-bottom .22s cubic-bezier(.2,.75,.25,1),
+      border-color .18s ease,
+      background-color .18s ease;
+  }
+
+  .main-content > .topbar.is-scrolled {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "heading actions";
+    align-items: center;
+    column-gap: 12px;
+    row-gap: 0;
+    min-height: 52px;
+    margin-bottom: 10px;
+    padding-top: 7px;
+    padding-bottom: 7px;
+  }
+
+  .main-content > .topbar.is-scrolled .mobile-brand {
+    display: none;
+  }
+
+  .main-content > .topbar.is-scrolled .page-heading {
+    grid-area: heading;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: auto;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    gap: 0;
+  }
+
+  .main-content > .topbar.is-scrolled .page-heading h1 {
+    min-width: 0;
+    font-size: 18px;
+    line-height: 1.15;
+    letter-spacing: -.45px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: font-size .2s cubic-bezier(.2,.75,.25,1), letter-spacing .2s ease;
+  }
+
+  .main-content > .topbar.is-scrolled .page-heading .eyebrow {
+    display: none;
+  }
+
+  .main-content > .topbar.is-scrolled .top-actions {
+    grid-area: actions;
+    justify-self: end;
+    align-self: center;
+    gap: 6px;
+    margin: 0;
+  }
+
+  .main-content > .topbar.is-scrolled .top-actions .top-add {
+    display: none !important;
+  }
+
+  .main-content > .topbar.is-scrolled .top-actions .icon-button {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    padding: 0;
+    border-radius: 11px;
+  }
+
+  .main-content > .topbar.is-scrolled .top-actions .icon-wrap {
+    width: 18px;
+    height: 18px;
+  }
+
+  .main-content > .topbar.is-scrolled .top-actions .icon-fallback {
+    width: 17px;
+    height: 17px;
+  }
+}
+
+@media (max-width: 390px) {
+  .main-content > .topbar.is-scrolled {
+    margin-left: -12px;
+    margin-right: -12px;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .main-content > .topbar,
+  .main-content > .topbar .page-heading h1 {
+    transition: none !important;
+  }
+}
