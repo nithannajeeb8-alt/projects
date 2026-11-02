@@ -392,14 +392,30 @@
     // Smart UI shares the header's direction state, so both surfaces react to
     // the same deliberate gesture instead of running competing scroll timers.
     // Classic navigation is never altered by this controller.
+    let navResizeObserver=null;
+    if(mobileNav&&typeof ResizeObserver==='function'){
+      navResizeObserver=new ResizeObserver(()=>{
+        if(mobileNav.classList.contains('is-geometry-animating')&&document.documentElement.dataset.smartUi==='on')syncSmartNavIndicator();
+      });
+      navResizeObserver.observe(mobileNav);
+    }
     syncAdaptiveNavState=()=>{
       if(!mobileNav)return;
       const shouldCollapse=mobileQuery.matches&&document.documentElement.dataset.smartUi==='on'&&collapsed;
-      mobileNav.classList.toggle('is-scroll-collapsed',shouldCollapse);
+      const wasCollapsed=mobileNav.classList.contains('is-scroll-collapsed');
+      if(wasCollapsed!==shouldCollapse){
+        const reducedMotion=typeof window.matchMedia==='function'&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        mobileNav.classList.toggle('is-geometry-animating',!reducedMotion);
+        mobileNav.classList.toggle('is-scroll-collapsed',shouldCollapse);
+      }
       mobileNav.dataset.scrollState=shouldCollapse?'compact':'expanded';
+      if(wasCollapsed!==shouldCollapse&&document.documentElement.dataset.smartUi==='on'&&typeof ResizeObserver!=='function')syncSmartNavIndicator();
     };
     mobileNav?.addEventListener?.('transitionend',event=>{
-      if(event.target===mobileNav&&event.propertyName==='width'&&document.documentElement.dataset.smartUi==='on')syncSmartNavIndicator();
+      if(event.target===mobileNav&&event.propertyName==='width'){
+        mobileNav.classList.remove('is-geometry-animating');
+        if(document.documentElement.dataset.smartUi==='on')syncSmartNavIndicator();
+      }
     });
     const update=()=>{
       const scrollTop=Math.max(0,Number(scroller.scrollTop)||0);

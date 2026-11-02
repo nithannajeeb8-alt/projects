@@ -3664,45 +3664,148 @@ html[data-first-run="on"] .app-modal {
   }
 }
 
-
-/* PocketWise 2.4.41 — Instagram-style adaptive Smart UI navigation.
-   Only the Smart UI mobile capsule changes geometry. Existing theme and Liquid
-   Glass surface tokens remain the source of colors, borders, blur and shadows. */
+/* PocketWise 2.4.42 — stable icon rail with an independently morphing capsule.
+   The navigation layout stays 60px tall in both states. Only the visual surface
+   scales vertically around the icon-row centre; the 46px tab targets and 44px
+   Quick Add target never move vertically or get clipped by the shrinking edge. */
 @media (max-width: 720px) {
   html[data-smart-ui="on"] .mobile-tabbar {
+    position: fixed;
+    z-index: 45;
     left: 50%;
     right: auto;
+    bottom: max(8px, env(safe-area-inset-bottom));
     width: calc(100% - 16px);
+    height: 60px !important;
+    min-height: 60px !important;
+    box-sizing: border-box;
+    padding: 4px 8px;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-rows: minmax(0, 1fr);
+    align-items: center;
+    justify-items: stretch;
+    gap: 2px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
     transform: translate3d(-50%, 0, 0);
-    transition:
-      width 420ms cubic-bezier(.22, 1, .36, 1),
-      height 360ms cubic-bezier(.22, 1, .36, 1),
-      min-height 360ms cubic-bezier(.22, 1, .36, 1),
-      padding 360ms cubic-bezier(.22, 1, .36, 1),
-      box-shadow 240ms ease;
-    will-change: width, height;
+    transition: width 280ms cubic-bezier(.2, .8, .2, 1);
+    isolation: isolate;
+    overflow: visible;
+  }
+
+  /* This is the only element whose vertical size changes. Scaling around its
+     centre keeps both icon centres and the capsule centre on the same axis. */
+  html[data-smart-ui="on"] .mobile-tabbar::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    box-sizing: border-box;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--surface) 95%, transparent);
+    box-shadow: 0 14px 38px rgba(20,30,24,.13), inset 0 1px 0 color-mix(in srgb, var(--surface) 86%, white);
+    -webkit-backdrop-filter: blur(18px) saturate(1.45);
+    backdrop-filter: blur(18px) saturate(1.45);
+    transform: scaleY(1);
+    transform-origin: 50% 50%;
+    transition: transform 280ms cubic-bezier(.2, .8, .2, 1), background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+    pointer-events: none;
+  }
+
+  html[data-theme="dark"][data-smart-ui="on"] .mobile-tabbar::before {
+    border-color: #282828;
+    background: rgba(7,7,7,.96);
+    box-shadow: 0 14px 38px rgba(0,0,0,.48), inset 0 1px 0 rgba(255,255,255,.035);
+  }
+
+  html[data-liquid-glass="on"][data-smart-ui="on"] .mobile-tabbar::before {
+    border-color: var(--glass-border);
+    border-top-color: var(--glass-highlight);
+    background: linear-gradient(155deg, var(--glass-nav), var(--glass-card-low));
+    box-shadow: var(--glass-float-shadow), inset 0 1px 0 var(--glass-highlight), inset 0 -1px 0 var(--glass-edge);
+    -webkit-backdrop-filter: blur(28px) saturate(175%);
+    backdrop-filter: blur(28px) saturate(175%);
   }
 
   html[data-smart-ui="on"] .mobile-tabbar.is-scroll-collapsed {
-    width: min(260px, calc(100vw - 32px));
-    height: 52px;
-    min-height: 52px;
-    padding: 4px 6px;
-    gap: 0;
+    width: min(296px, calc(100vw - 32px));
+    height: 60px !important;
+    min-height: 60px !important;
+    padding: 4px 8px;
+    gap: 2px;
   }
 
-  html[data-smart-ui="on"] .mobile-tabbar.is-scroll-collapsed .mobile-tab,
-  html[data-smart-ui="on"] .mobile-tabbar.is-scroll-collapsed .mobile-add {
-    min-height: 44px;
-    height: 44px;
-    padding-top: 0;
-    padding-bottom: 0;
+  html[data-smart-ui="on"] .mobile-tabbar.is-scroll-collapsed::before {
+    transform: scaleY(.8666667); /* 60px layout rail, 52px visible capsule */
+  }
+
+  /* Controls keep identical vertical geometry in expanded and compact states. */
+  html[data-smart-ui="on"] .mobile-tabbar > .mobile-tab {
+    position: relative;
+    z-index: 2;
+    align-self: center;
+    justify-self: stretch;
+    width: 100%;
+    min-width: 0;
+    height: 46px !important;
+    min-height: 46px !important;
+    margin: 0;
+    padding: 0 2px;
+    box-sizing: border-box;
+    transform: none;
+  }
+
+  html[data-smart-ui="on"] .mobile-tabbar > .mobile-add {
+    position: relative;
+    z-index: 3;
+    align-self: center;
+    justify-self: center;
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
+    flex: 0 0 44px;
+    margin: 0;
+    padding: 0;
+    transform: none;
+  }
+
+  html[data-smart-ui="on"] .mobile-tabbar .smart-nav-indicator {
+    z-index: 1;
+    height: 46px;
+    transition: transform 260ms cubic-bezier(.2, .8, .2, 1), width 260ms cubic-bezier(.2, .8, .2, 1), background-color 180ms ease, box-shadow 180ms ease;
+  }
+
+  /* Keep the active capsule below the icon rail, but let its geometry follow
+     the actual tab rectangle. It remains a separate layer from the outer shell. */
+  html[data-smart-ui="on"] .mobile-tabbar > .mobile-tab { z-index: 2; }
+  html[data-smart-ui="on"] .mobile-tabbar > .mobile-add { z-index: 3; }
+  html[data-smart-ui="on"] .mobile-tabbar.is-geometry-animating .smart-nav-indicator {
+    transition: none !important;
+  }
+}
+
+@media (max-width: 720px) and (prefers-reduced-transparency: reduce),
+       (max-width: 720px) and (prefers-contrast: more) {
+  html[data-smart-ui="on"] .mobile-tabbar::before {
+    background: var(--surface) !important;
+    border-color: var(--line) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   html[data-smart-ui="on"] .mobile-tabbar,
-  html[data-smart-ui="on"] .mobile-tabbar.is-scroll-collapsed {
+  html[data-smart-ui="on"] .mobile-tabbar::before,
+  html[data-smart-ui="on"] .mobile-tabbar .smart-nav-indicator {
     transition: none !important;
     will-change: auto;
   }
