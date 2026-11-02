@@ -392,6 +392,16 @@
     // Smart UI shares the header's direction state, so both surfaces react to
     // the same deliberate gesture instead of running competing scroll timers.
     // Classic navigation is never altered by this controller.
+    // During the capsule width transition, the active grid cell changes width
+    // continuously. Observe the nav rail so the inner selection stays centred
+    // on the active button at every frame instead of jumping only at the end.
+    let navResizeObserver=null;
+    if(mobileNav&&typeof ResizeObserver==='function'){
+      navResizeObserver=new ResizeObserver(()=>{
+        if(mobileNav.classList.contains('is-geometry-animating')&&document.documentElement.dataset.smartUi==='on')syncSmartNavIndicator();
+      });
+      navResizeObserver.observe(mobileNav);
+    }
     syncAdaptiveNavState=()=>{
       if(!mobileNav)return;
       const shouldCollapse=mobileQuery.matches&&document.documentElement.dataset.smartUi==='on'&&collapsed;
@@ -402,12 +412,12 @@
         mobileNav.classList.toggle('is-scroll-collapsed',shouldCollapse);
       }
       mobileNav.dataset.scrollState=shouldCollapse?'compact':'expanded';
-      if(wasCollapsed!==shouldCollapse&&reducedMotion&&document.documentElement.dataset.smartUi==='on')syncSmartNavIndicator(false);
+      if(wasCollapsed!==shouldCollapse&&document.documentElement.dataset.smartUi==='on'&&(!navResizeObserver||reducedMotion))syncSmartNavIndicator(false);
     };
     mobileNav?.addEventListener?.('transitionend',event=>{
       if(event.target===mobileNav&&event.propertyName==='width'){
         mobileNav.classList.remove('is-geometry-animating');
-        if(document.documentElement.dataset.smartUi==='on')syncSmartNavIndicator(false);
+        if(document.documentElement.dataset.smartUi==='on')syncSmartNavIndicator();
       }
     });
     const update=()=>{
@@ -2481,8 +2491,8 @@
     $('#finance-period-prev')?.addEventListener('click',()=>{const type=$('#finance-period-type').value,range=financeSelectedRange();if(!range)return;if(type==='custom'){const days=Math.max(1,Math.round((dateFrom(range.end)-dateFrom(range.start))/86400000)+1);$('#finance-custom-start').value=finance.addDays(range.start,-days);$('#finance-custom-end').value=finance.addDays(range.end,-days);}else if(type==='week')financeAnchor=finance.addDays(financeAnchor,-7);else if(type==='year'){const d=dateFrom(financeAnchor);d.setFullYear(d.getFullYear()-1);financeAnchor=localDate(d);}else{const d=dateFrom(financeAnchor);d.setDate(1);d.setMonth(d.getMonth()-1);financeAnchor=localDate(d);}$('#finance-period-anchor').value=financeAnchor;renderFinanceAnalytics();scheduleCharts();});
     $('#finance-period-next')?.addEventListener('click',()=>{const type=$('#finance-period-type').value,range=financeSelectedRange();if(!range)return;if(type==='custom'){const days=Math.max(1,Math.round((dateFrom(range.end)-dateFrom(range.start))/86400000)+1);const start=finance.addDays(range.start,days),end=finance.addDays(range.end,days);if(start>today())return;$('#finance-custom-start').value=start;$('#finance-custom-end').value=end>today()?today():end;}else{let nextAnchor;if(type==='week')nextAnchor=finance.addDays(range.start,7);else if(type==='year')nextAnchor=`${Number(range.start.slice(0,4))+1}-01-01`;else{const d=dateFrom(range.start);d.setDate(1);d.setMonth(d.getMonth()+1);nextAnchor=localDate(d);}if(nextAnchor>today())return;financeAnchor=nextAnchor;$('#finance-period-anchor').value=financeAnchor;}renderFinanceAnalytics();scheduleCharts();});$('#home-chart-mode').addEventListener('change',scheduleCharts);$('#trend-type').addEventListener('change',scheduleCharts);$('#ranking-mode').addEventListener('change',()=>renderRankings(chartPeriod()));
     $('#activity-filters').addEventListener('click',e=>{const b=e.target.closest('[data-filter]');if(!b)return;currentFilter=b.dataset.filter;renderActivity();syncGlassSegmentIndicators($('#activity-filters'));});
-    window.addEventListener('resize',()=>{syncGlassSegmentIndicators();syncSmartNavIndicator(false);});
-    document.addEventListener('visibilitychange',()=>{if(!document.hidden){updateDateHeader();renderDailyStory();syncSmartNavIndicator(false);void processDueRecurringEntries();}});window.addEventListener('pageshow',()=>{void processDueRecurringEntries();});
+    window.addEventListener('resize',()=>{syncGlassSegmentIndicators();syncSmartNavIndicator();});
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden){updateDateHeader();renderDailyStory();syncSmartNavIndicator();void processDueRecurringEntries();}});window.addEventListener('pageshow',()=>{void processDueRecurringEntries();});
     $('#hide-setting').addEventListener('change',async e=>{const snapshot=JSON.stringify(state);state.settings.hideBalances=e.target.checked;if(!(await persistMutation(snapshot,'Could not save the balance visibility setting.'))){e.target.checked=!!state.settings.hideBalances;applyHiddenAmounts();return;}applyHiddenAmounts();renderAll();});
     $('#liquid-glass-setting').addEventListener('change',async e=>{const snapshot=JSON.stringify(state);state.settings.liquidGlass=!!e.target.checked;if(!(await persistMutation(snapshot,'Could not save the appearance setting.'))){e.target.checked=!!state.settings.liquidGlass;applyTheme();return;}applyTheme();scheduleCharts();toast(state.settings.liquidGlass?'Liquid Glass enabled.':'Liquid Glass disabled.');});
     $('#smart-ui-setting').addEventListener('change',async e=>{const snapshot=JSON.stringify(state);state.settings.smartUI=!!e.target.checked;if(!(await persistMutation(snapshot,'Could not save Smart UI. Your previous settings were restored.'))){e.target.checked=!!state.settings.smartUI;applyTheme();return;}applyTheme();syncSmartNavIndicator();toast(state.settings.smartUI?'Smart UI enabled. Your navigation capsule follows the selected section.':'Smart UI disabled. Your classic navigation is restored.');});

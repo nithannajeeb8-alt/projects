@@ -3932,18 +3932,7 @@ html[data-first-run="on"] .app-modal {
 .form-field input[type="date"], .form-field input[type="datetime-local"] { overflow:hidden; text-overflow:clip; }
 .app-modal { box-sizing:border-box; max-width:calc(100vw - 24px); }
 .event-planner-form input, .event-planner-form select { min-width:0; max-width:100%; box-sizing:border-box; }
-/* A calmer floating dock: no stacked edge strokes around a translucent capsule. */
-@media (max-width:720px) {
-  html[data-smart-ui="on"] .mobile-tabbar { border:0 !important; background:transparent !important; box-shadow:none !important; overflow:visible !important; }
-  html[data-smart-ui="on"] .mobile-tabbar::before { border:1px solid color-mix(in srgb,var(--ink) 12%,transparent) !important; border-top-color:color-mix(in srgb,var(--ink) 16%,transparent) !important; box-shadow:0 12px 32px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.08) !important; -webkit-backdrop-filter:blur(26px) saturate(155%) !important; backdrop-filter:blur(26px) saturate(155%) !important; }
-  html[data-smart-ui="on"] .smart-nav-indicator { border:1px solid color-mix(in srgb,var(--green) 20%,transparent) !important; box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 3px 12px rgba(0,0,0,.14) !important; }
-  html[data-liquid-glass="on"][data-smart-ui="on"] .mobile-tabbar::before { border-color:color-mix(in srgb,var(--ink) 10%,transparent) !important; box-shadow:0 12px 34px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.065) !important; }
-  html[data-liquid-glass="on"][data-smart-ui="on"] .smart-nav-indicator { border-color:transparent !important; box-shadow:0 3px 12px rgba(0,0,0,.13) !important; }
-}
-@media (prefers-reduced-transparency:reduce), (prefers-contrast:more) {
-  html[data-smart-ui="on"] .mobile-tabbar::before { -webkit-backdrop-filter:none !important; backdrop-filter:none !important; background:var(--surface) !important; border-color:var(--line-strong,var(--line)) !important; }
-  html[data-smart-ui="on"] .smart-nav-indicator { -webkit-backdrop-filter:none !important; backdrop-filter:none !important; }
-}
+
 .pw-large-money { font-variant-numeric:tabular-nums; letter-spacing:-.035em !important; }
 .balance-number.pw-large-money { font-size:clamp(25px,6.5vw,35px) !important; line-height:1.1; }
 .money-stats strong.pw-large-money, .metric-card>strong.pw-large-money, .goal-insight-grid strong.pw-large-money { font-size:clamp(14px,3.7vw,19px) !important; line-height:1.2; }
@@ -4060,19 +4049,7 @@ html.pw-screen-restricted .app-shell, html.pw-screen-restricted .mobile-tabbar {
     min-height: 48px;
     text-align: center;
   }
-  .settings-layout {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-  .settings-layout > .settings-appearance-card { order: -2; }
-  .settings-layout > .settings-reminders-card { order: -1; }
-  .settings-layout > .settings-profile-card { order: 0; }
-  .settings-layout > .daily-story-settings-card { order: 1; }
-  .settings-layout > .settings-activities-card { order: 2; }
-  .settings-layout > .settings-card:nth-child(6) { order: 3; }
-  .settings-layout > .data-card { order: 4; }
-  .settings-layout > .danger-card { order: 5; }
+  /* Preserve Settings card order from the document; no CSS order overrides. */
   .settings-layout .settings-section-title h3 {
     font-size: 16px;
     line-height: 1.3;
