@@ -1,0 +1,59 @@
+generator client { provider = "prisma-client-js" }
+datasource db { provider = "postgresql"; url = env("DATABASE_URL") }
+
+enum RecipientStatus { DRAFT APPROVED QUEUED SENT REPLY_RECEIVED INTERVIEW REJECTED FOLLOW_UP_NEEDED BOUNCE OPT_OUT ERROR }
+
+model User {
+  id String @id @default(cuid())
+  email String @unique
+  name String?
+  refreshTokenEncrypted String
+  accessTokenEncrypted String?
+  tokenExpiry DateTime?
+  gmailHistoryId String?
+  watchExpiry DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  campaigns Campaign[]
+}
+
+model Campaign {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields:[userId], references:[id], onDelete:Cascade)
+  name String
+  profileJson Json
+  subjectTemplate String
+  bodyTemplate String
+  aiOptIn Boolean @default(false)
+  resumeKey String?
+  resumeFilename String?
+  resumeDeletedAt DateTime?
+  completedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  recipients Recipient[] 
+}
+
+model Recipient {
+  id String @id @default(cuid())
+  campaignId String
+  campaign Campaign @relation(fields:[campaignId], references:[id], onDelete:Cascade)
+  email String
+  company String
+  role String
+  opportunityText String? @db.Text
+  subject String
+  body String @db.Text
+  status RecipientStatus @default(DRAFT)
+  approvedAt DateTime?
+  sentAt DateTime?
+  gmailMessageId String? @unique
+  gmailThreadId String? @unique
+  lastReplyAt DateTime?
+  replySnippet String? @db.Text
+  errorMessage String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([campaignId, email])
+}

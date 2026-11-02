@@ -1,0 +1,5 @@
+import { NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { requireUser, unauthorized } from "@/lib/auth";
+import { recipientInput, render } from "@/lib/validation";
+export async function POST(request:Request,{params}:{params:Promise<{id:string}>}) { const userId=await requireUser(); if (!userId) return unauthorized(); const campaign=await db.campaign.findFirst({where:{id:(await params).id,userId}}); if (!campaign) return NextResponse.json({error:"Not found"},{status:404}); const body=await request.json(); const parsed=recipientInput.array().min(1).max(250).safeParse(body.recipients); if (!parsed.success) return NextResponse.json({error:parsed.error.flatten()},{status:400}); const profile=campaign.profileJson as {name:string;email:string;experience:string;availability?:string}; const rejected:string[]=[]; let added=0; for (const input of parsed.data) { try { await db.recipient.create({data:{campaignId:campaign.id,...input,subject:render(campaign.subjectTemplate,input,profile),body:render(campaign.bodyTemplate,input,profile)}}); added++; } catch { rejected.push(input.email); } } return NextResponse.json({added,rejected}); }
