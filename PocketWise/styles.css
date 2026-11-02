@@ -4145,3 +4145,441 @@ html.pw-screen-restricted .app-shell, html.pw-screen-restricted .mobile-tabbar {
 html.is-android #apple-image-shortcut-setting {
   display: none !important;
 }
+
+
+/* PocketWise 2.4.48 — Gradient collection / unified white Liquid Glass system.
+   One token set drives every screen; the selected preset changes only the colour field
+   and its semantic accent. Content remains high-contrast and data-first. */
+html[data-theme="gradient"] {
+  color-scheme: light;
+  --bg: transparent;
+  --surface: rgba(255,255,255,.86);
+  --surface-2: rgba(255,255,255,.72);
+  --surface-3: rgba(255,255,255,.56);
+  --ink: #20242b;
+  --muted: #555e68;
+  --subtle: #737d87;
+  --line: rgba(255,255,255,.78);
+  --green: color-mix(in srgb,var(--gradient-accent) 92%,#34212a);
+  --green-deep: color-mix(in srgb,var(--gradient-accent) 76%,#17202a);
+  --green-soft: rgba(255,255,255,.70);
+  --red: #c83e42;
+  --red-soft: rgba(255,239,237,.86);
+  --blue: #4279bd;
+  --blue-soft: rgba(234,242,255,.88);
+  --amber: #9a6924;
+  --amber-soft: rgba(255,246,223,.88);
+  --shadow: 0 12px 34px rgba(45,35,35,.10);
+  --glass-card: rgba(255,255,255,.82);
+  --glass-card-low: rgba(255,255,255,.70);
+  --glass-control: rgba(255,255,255,.72);
+  --glass-control-hover: rgba(255,255,255,.90);
+  --glass-nav: rgba(255,255,255,.78);
+  --glass-border: rgba(255,255,255,.90);
+  --glass-edge: rgba(67,51,54,.10);
+  --glass-highlight: rgba(255,255,255,.98);
+  --glass-accent: color-mix(in srgb,var(--gradient-accent) 11%,white);
+  --glass-blur: 24px;
+  --glass-card-shadow: 0 14px 36px rgba(49,34,34,.095);
+  --glass-float-shadow: 0 18px 48px rgba(43,32,35,.18);
+  --glass-amount-top: rgba(255,255,255,.94);
+  --glass-amount-bottom: rgba(255,255,255,.78);
+  --glass-control-shadow: rgba(43,34,35,.06);
+  --day-progress: #68717b;
+}
+html[data-theme="gradient"][data-gradient="coral-wave"] {
+  --gradient-accent: #d83d58;
+  --gradient-scene: radial-gradient(ellipse at 4% 12%,#ffd464 0,rgba(255,212,100,.84) 13%,transparent 39%),radial-gradient(ellipse at 88% 14%,#ff5e5e 0,rgba(255,94,94,.76) 17%,transparent 43%),radial-gradient(ellipse at 82% 82%,#e23c64 0,rgba(226,60,100,.77) 19%,transparent 44%),radial-gradient(ellipse at 21% 91%,#ffe1a5 0,rgba(255,225,165,.66) 14%,transparent 39%),linear-gradient(135deg,#ffb56e 0%,#ed4f66 52%,#b0183d 100%);
+}
+html[data-theme="gradient"][data-gradient="green-screen"] {
+  --gradient-accent: #4d7b2b;
+  --gradient-scene: radial-gradient(ellipse at 9% 13%,#4d7111 0,rgba(77,113,17,.80) 18%,transparent 42%),radial-gradient(ellipse at 90% 16%,#9bdb50 0,rgba(155,219,80,.76) 20%,transparent 45%),radial-gradient(ellipse at 18% 82%,#b2fee7 0,rgba(178,254,231,.84) 20%,transparent 46%),radial-gradient(ellipse at 86% 88%,#c3e956 0,rgba(195,233,86,.70) 18%,transparent 42%),linear-gradient(135deg,#1f4b2c 0%,#75ad38 50%,#b2fee7 100%);
+}
+html[data-theme="gradient"][data-gradient="retro-magic"] {
+  --gradient-accent: #a52c78;
+  --gradient-scene: radial-gradient(ellipse at 4% 14%,#fff7ad 0,rgba(255,247,173,.78) 16%,transparent 41%),radial-gradient(ellipse at 89% 16%,#ffb3ae 0,rgba(255,179,174,.82) 19%,transparent 44%),radial-gradient(ellipse at 86% 82%,#ff49c1 0,rgba(255,73,193,.72) 20%,transparent 45%),radial-gradient(ellipse at 18% 88%,#6a1452 0,rgba(106,20,82,.78) 17%,transparent 42%),linear-gradient(135deg,#44113e 0%,#a92d83 51%,#ff9bb7 100%);
+}
+html[data-theme="gradient"][data-gradient="on-fire"] {
+  --gradient-accent: #a83226;
+  --gradient-scene: radial-gradient(ellipse at 12% 9%,#fffb97 0,rgba(255,251,151,.78) 15%,transparent 39%),radial-gradient(ellipse at 87% 18%,#7a4b47 0,rgba(122,75,71,.78) 18%,transparent 43%),radial-gradient(ellipse at 75% 84%,#fe7fa2 0,rgba(254,127,162,.60) 18%,transparent 44%),radial-gradient(ellipse at 20% 84%,#b32c1a 0,rgba(179,44,26,.75) 18%,transparent 43%),linear-gradient(135deg,#e87935 0%,#8a3528 52%,#2a1617 100%);
+}
+html[data-theme="gradient"] body {
+  position: relative;
+  isolation: isolate;
+  background: transparent !important;
+  color: var(--ink);
+}
+html[data-theme="gradient"] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--gradient-scene);
+  background-size: cover;
+  background-position: center;
+  transform: translateZ(0);
+}
+html[data-theme="gradient"] .app-shell,
+html[data-theme="gradient"] .main-content,
+html[data-theme="gradient"] .page,
+html[data-theme="gradient"] .settings-layout { background: transparent; }
+
+/* Functional glass layer: navigation, headers, controls and transient overlays. */
+html[data-theme="gradient"] .sidebar,
+html[data-theme="gradient"] .topbar,
+html[data-theme="gradient"] .mobile-tabbar,
+html[data-theme="gradient"] .profile-chip,
+html[data-theme="gradient"] .app-modal,
+html[data-theme="gradient"] .modal-head,
+html[data-theme="gradient"] .toast,
+html[data-theme="gradient"] .icon-button,
+html[data-theme="gradient"] .round-subtle,
+html[data-theme="gradient"] .secondary-button,
+html[data-theme="gradient"] .mini-button,
+html[data-theme="gradient"] .search-box,
+html[data-theme="gradient"] .activity-toolbar #activity-period,
+html[data-theme="gradient"] .type-switch,
+html[data-theme="gradient"] .segmented,
+html[data-theme="gradient"] .filter-pill,
+html[data-theme="gradient"] .form-field input,
+html[data-theme="gradient"] .form-field select,
+html[data-theme="gradient"] .form-field textarea,
+html[data-theme="gradient"] .quick-action,
+html[data-theme="gradient"] .smart-nav-indicator {
+  -webkit-backdrop-filter: blur(22px) saturate(145%);
+  backdrop-filter: blur(22px) saturate(145%);
+}
+html[data-theme="gradient"] .sidebar {
+  background: rgba(255,255,255,.72);
+  border-color: rgba(255,255,255,.84);
+  box-shadow: inset -1px 0 0 rgba(255,255,255,.55), 8px 0 28px rgba(52,39,39,.055);
+}
+html[data-theme="gradient"] .topbar {
+  background: rgba(255,255,255,.44);
+  border-color: rgba(255,255,255,.72);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.92),0 8px 24px rgba(53,40,40,.045);
+  border-radius: 0 0 20px 20px;
+}
+html[data-theme="gradient"] .card,
+html[data-theme="gradient"] .metric-card,
+html[data-theme="gradient"] .settings-card,
+html[data-theme="gradient"] .data-card,
+html[data-theme="gradient"] .danger-card {
+  color: var(--ink);
+  background: rgba(255,255,255,.96);
+  border: 1px solid rgba(255,255,255,.98);
+  border-radius: 25px;
+  box-shadow: 0 14px 36px rgba(50,36,38,.085),inset 0 1px 0 rgba(255,255,255,.99),inset 0 -1px 0 rgba(70,52,56,.055);
+}
+html[data-theme="gradient"] .danger-card {
+  border-color: rgba(200,62,66,.24);
+  background: linear-gradient(148deg,rgba(255,255,255,.92),rgba(255,246,244,.86));
+}
+html[data-theme="gradient"] .app-modal {
+  background: rgba(255,255,255,.94);
+  border-color: rgba(255,255,255,.98);
+  box-shadow: 0 24px 80px rgba(35,25,28,.24),inset 0 1px 0 #fff;
+}
+html[data-theme="gradient"] .modal-head {
+  background: rgba(255,255,255,.96);
+  border-color: rgba(54,54,54,.09);
+}
+html[data-theme="gradient"] .app-modal::backdrop {
+  background: rgba(27,25,30,.34);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+html[data-theme="gradient"] .profile-chip,
+html[data-theme="gradient"] .icon-button,
+html[data-theme="gradient"] .round-subtle,
+html[data-theme="gradient"] .secondary-button,
+html[data-theme="gradient"] .mini-button,
+html[data-theme="gradient"] .search-box,
+html[data-theme="gradient"] .entity-row,
+html[data-theme="gradient"] .note-box,
+html[data-theme="gradient"] .detail-cell,
+html[data-theme="gradient"] .quick-action,
+html[data-theme="gradient"] .activity-chip {
+  background: rgba(255,255,255,.74);
+  color: var(--ink);
+  border-color: rgba(255,255,255,.93);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.98),inset 0 -1px 0 rgba(51,40,42,.055),0 3px 12px rgba(40,30,34,.045);
+}
+html[data-theme="gradient"] .icon-button:hover,
+html[data-theme="gradient"] .round-subtle:hover,
+html[data-theme="gradient"] .secondary-button:hover,
+html[data-theme="gradient"] .mini-button:hover,
+html[data-theme="gradient"] .quick-action:hover {
+  background: rgba(255,255,255,.93);
+  border-color: #fff;
+  transform: translateY(-1px);
+}
+html[data-theme="gradient"] .primary-button,
+html[data-theme="gradient"] .mobile-add,
+html[data-theme="gradient"] .toast-action {
+  color: #fff;
+  background: linear-gradient(145deg,color-mix(in srgb,var(--gradient-accent) 92%,#34212a),color-mix(in srgb,var(--gradient-accent) 76%,#34212a));
+  border: 1px solid color-mix(in srgb,var(--gradient-accent) 62%,white);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.42),0 7px 18px color-mix(in srgb,var(--gradient-accent) 21%,transparent);
+}
+html[data-theme="gradient"] .primary-button:hover,
+html[data-theme="gradient"] .mobile-add:hover { filter: brightness(1.035); }
+html[data-theme="gradient"] .soft-button,
+html[data-theme="gradient"] .filter-pill.active,
+html[data-theme="gradient"] .nav-item.active,
+html[data-theme="gradient"] .segmented button.selected,
+html[data-theme="gradient"] .type-switch button.selected {
+  color: var(--green-deep);
+  background: rgba(255,255,255,.88);
+  border-color: rgba(255,255,255,.98);
+  box-shadow: inset 0 1px 0 #fff,0 3px 11px rgba(48,36,40,.075);
+}
+html[data-theme="gradient"] .nav-item { color: #59616a; }
+html[data-theme="gradient"] .nav-item:hover { background: rgba(255,255,255,.56); color: #20242b; }
+html[data-theme="gradient"] .nav-item.active { position: relative; }
+html[data-theme="gradient"] .nav-item.active::before { content:""; position:absolute; left:5px; top:12px; bottom:12px; width:3px; border-radius:9px; background:var(--gradient-accent); }
+html[data-theme="gradient"] .mobile-tabbar {
+  background: rgba(255,255,255,.79);
+  border: 1px solid rgba(255,255,255,.94);
+  box-shadow: 0 14px 38px rgba(36,26,30,.15),inset 0 1px 0 #fff;
+}
+html[data-theme="gradient"] .mobile-tab { color: #626a73; }
+html[data-theme="gradient"] .mobile-tab.active { color: var(--green-deep); }
+html[data-theme="gradient"] .smart-nav-indicator {
+  background: linear-gradient(145deg,rgba(255,255,255,.98),rgba(255,255,255,.84));
+  border: 1px solid rgba(255,255,255,.99);
+  box-shadow: inset 0 1px 0 #fff,inset 0 -1px 0 rgba(61,46,50,.06),0 3px 10px rgba(39,28,31,.10);
+}
+html[data-theme="gradient"] .profile-chip { background: rgba(255,255,255,.76); }
+html[data-theme="gradient"] .avatar,
+html[data-theme="gradient"] .brand-mark,
+html[data-theme="gradient"] .settings-icon,
+html[data-theme="gradient"] .quick-icon,
+html[data-theme="gradient"] .empty-state .empty-icon,
+html[data-theme="gradient"] .backup-file-icon,
+html[data-theme="gradient"] .transaction-icon {
+  color: var(--green-deep);
+  background: rgba(255,255,255,.78);
+  border: 1px solid rgba(255,255,255,.92);
+  box-shadow: inset 0 1px 0 #fff,0 2px 8px rgba(47,34,38,.045);
+}
+html[data-theme="gradient"] .privacy-mini { background: rgba(255,255,255,.92); border: 1px solid rgba(255,255,255,.98); }
+html[data-theme="gradient"] .note-box,
+html[data-theme="gradient"] .detail-cell,
+html[data-theme="gradient"] .activity-chip { background: rgba(255,255,255,.90); }
+
+/* Content components: one calm white material, precise separators and dark readable text. */
+html[data-theme="gradient"] .setting-row,
+html[data-theme="gradient"] .money-stats>div+div,
+html[data-theme="gradient"] .card-separator,
+html[data-theme="gradient"] .budget-mini,
+html[data-theme="gradient"] .settings-section-title,
+html[data-theme="gradient"] .notification-record,
+html[data-theme="gradient"] .table-row,
+html[data-theme="gradient"] .data-table th,
+html[data-theme="gradient"] .data-table td {
+  border-color: rgba(54,54,54,.10);
+}
+html[data-theme="gradient"] .setting-row small,
+html[data-theme="gradient"] .page-heading p,
+html[data-theme="gradient"] .settings-section-title p,
+html[data-theme="gradient"] .fine-print,
+html[data-theme="gradient"] .muted,
+html[data-theme="gradient"] .money-stats span,
+html[data-theme="gradient"] .form-field label { color: #59626c; }
+html[data-theme="gradient"] .page-heading h1,
+html[data-theme="gradient"] .card h2,
+html[data-theme="gradient"] .card h3,
+html[data-theme="gradient"] .settings-card h3,
+html[data-theme="gradient"] .transaction-main strong,
+html[data-theme="gradient"] .metric-card strong { color: #20242b; }
+html[data-theme="gradient"] .transaction-row,
+html[data-theme="gradient"] .activity-row,
+html[data-theme="gradient"] .transaction-item,
+html[data-theme="gradient"] .entity-row,
+html[data-theme="gradient"] .detail-cell,
+html[data-theme="gradient"] .note-box,
+html[data-theme="gradient"] .ranking-row,
+html[data-theme="gradient"] .goal-row,
+html[data-theme="gradient"] .reminder-row,
+html[data-theme="gradient"] .account-row,
+html[data-theme="gradient"] .debt-row,
+html[data-theme="gradient"] .event-plan-row,
+html[data-theme="gradient"] .bill-split-row {
+  color: var(--ink);
+  background: rgba(255,255,255,.94);
+  border-color: rgba(255,255,255,.98);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.99),0 2px 8px rgba(44,34,38,.035);
+}
+html[data-theme="gradient"] .transaction-row:hover,
+html[data-theme="gradient"] .activity-row:hover,
+html[data-theme="gradient"] .transaction-item:hover { background: rgba(255,255,255,.92); }
+html[data-theme="gradient"] .progress-track,
+html[data-theme="gradient"] .ranking-bar,
+html[data-theme="gradient"] .activity-progress-track { background: rgba(32,36,43,.10); }
+html[data-theme="gradient"] .progress-track>span,
+html[data-theme="gradient"] .ranking-bar>span { background: var(--gradient-accent); }
+html[data-theme="gradient"] .days-track,
+html[data-theme="gradient"] .mobile-inner-track { stroke: rgba(32,36,43,.12); }
+html[data-theme="gradient"] .days-progress { stroke: var(--gradient-accent); }
+html[data-theme="gradient"] .arc-income,
+html[data-theme="gradient"] .income-color { color: #26885a; }
+html[data-theme="gradient"] .arc-expense,
+html[data-theme="gradient"] .expense-color { color: #c84e4d; }
+html[data-theme="gradient"] .arc-gap-mask { stroke: rgba(255,255,255,.92); }
+html[data-theme="gradient"] .success-pill,
+html[data-theme="gradient"] .status-pill.success-pill { color: #236b48; background: rgba(235,250,239,.94); border: 1px solid rgba(255,255,255,.96); }
+html[data-theme="gradient"] .danger-button { color: #a83232; background: rgba(255,241,239,.94); border-color: rgba(200,62,66,.22); }
+html[data-theme="gradient"] .filter-pill,
+html[data-theme="gradient"] .type-switch button,
+html[data-theme="gradient"] .segmented button { color: #5d6570; }
+html[data-theme="gradient"] .text-button,
+html[data-theme="gradient"] .inline-link,
+html[data-theme="gradient"] .daily-story-kicker,
+html[data-theme="gradient"] .daily-story-positive,
+html[data-theme="gradient"] .story-open-icon { color: var(--green-deep); }
+html[data-theme="gradient"] .quick-choice,
+html[data-theme="gradient"] .profile-color-option,
+html[data-theme="gradient"] .category-chip,
+html[data-theme="gradient"] .filter-chip,
+html[data-theme="gradient"] .activity-chip { background: rgba(255,255,255,.77); border-color: rgba(255,255,255,.94); color: var(--ink); }
+html[data-theme="gradient"] .form-field input,
+html[data-theme="gradient"] .form-field select,
+html[data-theme="gradient"] .form-field textarea,
+html[data-theme="gradient"] .quiet-hours input,
+html[data-theme="gradient"] .activity-toolbar #activity-period {
+  color: #20242b;
+  background: rgba(255,255,255,.91);
+  border-color: rgba(255,255,255,.98);
+  box-shadow: inset 0 1px 0 #fff,inset 0 -1px 0 rgba(40,30,35,.06),0 2px 9px rgba(45,35,39,.04);
+}
+html[data-theme="gradient"] .form-field input::placeholder,
+html[data-theme="gradient"] .form-field textarea::placeholder { color: #7b838b; opacity:1; }
+html[data-theme="gradient"] .form-field input:focus,
+html[data-theme="gradient"] .form-field select:focus,
+html[data-theme="gradient"] .form-field textarea:focus { border-color: color-mix(in srgb,var(--gradient-accent) 48%,white); box-shadow: 0 0 0 3px color-mix(in srgb,var(--gradient-accent) 15%,transparent),inset 0 1px 0 #fff; }
+html[data-theme="gradient"] .form-field input.amount-input,
+html[data-theme="gradient"] .quick-amount-wrap { background: rgba(255,255,255,.94) !important; color: #20242b !important; border-color: rgba(255,255,255,.98) !important; }
+html[data-theme="gradient"] .quick-flow-value { color: #20242b !important; }
+html[data-theme="gradient"] .switch input:checked+span { background: var(--gradient-accent); }
+html[data-theme="gradient"] button:focus-visible,
+html[data-theme="gradient"] input:focus-visible,
+html[data-theme="gradient"] select:focus-visible,
+html[data-theme="gradient"] textarea:focus-visible { outline-color: color-mix(in srgb,var(--gradient-accent) 58%,white); }
+html[data-theme="gradient"] ::selection { background: color-mix(in srgb,var(--gradient-accent) 25%,white); color: #20242b; }
+html[data-theme="gradient"] .toast { background: rgba(255,255,255,.94); color: #20242b; border-color: #fff; }
+html[data-theme="gradient"] .toast .icon-wrap { color: var(--gradient-accent); }
+html[data-theme="gradient"] .empty-state { color: #59626c; }
+html[data-theme="gradient"] .empty-state h3 { color: #20242b; }
+
+/* Gradient preset chooser: previews are actual theme thumbnails, never text baked into images. */
+.gradient-preset-setting { padding: 13px 0 15px; border-bottom: 1px solid var(--line); }
+.gradient-preset-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:11px; }
+.gradient-preset-heading strong,.gradient-preset-heading small { display:block; }
+.gradient-preset-heading strong { font-size:11px; font-weight:750; }
+.gradient-preset-heading small { margin-top:4px; color:var(--muted); font-size:10px; line-height:1.45; }
+.gradient-preset-count { flex:none; padding:5px 8px; border-radius:999px; background:rgba(255,255,255,.74); border:1px solid rgba(255,255,255,.85); color:var(--muted); font-size:9px; font-weight:700; }
+.gradient-preset-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; max-width:640px; }
+.gradient-preset { display:grid; grid-template-columns:43px minmax(0,1fr) 18px; align-items:center; gap:10px; min-width:0; min-height:68px; padding:9px 11px; text-align:left; border:1px solid rgba(255,255,255,.84); border-radius:17px; background:rgba(255,255,255,.70); color:#20242b; box-shadow:inset 0 1px 0 rgba(255,255,255,.98),0 2px 9px rgba(43,34,38,.035); transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease,background .18s ease; }
+.gradient-preset:hover { transform:translateY(-1px); background:rgba(255,255,255,.90); }
+.gradient-preset:active { transform:scale(.985); }
+.gradient-preset-swatch { display:block; width:43px; height:43px; border-radius:13px; border:2px solid rgba(255,255,255,.86); box-shadow:0 2px 7px rgba(30,25,28,.12),inset 0 1px 0 rgba(255,255,255,.52); }
+.gradient-preset[data-gradient-preset="coral-wave"] .gradient-preset-swatch { background:radial-gradient(circle at 18% 18%,#fff1bd 0 15%,transparent 40%),linear-gradient(135deg,#ffb56e,#ed4f66 56%,#b0183d); }
+.gradient-preset[data-gradient-preset="green-screen"] .gradient-preset-swatch { background:radial-gradient(circle at 80% 80%,#b2fee7 0 18%,transparent 45%),linear-gradient(135deg,#1f4b2c,#85c541 58%,#d6f18a); }
+.gradient-preset[data-gradient-preset="retro-magic"] .gradient-preset-swatch { background:radial-gradient(circle at 18% 16%,#fff7ad 0 14%,transparent 40%),linear-gradient(135deg,#44113e,#d83ca0 60%,#ffb3ae); }
+.gradient-preset[data-gradient-preset="on-fire"] .gradient-preset-swatch { background:radial-gradient(circle at 18% 18%,#fffb97 0 14%,transparent 42%),linear-gradient(135deg,#b32c1a,#e87935 55%,#2a1617); }
+.gradient-preset-copy { min-width:0; }
+.gradient-preset-copy strong,.gradient-preset-copy small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.gradient-preset-copy strong { font-size:10px; font-weight:800; letter-spacing:-.1px; }
+.gradient-preset-copy small { margin-top:3px; color:#69727c; font-size:9px; }
+.gradient-preset-check { display:grid; place-items:center; width:17px; height:17px; border-radius:50%; border:1px solid rgba(90,95,105,.22); color:transparent; font-size:10px; font-weight:900; }
+.gradient-preset.selected { border-color:color-mix(in srgb,var(--gradient-accent) 40%,white); background:rgba(255,255,255,.95); box-shadow:0 0 0 2px color-mix(in srgb,var(--gradient-accent) 12%,transparent),inset 0 1px 0 #fff,0 4px 14px rgba(42,31,35,.08); }
+html[data-theme="gradient"] .gradient-preset.selected .gradient-preset-check { background:var(--gradient-accent); color:#fff; border-color:var(--gradient-accent); }
+html[data-theme="gradient"] #theme-choice { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); width:min(100%,390px); padding:4px; border:1px solid rgba(255,255,255,.86); border-radius:13px; background:rgba(255,255,255,.57); }
+html[data-theme="gradient"] #theme-choice button { min-width:0; padding:8px 7px; border-radius:10px; color:#555e68; font-size:10px; }
+html[data-theme="gradient"] #theme-choice button.selected { color:#20242b; }
+html[data-theme="gradient"] #theme-choice .glass-segment-indicator { border-radius:10px; background:rgba(255,255,255,.97); border-color:#fff; }
+html[data-theme="gradient"] .liquid-glass-setting-row .switch input:disabled+span { opacity:.72; cursor:not-allowed; }
+html[data-theme="gradient"] .liquid-glass-setting-row .switch input:disabled+span:before { box-shadow:0 1px 4px rgba(0,0,0,.18); }
+
+/* iOS and compact-width guardrails: keep settings usable and avoid a horizontal page overflow. */
+@media (max-width:720px) {
+  html[data-theme="gradient"] .topbar { background:rgba(255,255,255,.58); border-radius:0 0 18px 18px; }
+  html[data-theme="gradient"] .sidebar { background:rgba(255,255,255,.83); }
+  html[data-theme="gradient"] .mobile-tabbar { background:rgba(255,255,255,.84); }
+  html[data-theme="gradient"] .appearance-theme-row { align-items:flex-start; flex-direction:column; gap:9px; }
+  html[data-theme="gradient"] #theme-choice { width:100%; max-width:none; }
+  html[data-theme="gradient"] .gradient-preset-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  html[data-theme="gradient"] .gradient-preset { grid-template-columns:38px minmax(0,1fr) 16px; gap:8px; padding:8px; min-height:64px; }
+  html[data-theme="gradient"] .gradient-preset-swatch { width:38px; height:38px; border-radius:12px; }
+  html[data-theme="gradient"] .gradient-preset-copy strong { font-size:10px; }
+  html[data-theme="gradient"] .gradient-preset-copy small { font-size:8px; }
+}
+@media (max-width:360px) {
+  html[data-theme="gradient"] .gradient-preset-grid { grid-template-columns:minmax(0,1fr); }
+  html[data-theme="gradient"] .gradient-preset { min-height:58px; }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  html[data-theme="gradient"] .sidebar,
+  html[data-theme="gradient"] .topbar,
+  html[data-theme="gradient"] .mobile-tabbar,
+  html[data-theme="gradient"] .profile-chip,
+  html[data-theme="gradient"] .app-modal,
+  html[data-theme="gradient"] .modal-head,
+  html[data-theme="gradient"] .toast,
+  html[data-theme="gradient"] .icon-button,
+  html[data-theme="gradient"] .round-subtle,
+  html[data-theme="gradient"] .secondary-button,
+  html[data-theme="gradient"] .mini-button,
+  html[data-theme="gradient"] .search-box,
+  html[data-theme="gradient"] .type-switch,
+  html[data-theme="gradient"] .segmented,
+  html[data-theme="gradient"] .filter-pill,
+  html[data-theme="gradient"] .form-field input,
+  html[data-theme="gradient"] .form-field select,
+  html[data-theme="gradient"] .form-field textarea,
+  html[data-theme="gradient"] .gradient-preset {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: #fff;
+    border-color: #fff;
+  }
+  html[data-theme="gradient"] .card,
+  html[data-theme="gradient"] .metric-card,
+  html[data-theme="gradient"] .settings-card,
+  html[data-theme="gradient"] .data-card,
+  html[data-theme="gradient"] .danger-card { background: #fff; }
+}
+
+@media (prefers-reduced-transparency:reduce), (prefers-contrast:more) {
+  html[data-theme="gradient"] body::before { filter:none; }
+  html[data-theme="gradient"] .sidebar,
+  html[data-theme="gradient"] .topbar,
+  html[data-theme="gradient"] .mobile-tabbar,
+  html[data-theme="gradient"] .profile-chip,
+  html[data-theme="gradient"] .card,
+  html[data-theme="gradient"] .metric-card,
+  html[data-theme="gradient"] .settings-card,
+  html[data-theme="gradient"] .app-modal,
+  html[data-theme="gradient"] .modal-head,
+  html[data-theme="gradient"] .icon-button,
+  html[data-theme="gradient"] .round-subtle,
+  html[data-theme="gradient"] .secondary-button,
+  html[data-theme="gradient"] .form-field input,
+  html[data-theme="gradient"] .form-field select,
+  html[data-theme="gradient"] .form-field textarea,
+  html[data-theme="gradient"] .gradient-preset { -webkit-backdrop-filter:none; backdrop-filter:none; background:#fff !important; border-color:#d8dce1 !important; }
+  html[data-theme="gradient"] .gradient-preset.selected { outline:2px solid var(--gradient-accent); outline-offset:1px; }
+}
+@media (forced-colors:active) {
+  .gradient-preset.selected { outline:2px solid SelectedItem; }
+  html[data-theme="gradient"] body::before { display:none; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .gradient-preset,
+  html[data-theme="gradient"] .primary-button,
+  html[data-theme="gradient"] .secondary-button,
+  html[data-theme="gradient"] .icon-button,
+  html[data-theme="gradient"] .round-subtle { transition:none !important; }
+}
