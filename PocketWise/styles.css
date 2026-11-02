@@ -3663,3 +3663,47 @@ html[data-first-run="on"] .app-modal {
     transition: none !important;
   }
 }
+
+
+/* PocketWise 2.4.41 — Instagram-style adaptive Smart UI navigation.
+   Only the Smart UI mobile capsule changes geometry. Existing theme and Liquid
+   Glass surface tokens remain the source of colors, borders, blur and shadows. */
+@media (max-width: 720px) {
+  html[data-smart-ui="on"] .mobile-tabbar {
+    left: 50%;
+    right: auto;
+    width: calc(100% - 16px);
+    transform: translate3d(-50%, 0, 0);
+    transition:
+      width 420ms cubic-bezier(.22, 1, .36, 1),
+      height 360ms cubic-bezier(.22, 1, .36, 1),
+      min-height 360ms cubic-bezier(.22, 1, .36, 1),
+      padding 360ms cubic-bezier(.22, 1, .36, 1),
+      box-shadow 240ms ease;
+    will-change: width, height;
+  }
+
+  html[data-smart-ui="on"] .mobile-tabbar.is-scroll-collapsed {
+    width: min(260px, calc(100vw - 32px));
+    height: 52px;
+    min-height: 52px;
+    padding: 4px 6px;
+    gap: 0;
+  }
+
+  html[data-smart-ui="on"] .mobile-tabbar.is-scroll-collapsed .mobile-tab,
+  html[data-smart-ui="on"] .mobile-tabbar.is-scroll-collapsed .mobile-add {
+    min-height: 44px;
+    height: 44px;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-smart-ui="on"] .mobile-tabbar,
+  html[data-smart-ui="on"] .mobile-tabbar.is-scroll-collapsed {
+    transition: none !important;
+    will-change: auto;
+  }
+}

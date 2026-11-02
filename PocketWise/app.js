@@ -346,9 +346,11 @@
     toast('Storage recovery snapshot exported. Keep it private and do not overwrite your regular backup.');
   }
   let resetAdaptiveHeaderSurface=()=>{};
+  let syncAdaptiveNavState=()=>{};
   function initAdaptiveHeaderSurface(){
     const scroller=$('.main-content');
     const header=$('.main-content > .topbar');
+    const mobileNav=$('.mobile-tabbar');
     if(!scroller||!header||header.dataset.scrollSurfaceReady==='true')return;
     header.dataset.scrollSurfaceReady='true';
 
@@ -373,11 +375,13 @@
 
     const applyState=()=>{
       const isChanged=header.classList.contains('is-scrolled')!==collapsed;
-      if(!isChanged)return;
-      header.classList.toggle('is-scrolled',collapsed);
-      header.setAttribute('data-header-state',collapsed?'compact':'expanded');
-      if(brand)brand.setAttribute('aria-hidden',collapsed?'true':'false');
-      if(date)date.setAttribute('aria-hidden',collapsed?'true':'false');
+      if(isChanged){
+        header.classList.toggle('is-scrolled',collapsed);
+        header.setAttribute('data-header-state',collapsed?'compact':'expanded');
+        if(brand)brand.setAttribute('aria-hidden',collapsed?'true':'false');
+        if(date)date.setAttribute('aria-hidden',collapsed?'true':'false');
+      }
+      syncAdaptiveNavState();
     };
     const resetDirectionTracking=scrollTop=>{
       lastScrollTop=scrollTop;
@@ -385,6 +389,18 @@
       direction=0;
       directionTravel=0;
     };
+    // Smart UI shares the header's direction state, so both surfaces react to
+    // the same deliberate gesture instead of running competing scroll timers.
+    // Classic navigation is never altered by this controller.
+    syncAdaptiveNavState=()=>{
+      if(!mobileNav)return;
+      const shouldCollapse=mobileQuery.matches&&document.documentElement.dataset.smartUi==='on'&&collapsed;
+      mobileNav.classList.toggle('is-scroll-collapsed',shouldCollapse);
+      mobileNav.dataset.scrollState=shouldCollapse?'compact':'expanded';
+    };
+    mobileNav?.addEventListener?.('transitionend',event=>{
+      if(event.target===mobileNav&&event.propertyName==='width'&&document.documentElement.dataset.smartUi==='on')syncSmartNavIndicator();
+    });
     const update=()=>{
       const scrollTop=Math.max(0,Number(scroller.scrollTop)||0);
       if(!mobileQuery.matches){
@@ -432,10 +448,12 @@
       header.setAttribute('data-header-state','expanded');
       if(brand)brand.setAttribute('aria-hidden','false');
       if(date)date.setAttribute('aria-hidden','false');
+      syncAdaptiveNavState();
     };
     const onViewportChange=()=>{
       if(!mobileQuery.matches)resetAdaptiveHeaderSurface();
       else resetDirectionTracking(Math.max(0,Number(scroller.scrollTop)||0));
+      syncAdaptiveNavState();
     };
 
     scroller.addEventListener('scroll',update,{passive:true});
@@ -570,7 +588,7 @@
   }
   function applyTheme(){
     const pref=state.settings.theme||'light';let actual=pref;if(pref==='system')actual=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
-    document.documentElement.dataset.theme=actual;document.documentElement.dataset.liquidGlass=state.settings.liquidGlass?'on':'off';document.documentElement.dataset.smartUi=state.settings.smartUI?'on':'off';document.documentElement.style.backgroundColor=actual==='dark'?'#000000':'#f6f8f5';document.documentElement.style.colorScheme=actual;try{localStorage.setItem('pocketwise-appearance-v1',JSON.stringify({theme:pref,liquidGlass:!!state.settings.liquidGlass,smartUI:!!state.settings.smartUI}));}catch(_){}const meta=$('meta[name="theme-color"]');if(meta)meta.content=actual==='dark'?'#000000':'#f6f8f5';const appleStatus=$('meta[name="apple-mobile-web-app-status-bar-style"]');if(appleStatus)appleStatus.content=actual==='dark'?'black':'default';$('#theme-label').textContent=pref==='system'?'System appearance':`${pref[0].toUpperCase()+pref.slice(1)} appearance`;
+    document.documentElement.dataset.theme=actual;document.documentElement.dataset.liquidGlass=state.settings.liquidGlass?'on':'off';document.documentElement.dataset.smartUi=state.settings.smartUI?'on':'off';syncAdaptiveNavState();document.documentElement.style.backgroundColor=actual==='dark'?'#000000':'#f6f8f5';document.documentElement.style.colorScheme=actual;try{localStorage.setItem('pocketwise-appearance-v1',JSON.stringify({theme:pref,liquidGlass:!!state.settings.liquidGlass,smartUI:!!state.settings.smartUI}));}catch(_){}const meta=$('meta[name="theme-color"]');if(meta)meta.content=actual==='dark'?'#000000':'#f6f8f5';const appleStatus=$('meta[name="apple-mobile-web-app-status-bar-style"]');if(appleStatus)appleStatus.content=actual==='dark'?'black':'default';$('#theme-label').textContent=pref==='system'?'System appearance':`${pref[0].toUpperCase()+pref.slice(1)} appearance`;
     $$('#theme-choice button').forEach(b=>b.classList.toggle('selected',b.dataset.theme===pref));
     if($('#hide-setting'))$('#hide-setting').checked=!!state.settings.hideBalances;
     if($('#liquid-glass-setting'))$('#liquid-glass-setting').checked=!!state.settings.liquidGlass;
