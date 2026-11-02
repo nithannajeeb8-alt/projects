@@ -512,7 +512,6 @@
     renderAll();
     scheduleDailyStoryRefresh();
     await evaluateBudgetAlerts(false);
-    $('#storage-status').textContent=db?'IndexedDB on device':'Browser storage';
     renderProfile();
     initAdaptiveHeaderSurface();
     if(state.settings.firstRunFlowStarted&&!state.settings.firstRunFlowCompleted&&window.PocketwiseFirstRun){
@@ -543,7 +542,7 @@
         }
       });
     } else if(!state.settings.profileComplete) setTimeout(()=>showProfileForm(true),120);
-    if ('serviceWorker' in navigator) navigator.serviceWorker.ready.then(() => { const status = document.querySelector('#storage-status'); if (status) status.textContent = 'Offline-ready'; }).catch(() => {});if(window.PocketWisePush?.isConfigured?.()&&window.PocketWisePush?.hasInstallation?.())syncBackgroundReminders();
+    if(window.PocketWisePush?.isConfigured?.()&&window.PocketWisePush?.hasInstallation?.())syncBackgroundReminders();
   }
   const activityById = id => state.activities.find(a=>a.id===id) || {id:'other',name:'Other',icon:'more',kind:'both',freq:0};
   const accountById = id => state.accounts.find(a=>a.id===id) || state.accounts[0] || {id:'none',name:'No account',openingBalance:0};

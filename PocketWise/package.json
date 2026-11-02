@@ -1,6 +1,6 @@
 {
   "name": "pocketwise-alpha2",
-  "version": "2.4.44",
+  "version": "2.4.45",
   "private": true,
   "description": "PocketWise local-first finance PWA with mobile UX refinement, stable Smart UI navigation and improved savings goals",
   "scripts": {
