@@ -3188,14 +3188,13 @@ input[type="range"]{touch-action:pan-x pan-y;}
 }
 
 
-/* PocketWise 2.4.37 — green frosted scroll-edge material.
-   Keep the sticky element itself filter-free for Safari chrome sampling. The
-   inset pseudo-element is the material layer: it blurs the content scrolling
-   beneath it, carries PocketWise emerald tint, and fades out instead of drawing
-   a separator. Its lower overscan softens card edges passing under the header. */
+/* PocketWise 2.4.40 — compact neutral frosted scroll-edge material.
+   Use a theme-adaptive standard-material approximation: translucent surface,
+   restrained blur and a short fade. No brand-color wash, gradient or divider.
+   The sticky root stays filter-free for stable Safari scroll-edge sampling. */
 @media (max-width: 720px) {
-  /* The topbar is a sticky child of this scroll viewport. Disabling anchoring
-     here prevents its animated height change from feeding back into scrollTop. */
+  /* Prevent the header's height transition from feeding scroll anchoring back
+     into the direction controller. Keep this on the actual scroll container. */
   .main-content {
     overflow-anchor: none;
   }
@@ -3222,17 +3221,18 @@ input[type="range"]{touch-action:pan-x pan-y;}
     top: 0;
     left: 0;
     right: 0;
-    bottom: -34px;
+    bottom: -8px;
     opacity: 0;
     transform: translate3d(0,-5px,0);
-    background: color-mix(in srgb, var(--green) 18%, transparent);
+    background: var(--surface);
+    background: color-mix(in srgb, var(--surface) 72%, transparent);
     border: 0;
-    -webkit-backdrop-filter: blur(16px) saturate(170%);
-    backdrop-filter: blur(16px) saturate(170%);
+    -webkit-backdrop-filter: blur(18px) saturate(1.35);
+    backdrop-filter: blur(18px) saturate(1.35);
     -webkit-mask-image: linear-gradient(180deg,
-      #000 0%, #000 58%, rgba(0,0,0,.82) 78%, transparent 100%);
+      #000 0%, #000 82%, rgba(0,0,0,.72) 94%, transparent 100%);
     mask-image: linear-gradient(180deg,
-      #000 0%, #000 58%, rgba(0,0,0,.82) 78%, transparent 100%);
+      #000 0%, #000 82%, rgba(0,0,0,.72) 94%, transparent 100%);
     transition: opacity .22s ease, transform .28s cubic-bezier(.22,1,.36,1);
   }
 
@@ -3257,7 +3257,7 @@ input[type="range"]{touch-action:pan-x pan-y;}
 @media (max-width: 720px) and (prefers-reduced-transparency: reduce),
        (max-width: 720px) and (prefers-contrast: more) {
   .main-content > .topbar.is-scrolled::before {
-    background: var(--green-soft);
+    background: var(--surface);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
     -webkit-mask-image: none;
@@ -3268,7 +3268,7 @@ input[type="range"]{touch-action:pan-x pan-y;}
 @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
   @media (max-width: 720px) {
     .main-content > .topbar.is-scrolled::before {
-      background: var(--green-soft);
+      background: var(--surface);
     }
   }
 }
