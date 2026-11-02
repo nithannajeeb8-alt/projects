@@ -4189,40 +4189,40 @@ html[data-theme="gradient"] {
   --day-progress: #344a3a;
 }
 html[data-theme="gradient"][data-gradient="coral-wave"] {
-  --gradient-accent: #d83d58;
+  --gradient-accent: #98556B;
   --glass-panel-alpha: .49;
   --glass-panel-low-alpha: .34;
   --glass-row-alpha: .37;
   --glass-control-alpha: .45;
   --glass-nav-alpha: .58;
-  --gradient-scene: radial-gradient(ellipse at 16% 48%,#fff 0,rgba(255,255,255,.78) 7%,transparent 32%),radial-gradient(ellipse at 5% 10%,#ffd464 0,rgba(255,212,100,.88) 15%,transparent 42%),radial-gradient(ellipse at 90% 12%,#ff5e5e 0,rgba(255,94,94,.82) 18%,transparent 43%),radial-gradient(ellipse at 82% 82%,#e23c64 0,rgba(226,60,100,.82) 20%,transparent 45%),linear-gradient(138deg,#ffd464 0%,#ff5e5e 30%,#e23c64 64%,#b0183d 100%);
+  --gradient-scene: radial-gradient(ellipse 66% 48% at 10% 10%,rgba(255,250,235,.98) 0%,rgba(255,250,235,.72) 24%,transparent 70%),radial-gradient(ellipse 62% 52% at 88% 18%,rgba(255,216,220,.92) 0%,rgba(255,216,220,.70) 25%,transparent 70%),radial-gradient(ellipse 66% 54% at 14% 88%,rgba(255,222,207,.96) 0%,rgba(255,222,207,.72) 24%,transparent 70%),radial-gradient(ellipse 62% 50% at 88% 86%,rgba(239,211,229,.91) 0%,rgba(239,211,229,.70) 24%,transparent 70%),linear-gradient(135deg,#FFF3E4 0%,#F9E0D9 48%,#F0D8E8 100%);
 }
 html[data-theme="gradient"][data-gradient="green-screen"] {
-  --gradient-accent: #4d7b2b;
-  --glass-panel-alpha: .43;
-  --glass-panel-low-alpha: .28;
-  --glass-row-alpha: .32;
-  --glass-control-alpha: .42;
-  --glass-nav-alpha: .54;
-  --gradient-scene: radial-gradient(ellipse at 12% 52%,#f4fffc 0,rgba(244,255,252,.82) 12%,transparent 40%),radial-gradient(ellipse at 10% 12%,#4d7111 0,rgba(77,113,17,.84) 19%,transparent 43%),radial-gradient(ellipse at 90% 16%,#c3e956 0,rgba(195,233,86,.78) 19%,transparent 44%),radial-gradient(ellipse at 86% 88%,#b2fee7 0,rgba(178,254,231,.84) 22%,transparent 48%),linear-gradient(138deg,#1f4b2c 0%,#4d7111 35%,#c3e956 67%,#b2fee7 100%);
+  --gradient-accent: #50765A;
+  --glass-panel-alpha: .47;
+  --glass-panel-low-alpha: .32;
+  --glass-row-alpha: .35;
+  --glass-control-alpha: .44;
+  --glass-nav-alpha: .57;
+  --gradient-scene: radial-gradient(ellipse 64% 50% at 10% 12%,rgba(250,252,231,.98) 0%,rgba(250,252,231,.72) 24%,transparent 70%),radial-gradient(ellipse 62% 50% at 88% 18%,rgba(224,241,201,.93) 0%,rgba(224,241,201,.72) 25%,transparent 70%),radial-gradient(ellipse 66% 54% at 15% 88%,rgba(211,235,205,.96) 0%,rgba(211,235,205,.72) 24%,transparent 70%),radial-gradient(ellipse 62% 50% at 88% 86%,rgba(203,239,230,.92) 0%,rgba(203,239,230,.70) 24%,transparent 70%),linear-gradient(135deg,#F5F8E8 0%,#E2EFD6 48%,#D6F0E8 100%);
 }
 html[data-theme="gradient"][data-gradient="retro-magic"] {
-  --gradient-accent: #a52c78;
-  --glass-panel-alpha: .54;
-  --glass-panel-low-alpha: .39;
-  --glass-row-alpha: .42;
-  --glass-control-alpha: .50;
-  --glass-nav-alpha: .62;
-  --gradient-scene: radial-gradient(ellipse at 4% 14%,#fff7ad 0,rgba(255,247,173,.82) 16%,transparent 41%),radial-gradient(ellipse at 89% 16%,#ffb3ae 0,rgba(255,179,174,.84) 19%,transparent 44%),radial-gradient(ellipse at 86% 82%,#ff49c1 0,rgba(255,73,193,.76) 20%,transparent 45%),radial-gradient(ellipse at 18% 88%,#6a1452 0,rgba(106,20,82,.82) 17%,transparent 42%),linear-gradient(138deg,#44113e 0%,#6a1452 30%,#ff49c1 66%,#ffb3ae 100%);
+  --gradient-accent: #71598C;
+  --glass-panel-alpha: .50;
+  --glass-panel-low-alpha: .35;
+  --glass-row-alpha: .38;
+  --glass-control-alpha: .46;
+  --glass-nav-alpha: .59;
+  --gradient-scene: radial-gradient(ellipse 65% 48% at 10% 10%,rgba(255,249,237,.98) 0%,rgba(255,249,237,.72) 24%,transparent 70%),radial-gradient(ellipse 62% 52% at 89% 18%,rgba(230,218,249,.94) 0%,rgba(230,218,249,.70) 24%,transparent 70%),radial-gradient(ellipse 66% 54% at 14% 88%,rgba(238,218,241,.96) 0%,rgba(238,218,241,.72) 24%,transparent 70%),radial-gradient(ellipse 62% 50% at 88% 86%,rgba(250,219,232,.93) 0%,rgba(250,219,232,.70) 24%,transparent 70%),linear-gradient(135deg,#F8F2FF 0%,#EADFF7 48%,#F7DDEA 100%);
 }
 html[data-theme="gradient"][data-gradient="on-fire"] {
-  --gradient-accent: #a83226;
-  --glass-panel-alpha: .61;
-  --glass-panel-low-alpha: .47;
-  --glass-row-alpha: .49;
-  --glass-control-alpha: .57;
-  --glass-nav-alpha: .68;
-  --gradient-scene: radial-gradient(ellipse at 12% 9%,#fffb97 0,rgba(255,251,151,.82) 15%,transparent 39%),radial-gradient(ellipse at 87% 18%,#7a4b47 0,rgba(122,75,71,.84) 18%,transparent 43%),radial-gradient(ellipse at 75% 84%,#fe7fa2 0,rgba(254,127,162,.68) 18%,transparent 44%),radial-gradient(ellipse at 20% 84%,#b32c1a 0,rgba(179,44,26,.80) 18%,transparent 43%),linear-gradient(138deg,#fffb97 0%,#b32c1a 32%,#7a4b47 68%,#2a1617 100%);
+  --gradient-accent: #966346;
+  --glass-panel-alpha: .49;
+  --glass-panel-low-alpha: .34;
+  --glass-row-alpha: .37;
+  --glass-control-alpha: .45;
+  --glass-nav-alpha: .58;
+  --gradient-scene: radial-gradient(ellipse 65% 48% at 10% 10%,rgba(255,250,235,.98) 0%,rgba(255,250,235,.72) 24%,transparent 70%),radial-gradient(ellipse 62% 52% at 89% 18%,rgba(255,229,201,.94) 0%,rgba(255,229,201,.70) 24%,transparent 70%),radial-gradient(ellipse 66% 54% at 14% 88%,rgba(249,215,197,.96) 0%,rgba(249,215,197,.72) 24%,transparent 70%),radial-gradient(ellipse 62% 50% at 88% 86%,rgba(242,207,204,.92) 0%,rgba(242,207,204,.70) 24%,transparent 70%),linear-gradient(135deg,#FFF4E5 0%,#FBE1CA 48%,#F1D1D0 100%);
 }
 
 html[data-theme="gradient"] body {
@@ -4675,10 +4675,10 @@ html[data-theme="gradient"] .empty-state h3 { color:var(--ink); }
 .gradient-preset:hover { transform:translateY(-1px); background:rgba(255,255,255,.60); }
 .gradient-preset:active { transform:scale(.985); }
 .gradient-preset-swatch { display:block; width:43px; height:43px; border-radius:13px; border:2px solid rgba(255,255,255,.90); box-shadow:0 2px 7px rgba(30,25,28,.12),inset 0 1px 0 rgba(255,255,255,.72); }
-.gradient-preset[data-gradient-preset="coral-wave"] .gradient-preset-swatch { background:radial-gradient(circle at 18% 18%,#fff1bd 0 15%,transparent 40%),linear-gradient(135deg,#ffb56e,#ed4f66 56%,#b0183d); }
-.gradient-preset[data-gradient-preset="green-screen"] .gradient-preset-swatch { background:radial-gradient(circle at 80% 80%,#b2fee7 0 18%,transparent 45%),linear-gradient(135deg,#1f4b2c,#85c541 58%,#d6f18a); }
-.gradient-preset[data-gradient-preset="retro-magic"] .gradient-preset-swatch { background:radial-gradient(circle at 18% 16%,#fff7ad 0 14%,transparent 40%),linear-gradient(135deg,#44113e,#d83ca0 60%,#ffb3ae); }
-.gradient-preset[data-gradient-preset="on-fire"] .gradient-preset-swatch { background:radial-gradient(circle at 18% 18%,#fffb97 0 14%,transparent 42%),linear-gradient(135deg,#b32c1a,#e87935 55%,#2a1617); }
+.gradient-preset[data-gradient-preset="coral-wave"] .gradient-preset-swatch { background:radial-gradient(circle at 18% 18%,#fffbed 0 18%,transparent 48%),linear-gradient(135deg,#fff3e4 0%,#f8d9d5 54%,#efd6e8 100%); }
+.gradient-preset[data-gradient-preset="green-screen"] .gradient-preset-swatch { background:radial-gradient(circle at 80% 80%,#d4f2e7 0 18%,transparent 48%),linear-gradient(135deg,#f5f8e8 0%,#e1efd3 54%,#d2efe7 100%); }
+.gradient-preset[data-gradient-preset="retro-magic"] .gradient-preset-swatch { background:radial-gradient(circle at 18% 16%,#fff9ef 0 18%,transparent 48%),linear-gradient(135deg,#f8f2ff 0%,#e8dcf8 54%,#f6dce9 100%); }
+.gradient-preset[data-gradient-preset="on-fire"] .gradient-preset-swatch { background:radial-gradient(circle at 18% 18%,#fffbed 0 18%,transparent 48%),linear-gradient(135deg,#fff4e5 0%,#f9dfc5 54%,#f0d0cd 100%); }
 .gradient-preset-copy { min-width:0; }
 .gradient-preset-copy strong,.gradient-preset-copy small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .gradient-preset-copy strong { font-size:10px; font-weight:800; letter-spacing:-.1px; }
@@ -5085,112 +5085,61 @@ html[data-theme="gradient"] #activity-filters .filter-pill.active {
   #activity-filters .filter-pill { flex:0 0 auto; scroll-snap-align:start; white-space:nowrap; }
 }
 
-/* Compact brand/title hierarchy. The brand remains visible when the title bar collapses. */
+/* PocketWise 2.4.52 — compact header is title-only; the expanded state retains the brand. */
 @media(max-width:720px) {
   html[data-theme="gradient"] .main-content > .topbar.is-scrolled .mobile-brand {
-    display:flex !important;
-    position:absolute;
-    top:50%;
-    left:14px;
-    z-index:3;
-    align-items:center;
-    margin:0;
-    max-width:82px;
-    opacity:1 !important;
-    transform:translate3d(0,-50%,0) !important;
-    pointer-events:auto;
-    font-size:12px;
-    line-height:1;
-    letter-spacing:-.35px;
-    color:#26362e;
-  }
-  html[data-theme="gradient"] .main-content > .topbar.is-scrolled .mobile-brand strong {
-    display:block;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    font-weight:850;
+    display:none !important;
+    opacity:0 !important;
+    pointer-events:none !important;
   }
   html[data-theme="gradient"] .main-content > .topbar.is-scrolled .page-heading {
     top:50%;
-    left:98px;
-    right:104px;
+    left:16px !important;
+    right:106px !important;
+    width:auto;
     transform:translate3d(0,-50%,0) !important;
   }
   html[data-theme="gradient"] .main-content > .topbar.is-scrolled .page-heading h1 {
-    font-size:17px;
-    line-height:1.1;
-    letter-spacing:-.4px;
+    font-size:20px;
+    line-height:1.12;
+    letter-spacing:-.45px;
     color:#202a25;
   }
-  html[data-theme="gradient"] .main-content > .topbar.is-scrolled .top-actions {
-    top:50%;
-    right:12px;
-    transform:translate3d(0,-50%,0);
-    gap:6px;
-  }
-  html[data-theme="gradient"] .main-content > .topbar.is-scrolled .top-actions .icon-button {
-    width:35px;
-    min-width:35px;
-    height:35px;
-    min-height:35px;
-    border-radius:12px;
-  }
-  html[data-theme="gradient"] .main-content > .topbar.is-scrolled .page-heading .eyebrow {
-    display:none !important;
-  }
+  html[data-theme="gradient"] .main-content > .topbar.is-scrolled .page-heading .eyebrow { display:none !important; }
 }
 @media(max-width:390px) {
-  html[data-theme="gradient"] .main-content > .topbar.is-scrolled .mobile-brand { left:11px; max-width:75px; }
-  html[data-theme="gradient"] .main-content > .topbar.is-scrolled .page-heading { left:87px; right:94px; }
-  html[data-theme="gradient"] .main-content > .topbar.is-scrolled .page-heading h1 { font-size:16px; }
-  html[data-theme="gradient"] .main-content > .topbar.is-scrolled .top-actions { right:9px; gap:5px; }
-  html[data-theme="gradient"] .main-content > .topbar.is-scrolled .top-actions .icon-button { width:33px; min-width:33px; height:33px; min-height:33px; }
+  html[data-theme="gradient"] .main-content > .topbar.is-scrolled .page-heading { left:12px !important; right:94px !important; }
+  html[data-theme="gradient"] .main-content > .topbar.is-scrolled .page-heading h1 { font-size:18px; }
 }
 
-/* Money stories become a compact weekly index, not a row of oversized bubbles. */
-.daily-story-region { margin:12px 0 15px; padding:0; }
-.daily-story-strip-heading { margin:0 2px 8px; align-items:center; }
-.daily-story-strip-heading h2 {
-  color:var(--ink);
-  font:800 12px/1.2 var(--display);
-  letter-spacing:.01em;
-  text-transform:none;
-}
-.daily-story-date-pill { min-height:26px; padding:5px 10px; font-size:9px; }
-.daily-story-scroller { gap:7px; padding:2px 1px 6px; }
-.daily-story-list-item { flex:0 0 47px; }
-.daily-story-bubble { gap:3px; }
-.daily-story-ring {
-  width:43px;
-  height:43px;
-  padding:2px;
-  border-width:1px;
-}
-.daily-story-ring-inner { padding:2px; border-width:1.5px; }
-.daily-story-bubble-label { font-size:9px; line-height:1.1; font-weight:800; }
-.daily-story-bubble-meta { display:block; max-width:100%; color:var(--muted); font-size:8px; line-height:1.05; font-weight:650; white-space:nowrap; }
+/* PocketWise 2.4.52 — restore Money Stories to the original pre-2.4.51 dimensions. */
+.daily-story-region { margin:-8px 0 14px; padding:0; border:0; border-radius:0; background:transparent; box-shadow:none; }
+.daily-story-strip-heading { margin:0 2px 7px; align-items:center; gap:12px; }
+.daily-story-strip-heading h2 { color:var(--muted); font:750 10px/1.2 var(--font); letter-spacing:.14em; text-transform:uppercase; }
+.daily-story-date-pill { flex:0 0 auto; color:var(--muted); font-size:10px; font-weight:650; }
+.daily-story-scroller { gap:12px; padding:3px 2px 9px; }
+.daily-story-list-item { flex:0 0 68px; }
+.daily-story-bubble { gap:6px; }
+.daily-story-ring { width:64px; height:64px; padding:3px; border-width:1px; }
+.daily-story-ring-inner { padding:4px; border-width:2px; }
+.daily-story-bubble-label { font-size:10px; line-height:1.25; font-weight:700; }
+.daily-story-bubble-meta { display:none !important; }
 .daily-story-thumbnail-pie { width:100%; height:100%; }
-html[data-theme="gradient"] .daily-story-region {
-  padding:10px 11px 7px;
-  border:1px solid rgba(255,255,255,.54);
-  border-radius:17px;
-  background:rgba(255,255,255,.20);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.64);
-  -webkit-backdrop-filter:blur(10px) saturate(128%);
-  backdrop-filter:blur(10px) saturate(128%);
-}
-html[data-theme="gradient"] .daily-story-strip-heading h2 { color:#293a31; }
-html[data-theme="gradient"] .daily-story-bubble-label { color:#36483e; }
-html[data-theme="gradient"] .daily-story-bubble-meta { color:#536158; }
+html[data-theme="gradient"] .daily-story-region { padding:0; border:0; background:transparent; box-shadow:none; -webkit-backdrop-filter:none; backdrop-filter:none; }
+html[data-theme="gradient"] .daily-story-strip-heading h2 { color:#3e5145; }
+html[data-theme="gradient"] .daily-story-bubble-label { color:#46594d; }
 @media(max-width:720px) {
-  .daily-story-region { margin:10px 0 13px; }
-  .daily-story-strip-heading { margin-bottom:7px; }
-  .daily-story-scroller { gap:6px; padding-bottom:5px; }
-  .daily-story-list-item { flex-basis:45px; }
-  .daily-story-ring { width:40px; height:40px; }
-  .daily-story-bubble-label { font-size:8.5px; }
-  .daily-story-bubble-meta { font-size:7.5px; }
+  .daily-story-region { margin:-12px 0 11px; }
+  .daily-story-strip-heading { margin-bottom:5px; }
+  .daily-story-scroller { gap:10px; padding:3px 2px 7px; }
+  .daily-story-list-item { flex-basis:66px; }
+  .daily-story-ring { width:62px; height:62px; }
+}
+@media(max-width:390px) {
+  .daily-story-scroller { gap:8px; }
+  .daily-story-list-item { flex-basis:62px; }
+  .daily-story-ring { width:58px; height:58px; }
+  .daily-story-bubble-label { font-size:9px; }
 }
 
 /* Data series have stable meanings across charts and a visible key. */
@@ -5232,4 +5181,71 @@ html[data-theme="gradient"] .heat-cell.heat-4 { background:#005A9C; }
 }
 @media(prefers-reduced-motion:reduce) {
   #page-activity .transaction-row { transition:none !important; }
+}
+
+
+/* PocketWise 2.4.52 — light gradient collection and theme-aware chart palettes.
+   Keep the four backgrounds bright enough for the existing white glass materials.
+   Each preset owns a distinct categorical palette plus semantic positive/negative colours. */
+html[data-theme="gradient"][data-gradient="coral-wave"] {
+  --chart-1:#1E5B83; --chart-2:#16745F; --chart-3:#6A4A9A; --chart-4:#9A5700;
+  --chart-5:#AA3454; --chart-6:#237D9D; --chart-7:#5B6D2D; --chart-8:#505A67;
+  --chart-income:#08724F; --chart-expense:#B12E42; --chart-primary:#1E5B83; --chart-blue:#1E5B83;
+  --chart-grid:rgba(50,55,60,.17); --day-progress:#1E5B83;
+}
+html[data-theme="gradient"][data-gradient="green-screen"] {
+  --chart-1:#1D5E8A; --chart-2:#A23C72; --chart-3:#5A48A1; --chart-4:#9A5800;
+  --chart-5:#B13C33; --chart-6:#08777A; --chart-7:#4A6A2A; --chart-8:#4B5969;
+  --chart-income:#08745E; --chart-expense:#B13C33; --chart-primary:#5A48A1; --chart-blue:#1D5E8A;
+  --chart-grid:rgba(47,59,53,.16); --day-progress:#5A48A1;
+}
+html[data-theme="gradient"][data-gradient="retro-magic"] {
+  --chart-1:#275B91; --chart-2:#A4520B; --chart-3:#0A755E; --chart-4:#78439C;
+  --chart-5:#B12C66; --chart-6:#257A98; --chart-7:#786319; --chart-8:#515A70;
+  --chart-income:#0A755E; --chart-expense:#B12C66; --chart-primary:#78439C; --chart-blue:#275B91;
+  --chart-grid:rgba(55,48,63,.17); --day-progress:#78439C;
+}
+html[data-theme="gradient"][data-gradient="on-fire"] {
+  --chart-1:#205B8A; --chart-2:#08766B; --chart-3:#69499C; --chart-4:#4B702E;
+  --chart-5:#B23D35; --chart-6:#237A9B; --chart-7:#7A5B20; --chart-8:#55515F;
+  --chart-income:#08766B; --chart-expense:#B23D35; --chart-primary:#205B8A; --chart-blue:#205B8A;
+  --chart-grid:rgba(59,52,48,.17); --day-progress:#205B8A;
+}
+html[data-theme="gradient"] .heat-cell.heat-1 { background:color-mix(in srgb,var(--chart-primary) 16%,rgba(255,255,255,.76)); }
+html[data-theme="gradient"] .heat-cell.heat-2 { background:color-mix(in srgb,var(--chart-primary) 34%,rgba(255,255,255,.66)); }
+html[data-theme="gradient"] .heat-cell.heat-3 { background:color-mix(in srgb,var(--chart-primary) 58%,rgba(255,255,255,.54)); }
+html[data-theme="gradient"] .heat-cell.heat-4 { background:var(--chart-primary); color:#fff; }
+
+/* Overview's compact transactions use the same distinct-card rhythm as Activity. */
+html[data-theme="gradient"] .recent-card .transaction-list {
+  display:flex;
+  flex-direction:column;
+  gap:9px;
+}
+html[data-theme="gradient"] .recent-card .transaction-swipe-shell {
+  margin:0;
+  padding:0;
+  border:0;
+  border-radius:17px;
+  overflow:visible;
+}
+html[data-theme="gradient"] .recent-card .transaction-row {
+  min-height:70px;
+  padding:11px 12px;
+  border:1px solid rgba(255,255,255,.82);
+  border-radius:17px;
+  background:rgba(255,255,255,.62);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.96),0 4px 13px rgba(48,54,48,.055);
+  -webkit-backdrop-filter:blur(14px) saturate(142%);
+  backdrop-filter:blur(14px) saturate(142%);
+}
+html[data-theme="gradient"] .recent-card .transaction-swipe-shell.is-open .transaction-row {
+  width:calc(100% - var(--tx-delete-width) - var(--tx-action-gap) - var(--tx-action-inset));
+}
+@media(max-width:720px) {
+  html[data-theme="gradient"] .recent-card .transaction-list { gap:8px; }
+  html[data-theme="gradient"] .recent-card .transaction-row { min-height:68px; padding:10px 11px; }
+}
+@media(prefers-reduced-transparency:reduce), (prefers-contrast:more) {
+  html[data-theme="gradient"] .recent-card .transaction-row { background:rgba(255,255,255,.96); -webkit-backdrop-filter:none; backdrop-filter:none; }
 }

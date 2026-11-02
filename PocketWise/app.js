@@ -380,7 +380,7 @@
       if(isChanged){
         header.classList.toggle('is-scrolled',collapsed);
         header.setAttribute('data-header-state',collapsed?'compact':'expanded');
-        if(brand)brand.setAttribute('aria-hidden',collapsed&&document.documentElement.dataset.theme!=='gradient'?'true':'false');
+        if(brand)brand.setAttribute('aria-hidden',collapsed?'true':'false');
         if(date)date.setAttribute('aria-hidden',collapsed?'true':'false');
       }
       syncAdaptiveNavState();
@@ -610,17 +610,17 @@
     const pref=state.settings.theme||'light';
     const preset=['coral-wave','green-screen','retro-magic','on-fire'].includes(state.settings.gradientPreset)?state.settings.gradientPreset:'coral-wave';
     const presetLabels={'coral-wave':'Coral Wave','green-screen':'Green Screen','retro-magic':'Retro Magic','on-fire':'On Fire'};
-    const presetColors={'coral-wave':'#F06C61','green-screen':'#7FAE43','retro-magic':'#D94BA4','on-fire':'#E56F3E'};
+    const presetColors={'coral-wave':'#F4DDDA','green-screen':'#E2EFD9','retro-magic':'#EDE2F5','on-fire':'#F6E0D0'};
     let actual=pref;
     if(pref==='system')actual=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
     const isGradient=pref==='gradient';
     const scheme=actual==='dark'?'dark':'light';
-    const canvas=actual==='dark'?'#000000':isGradient?'#FFF0E8':'#f6f8f5';
+    const canvas=actual==='dark'?'#000000':isGradient?presetColors[preset]:'#f6f8f5';
     const themeColor=isGradient?presetColors[preset]:canvas;
     const root=document.documentElement;
     root.dataset.theme=actual;
     const topbar=$('.main-content > .topbar'),mobileBrand=topbar?.querySelector('.mobile-brand');
-    if(mobileBrand)mobileBrand.setAttribute('aria-hidden',topbar.classList.contains('is-scrolled')&&actual!=='gradient'?'true':'false');
+    if(mobileBrand)mobileBrand.setAttribute('aria-hidden',topbar.classList.contains('is-scrolled')?'true':'false');
     root.dataset.gradient=preset;
     root.dataset.liquidGlass=(isGradient||state.settings.liquidGlass)?'on':'off';
     root.dataset.smartUi=state.settings.smartUI?'on':'off';
@@ -845,7 +845,7 @@
       const transactionLabel=count===1?'1 transaction':`${count} transactions`;
       const aria=`Open money story for ${spokenDate}. ${transactionLabel}. Income ${fmtHidden(data.income)}. Spent ${fmtHidden(data.expenses)}. Balance brought down ${fmtHidden(data.openingBalance)}. Balance carried down ${fmtHidden(data.closingBalance)}.`;
       const pie=storyPieSVG(data.categories).replace('class="daily-story-pie"','class="daily-story-pie daily-story-thumbnail-pie"');
-      return `<div class="daily-story-list-item" role="listitem"><button class="daily-story-bubble ${count?'has-transactions':'is-quiet'}" type="button" data-story-date="${date}" aria-label="${escapeHTML(aria)}" aria-haspopup="dialog" title="${escapeHTML(spokenDate)}"><span class="daily-story-ring" aria-hidden="true"><span class="daily-story-ring-inner">${pie}</span></span><span class="daily-story-bubble-label">${escapeHTML(dateLabel)}</span><span class="daily-story-bubble-meta">${count?`${count} tx`:'Quiet'}</span></button></div>`;
+      return `<div class="daily-story-list-item" role="listitem"><button class="daily-story-bubble ${count?'has-transactions':'is-quiet'}" type="button" data-story-date="${date}" aria-label="${escapeHTML(aria)}" aria-haspopup="dialog" title="${escapeHTML(spokenDate)}"><span class="daily-story-ring" aria-hidden="true"><span class="daily-story-ring-inner">${pie}</span></span><span class="daily-story-bubble-label">${escapeHTML(dateLabel)}</span></button></div>`;
     }).join('');
   }
   function openDailyStory(date=previousLocalDate()){
