@@ -352,15 +352,21 @@
     if(!scroller||!header||header.dataset.scrollSurfaceReady==='true')return;
     header.dataset.scrollSurfaceReady='true';
 
-    // The inner .main-content element is the real iPhone scroll viewport.
-    // Keep scroll work cheap: read one number, then write only on state changes.
-    // A wide hysteresis band prevents bounce/trackpad noise from reopening the header.
+    // Follow deliberate scroll direction, not a position threshold alone.
+    // Sub-pixel scroll updates are accumulated; a short reverse movement resets
+    // the travel counter instead of making the header chatter between states.
     const collapseAt=56;
     const expandAt=20;
+    const directionThreshold=14;
+    const minimumDelta=1.25;
     const mobileQuery=window.matchMedia('(max-width: 720px)');
     const brand=header.querySelector('.mobile-brand');
     const date=header.querySelector('.page-heading .eyebrow');
     let collapsed=false;
+    let lastScrollTop=Math.max(0,Number(scroller.scrollTop)||0);
+    let pendingDelta=0;
+    let direction=0;
+    let directionTravel=0;
     header.setAttribute('data-header-state','expanded');
     if(brand)brand.setAttribute('aria-hidden','false');
     if(date)date.setAttribute('aria-hidden','false');
@@ -373,19 +379,55 @@
       if(brand)brand.setAttribute('aria-hidden',collapsed?'true':'false');
       if(date)date.setAttribute('aria-hidden',collapsed?'true':'false');
     };
+    const resetDirectionTracking=scrollTop=>{
+      lastScrollTop=scrollTop;
+      pendingDelta=0;
+      direction=0;
+      directionTravel=0;
+    };
     const update=()=>{
+      const scrollTop=Math.max(0,Number(scroller.scrollTop)||0);
       if(!mobileQuery.matches){
         collapsed=false;
+        resetDirectionTracking(scrollTop);
         applyState();
         return;
       }
-      const scrollTop=Math.max(0,Number(scroller.scrollTop)||0);
-      if(!collapsed&&scrollTop>=collapseAt)collapsed=true;
-      else if(collapsed&&scrollTop<=expandAt)collapsed=false;
+
+      pendingDelta+=scrollTop-lastScrollTop;
+      lastScrollTop=scrollTop;
+
+      // Always restore the full header close to the top, even after a short flick.
+      if(scrollTop<=expandAt){
+        collapsed=false;
+        resetDirectionTracking(scrollTop);
+        applyState();
+        return;
+      }
+
+      // Accumulate tiny deltas so slow, deliberate finger movement still counts.
+      if(Math.abs(pendingDelta)<minimumDelta)return;
+      const movement=pendingDelta;
+      pendingDelta=0;
+      const nextDirection=movement>0?1:-1;
+      if(nextDirection!==direction){
+        direction=nextDirection;
+        directionTravel=0;
+      }
+      directionTravel+=Math.abs(movement);
+
+      if(!collapsed&&nextDirection===1&&scrollTop>=collapseAt&&directionTravel>=directionThreshold){
+        collapsed=true;
+        directionTravel=0;
+      }else if(collapsed&&nextDirection===-1&&directionTravel>=directionThreshold){
+        collapsed=false;
+        directionTravel=0;
+      }
       applyState();
     };
     resetAdaptiveHeaderSurface=()=>{
       collapsed=false;
+      resetDirectionTracking(Math.max(0,Number(scroller.scrollTop)||0));
       if(header.classList.contains('is-scrolled'))header.classList.remove('is-scrolled');
       header.setAttribute('data-header-state','expanded');
       if(brand)brand.setAttribute('aria-hidden','false');
@@ -393,7 +435,7 @@
     };
     const onViewportChange=()=>{
       if(!mobileQuery.matches)resetAdaptiveHeaderSurface();
-      else update();
+      else resetDirectionTracking(Math.max(0,Number(scroller.scrollTop)||0));
     };
 
     scroller.addEventListener('scroll',update,{passive:true});

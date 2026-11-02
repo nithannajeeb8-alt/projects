@@ -3194,6 +3194,12 @@ input[type="range"]{touch-action:pan-x pan-y;}
    beneath it, carries PocketWise emerald tint, and fades out instead of drawing
    a separator. Its lower overscan softens card edges passing under the header. */
 @media (max-width: 720px) {
+  /* The topbar is a sticky child of this scroll viewport. Disabling anchoring
+     here prevents its animated height change from feeding back into scrollTop. */
+  .main-content {
+    overflow-anchor: none;
+  }
+
   .main-content > .topbar {
     position: sticky;
     top: 0;
@@ -3219,15 +3225,7 @@ input[type="range"]{touch-action:pan-x pan-y;}
     bottom: -34px;
     opacity: 0;
     transform: translate3d(0,-5px,0);
-    background:
-      radial-gradient(ellipse 88% 72% at 17% 0%,
-        color-mix(in srgb, var(--green) 23%, transparent) 0%,
-        transparent 72%),
-      linear-gradient(180deg,
-        color-mix(in srgb, var(--bg) 88%, var(--green) 12%) 0%,
-        color-mix(in srgb, var(--bg) 84%, transparent) 48%,
-        color-mix(in srgb, var(--bg) 58%, transparent) 76%,
-        transparent 100%);
+    background: color-mix(in srgb, var(--green) 18%, transparent);
     border: 0;
     -webkit-backdrop-filter: blur(16px) saturate(170%);
     backdrop-filter: blur(16px) saturate(170%);
@@ -3259,9 +3257,7 @@ input[type="range"]{touch-action:pan-x pan-y;}
 @media (max-width: 720px) and (prefers-reduced-transparency: reduce),
        (max-width: 720px) and (prefers-contrast: more) {
   .main-content > .topbar.is-scrolled::before {
-    background:
-      radial-gradient(ellipse at 18% 0%, color-mix(in srgb, var(--green) 15%, transparent), transparent 70%),
-      color-mix(in srgb, var(--bg) 96%, var(--green) 4%);
+    background: var(--green-soft);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
     -webkit-mask-image: none;
@@ -3272,9 +3268,7 @@ input[type="range"]{touch-action:pan-x pan-y;}
 @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
   @media (max-width: 720px) {
     .main-content > .topbar.is-scrolled::before {
-      background:
-        radial-gradient(ellipse at 18% 0%, color-mix(in srgb, var(--green) 18%, transparent), transparent 70%),
-        color-mix(in srgb, var(--bg) 90%, transparent);
+      background: var(--green-soft);
     }
   }
 }
@@ -3643,13 +3637,12 @@ html[data-first-run="on"] .app-modal {
 }
 
 
-/* PocketWise 2.4.38 — shrink the actual sticky header, not only its contents.
+/* PocketWise 2.4.39 — shrink the actual sticky header, not only its contents.
    The expanded header remains 102px. Once collapsed, the flex item itself becomes
    a 56px single row; the title/actions already occupy that top row. The margin
    below the header also closes so the next section can flow naturally underneath. */
 @media (max-width: 720px) {
   .main-content > .topbar {
-    overflow-anchor: none;
     transition:
       height .26s cubic-bezier(.22,1,.36,1),
       min-height .26s cubic-bezier(.22,1,.36,1),
