@@ -3664,10 +3664,11 @@ html[data-first-run="on"] .app-modal {
   }
 }
 
-/* PocketWise 2.4.42 — stable icon rail with an independently morphing capsule.
-   The navigation layout stays 60px tall in both states. Only the visual surface
-   scales vertically around the icon-row centre; the 46px tab targets and 44px
-   Quick Add target never move vertically or get clipped by the shrinking edge. */
+/* PocketWise 2.4.43 — true-radius capsule with a stable icon rail.
+   The navigation layout stays 60px tall in both states. The visual capsule
+   animates its own height from 60px to 52px while remaining centred on the
+   icon rail. Its border, blur and shadow are not scaled, so the capsule keeps
+   a genuine pill silhouette. The 46px tabs and 44px Quick Add target do not move. */
 @media (max-width: 720px) {
   html[data-smart-ui="on"] .mobile-tabbar {
     position: fixed;
@@ -3699,12 +3700,16 @@ html[data-first-run="on"] .app-modal {
     overflow: visible;
   }
 
-  /* This is the only element whose vertical size changes. Scaling around its
-     centre keeps both icon centres and the capsule centre on the same axis. */
+  /* The shell is a real capsule at every frame, not a vertically scaled
+     screenshot of one. Only this absolutely positioned surface changes height;
+     the parent grid and all interactive controls retain fixed geometry. */
   html[data-smart-ui="on"] .mobile-tabbar::before {
     content: "";
     position: absolute;
-    inset: 0;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 60px;
     z-index: 0;
     box-sizing: border-box;
     border: 1px solid var(--line);
@@ -3713,9 +3718,8 @@ html[data-first-run="on"] .app-modal {
     box-shadow: 0 14px 38px rgba(20,30,24,.13), inset 0 1px 0 color-mix(in srgb, var(--surface) 86%, white);
     -webkit-backdrop-filter: blur(18px) saturate(1.45);
     backdrop-filter: blur(18px) saturate(1.45);
-    transform: scaleY(1);
-    transform-origin: 50% 50%;
-    transition: transform 280ms cubic-bezier(.2, .8, .2, 1), background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+    transform: translate3d(0, -50%, 0);
+    transition: height 280ms cubic-bezier(.2, .8, .2, 1), background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
     pointer-events: none;
   }
 
@@ -3743,7 +3747,7 @@ html[data-first-run="on"] .app-modal {
   }
 
   html[data-smart-ui="on"] .mobile-tabbar.is-scroll-collapsed::before {
-    transform: scaleY(.8666667); /* 60px layout rail, 52px visible capsule */
+    height: 52px; /* 60px layout rail, 52px true capsule; icons remain centred */
   }
 
   /* Controls keep identical vertical geometry in expanded and compact states. */
