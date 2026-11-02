@@ -3641,3 +3641,32 @@ html[data-first-run="on"] .app-modal {
     animation: none !important;
   }
 }
+
+
+/* PocketWise 2.4.38 — shrink the actual sticky header, not only its contents.
+   The expanded header remains 102px. Once collapsed, the flex item itself becomes
+   a 56px single row; the title/actions already occupy that top row. The margin
+   below the header also closes so the next section can flow naturally underneath. */
+@media (max-width: 720px) {
+  .main-content > .topbar {
+    overflow-anchor: none;
+    transition:
+      height .26s cubic-bezier(.22,1,.36,1),
+      min-height .26s cubic-bezier(.22,1,.36,1),
+      flex-basis .26s cubic-bezier(.22,1,.36,1),
+      margin-bottom .26s cubic-bezier(.22,1,.36,1);
+  }
+
+  .main-content > .topbar.is-scrolled {
+    height: 56px;
+    min-height: 56px;
+    flex-basis: 56px;
+    margin-bottom: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .main-content > .topbar {
+    transition: none !important;
+  }
+}
