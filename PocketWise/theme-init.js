@@ -24,6 +24,7 @@
   root.dataset.smartUi=smartUI?'on':'off';
   root.style.backgroundColor=canvas;
   root.style.colorScheme=scheme;
-  if(meta)meta.content=actual==='gradient'?themeColors[preset]:canvas;
+  if(meta)meta.content=canvas;
+  if(actual==='gradient'&&meta)meta.content=themeColors[preset];
   if(appleStatus)appleStatus.content=actual==='dark'?'black':'default';
 })();
