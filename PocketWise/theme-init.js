@@ -15,7 +15,7 @@
   var systemDark=false;
   try{systemDark=!!(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);}catch(_){}
   var actual=preference==='system'?(systemDark?'dark':'light'):preference;
-  var themeColors={'coral-wave':'#F4DDDA','green-screen':'#E2EFD9','retro-magic':'#EDE2F5','on-fire':'#F6E0D0'};
+  var themeColors={'coral-wave':'#FBECE9','green-screen':'#EDF5E9','retro-magic':'#F2ECF8','on-fire':'#FBEFE4'};
   var canvas=actual==='dark'?'#000000':actual==='gradient'?themeColors[preset]:'#f6f8f5';
   var scheme=actual==='dark'?'dark':'light';
   root.dataset.theme=actual;

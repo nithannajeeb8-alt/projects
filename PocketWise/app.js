@@ -610,7 +610,7 @@
     const pref=state.settings.theme||'light';
     const preset=['coral-wave','green-screen','retro-magic','on-fire'].includes(state.settings.gradientPreset)?state.settings.gradientPreset:'coral-wave';
     const presetLabels={'coral-wave':'Coral Wave','green-screen':'Green Screen','retro-magic':'Retro Magic','on-fire':'On Fire'};
-    const presetColors={'coral-wave':'#F4DDDA','green-screen':'#E2EFD9','retro-magic':'#EDE2F5','on-fire':'#F6E0D0'};
+    const presetColors={'coral-wave':'#FBECE9','green-screen':'#EDF5E9','retro-magic':'#F2ECF8','on-fire':'#FBEFE4'};
     let actual=pref;
     if(pref==='system')actual=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
     const isGradient=pref==='gradient';
