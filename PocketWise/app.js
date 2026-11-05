@@ -327,7 +327,7 @@
     if(!next.activities.length)next.activities=defaults.activities.map(a=>({...a}));
     next.settings=normalizeDailyStoryPreference({...defaults.settings,...(source.settings&&typeof source.settings==='object'&&!Array.isArray(source.settings)?source.settings:{})});
     if(!['coral-wave','green-screen','retro-magic','on-fire'].includes(next.settings.gradientPreset))next.settings.gradientPreset='coral-wave';
-    if(!['light','dark','system','gradient','glass'].includes(next.settings.theme))next.settings.theme='light';
+    if(!['light','dark','system','gradient'].includes(next.settings.theme))next.settings.theme='light';
     for(const key of ['seenAlerts','notifications','sentAlerts','smartRules','merchantRules'])if(!Array.isArray(next.settings[key]))next.settings[key]=[];
     const salarySource=source.settings&&source.settings.salaryPlan&&typeof source.settings.salaryPlan==='object'&&!Array.isArray(source.settings.salaryPlan)?source.settings.salaryPlan:{};
     next.settings.salaryPlan={expectedSalary:Math.max(0,Number(salarySource.expectedSalary)||0),frequency:['monthly','fortnightly','weekly'].includes(salarySource.frequency)?salarySource.frequency:'monthly',paydayDay:Number.isFinite(Number(salarySource.paydayDay))?Number(salarySource.paydayDay):1,paydayDate:typeof salarySource.paydayDate==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(salarySource.paydayDate)?salarySource.paydayDate:null,allocations:Array.isArray(salarySource.allocations)?salarySource.allocations.filter(rule=>rule&&typeof rule==='object'&&!Array.isArray(rule)).slice(0,100):[]};
@@ -611,20 +611,18 @@
     const preset=['coral-wave','green-screen','retro-magic','on-fire'].includes(state.settings.gradientPreset)?state.settings.gradientPreset:'coral-wave';
     const presetLabels={'coral-wave':'Coral Wave','green-screen':'Green Screen','retro-magic':'Retro Magic','on-fire':'On Fire'};
     const presetColors={'coral-wave':'#FBECE9','green-screen':'#EDF5E9','retro-magic':'#F2ECF8','on-fire':'#FBEFE4'};
-    const isGlassUi=pref==='glass';
     let actual=pref;
-    if(pref==='system'||isGlassUi)actual=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+    if(pref==='system')actual=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
     const isGradient=pref==='gradient';
     const scheme=actual==='dark'?'dark':'light';
-    const canvas=actual==='dark'?'#000000':isGradient?presetColors[preset]:isGlassUi?'#EAF1F2':'#f6f8f5';
+    const canvas=actual==='dark'?'#000000':isGradient?presetColors[preset]:'#f6f8f5';
     const themeColor=isGradient?presetColors[preset]:canvas;
     const root=document.documentElement;
     root.dataset.theme=actual;
-    root.dataset.glassUi=isGlassUi?'on':'off';
     const topbar=$('.main-content > .topbar'),mobileBrand=topbar?.querySelector('.mobile-brand');
     if(mobileBrand)mobileBrand.setAttribute('aria-hidden',topbar.classList.contains('is-scrolled')?'true':'false');
     root.dataset.gradient=preset;
-    root.dataset.liquidGlass=(isGradient||isGlassUi||state.settings.liquidGlass)?'on':'off';
+    root.dataset.liquidGlass=(isGradient||state.settings.liquidGlass)?'on':'off';
     root.dataset.smartUi=state.settings.smartUI?'on':'off';
     syncAdaptiveNavState();
     root.style.backgroundColor=canvas;
@@ -632,8 +630,8 @@
     try{localStorage.setItem('pocketwise-appearance-v1',JSON.stringify({theme:pref,gradientPreset:preset,liquidGlass:!!state.settings.liquidGlass,smartUI:!!state.settings.smartUI}));}catch(_){}
     const meta=$('meta[name="theme-color"]');if(meta)meta.content=themeColor;
     const appleStatus=$('meta[name="apple-mobile-web-app-status-bar-style"]');if(appleStatus)appleStatus.content=actual==='dark'?'black':'default';
-    const label=$('#theme-label');if(label)label.textContent=isGlassUi?'Glass UI':isGradient?`${presetLabels[preset]} gradient`:pref==='system'?'System appearance':`${pref[0].toUpperCase()+pref.slice(1)} appearance`;
-    const themeToggle=$('#theme-toggle');if(themeToggle)themeToggle.setAttribute('aria-label',`Switch appearance. Current: ${isGlassUi?'Glass UI':isGradient?`${presetLabels[preset]} gradient`:pref}`);
+    const label=$('#theme-label');if(label)label.textContent=isGradient?`${presetLabels[preset]} gradient`:pref==='system'?'System appearance':`${pref[0].toUpperCase()+pref.slice(1)} appearance`;
+    const themeToggle=$('#theme-toggle');if(themeToggle)themeToggle.setAttribute('aria-label',`Switch appearance. Current: ${isGradient?`${presetLabels[preset]} gradient`:pref}`);
     $$('#theme-choice button').forEach(b=>{
       const selected=b.dataset.theme===pref;
       b.classList.toggle('selected',selected);
@@ -646,8 +644,8 @@
     });
     const picker=$('#gradient-preset-picker');if(picker)picker.hidden=!isGradient;
     const glassSetting=$('#liquid-glass-setting');
-    if(glassSetting){glassSetting.checked=isGradient||isGlassUi||!!state.settings.liquidGlass;glassSetting.disabled=isGradient||isGlassUi;glassSetting.setAttribute('aria-label',isGradient?'Liquid Glass is always enabled for gradient themes':isGlassUi?'Liquid Glass is built into the Glass UI theme':'Enable Liquid Glass');}
-    const glassCopy=$('#liquid-glass-setting-copy');if(glassCopy)glassCopy.textContent=isGradient?'White glass surfaces are built into Gradient themes. Switch to Light or Dark to control this separately.':isGlassUi?'Glass UI uses floating, translucent controls. It follows your device light or dark appearance.':'Translucent surfaces. With Smart UI, the navigation pill also becomes glass-like.';
+    if(glassSetting){glassSetting.checked=isGradient||!!state.settings.liquidGlass;glassSetting.disabled=isGradient;glassSetting.setAttribute('aria-label',isGradient?'Liquid Glass is always enabled for gradient themes':'Enable Liquid Glass');}
+    const glassCopy=$('#liquid-glass-setting-copy');if(glassCopy)glassCopy.textContent=isGradient?'White glass surfaces are built into Gradient themes. Switch to Light or Dark to control this separately.':'Translucent surfaces. With Smart UI, the navigation pill also becomes glass-like.';
     if($('#hide-setting'))$('#hide-setting').checked=!!state.settings.hideBalances;
     if($('#smart-ui-setting'))$('#smart-ui-setting').checked=!!state.settings.smartUI;
     if($('#daily-story-setting'))$('#daily-story-setting').checked=!!state.settings.dailyStory;
@@ -2422,7 +2420,7 @@
       if(event.target.closest('#event-plan-download')){await downloadEventPlanFromForm();return;}
       const addType=event.target.closest('[data-add-type]');if(addType){transactionForm(null,addType.dataset.addType);return;}
       const action=event.target.closest('[data-action]')?.dataset.action;if(action){if(action==='budget')budgetForm();else if(action==='debts')showDebts();else if(action==='new-debt')debtForm();else if(action==='accounts')accountsManager();return;}
-      if(event.target.closest('#theme-toggle')){const snapshot=JSON.stringify(state);const current=document.documentElement.dataset.theme;state.settings.theme=state.settings.theme==='gradient'?'light':state.settings.theme==='glass'?(current==='dark'?'light':'dark'):state.settings.theme==='dark'?'light':'dark';if(!(await persistMutation(snapshot,'Could not change the theme. Your previous settings were restored.'))){applyTheme();return;}applyTheme();scheduleCharts();return;}
+      if(event.target.closest('#theme-toggle')){const snapshot=JSON.stringify(state);state.settings.theme=state.settings.theme==='dark'?'light':state.settings.theme==='gradient'?'light':'dark';if(!(await persistMutation(snapshot,'Could not change the theme. Your previous settings were restored.'))){applyTheme();return;}applyTheme();scheduleCharts();return;}
       const gradientPresetBtn=event.target.closest('button[data-gradient-preset]');if(gradientPresetBtn){const preset=gradientPresetBtn.dataset.gradientPreset;if(!['coral-wave','green-screen','retro-magic','on-fire'].includes(preset))return;const snapshot=JSON.stringify(state);state.settings.theme='gradient';state.settings.gradientPreset=preset;if(!(await persistMutation(snapshot,'Could not save the gradient appearance. Your previous settings were restored.'))){applyTheme();return;}applyTheme();scheduleCharts();return;}
       const themeBtn=event.target.closest('button[data-theme]');if(themeBtn){const snapshot=JSON.stringify(state);state.settings.theme=themeBtn.dataset.theme;if(!(await persistMutation(snapshot,'Could not change the theme. Your previous settings were restored.'))){applyTheme();return;}applyTheme();scheduleCharts();return;}
       if(event.target.closest('#hide-balances')){if(state.settings.hideBalances){const snapshot=JSON.stringify(state);state.settings.hideBalances=false;hiddenAmounts=false;if(!(await persistMutation(snapshot,'Could not save the balance visibility setting.'))){applyHiddenAmounts();return;}renderSettingsSummary();}else{hiddenAmounts=!hiddenAmounts;}applyHiddenAmounts();return;}
@@ -2533,7 +2531,7 @@
     window.addEventListener('resize',()=>{syncGlassSegmentIndicators();syncSmartNavIndicator();});
     document.addEventListener('visibilitychange',()=>{if(!document.hidden){updateDateHeader();renderDailyStory();syncSmartNavIndicator();void processDueRecurringEntries();}});window.addEventListener('pageshow',()=>{void processDueRecurringEntries();});
     $('#hide-setting').addEventListener('change',async e=>{const snapshot=JSON.stringify(state);state.settings.hideBalances=e.target.checked;if(!(await persistMutation(snapshot,'Could not save the balance visibility setting.'))){e.target.checked=!!state.settings.hideBalances;applyHiddenAmounts();return;}applyHiddenAmounts();renderAll();});
-    $('#liquid-glass-setting').addEventListener('change',async e=>{if(state.settings.theme==='gradient'||state.settings.theme==='glass'){applyTheme();return;}const snapshot=JSON.stringify(state);state.settings.liquidGlass=!!e.target.checked;if(!(await persistMutation(snapshot,'Could not save the appearance setting.'))){e.target.checked=!!state.settings.liquidGlass;applyTheme();return;}applyTheme();scheduleCharts();toast(state.settings.liquidGlass?'Liquid Glass enabled.':'Liquid Glass disabled.');});
+    $('#liquid-glass-setting').addEventListener('change',async e=>{if(state.settings.theme==='gradient'){applyTheme();return;}const snapshot=JSON.stringify(state);state.settings.liquidGlass=!!e.target.checked;if(!(await persistMutation(snapshot,'Could not save the appearance setting.'))){e.target.checked=!!state.settings.liquidGlass;applyTheme();return;}applyTheme();scheduleCharts();toast(state.settings.liquidGlass?'Liquid Glass enabled.':'Liquid Glass disabled.');});
     $('#smart-ui-setting').addEventListener('change',async e=>{const snapshot=JSON.stringify(state);state.settings.smartUI=!!e.target.checked;if(!(await persistMutation(snapshot,'Could not save Smart UI. Your previous settings were restored.'))){e.target.checked=!!state.settings.smartUI;applyTheme();return;}applyTheme();syncSmartNavIndicator();toast(state.settings.smartUI?'Smart UI enabled. Your navigation capsule follows the selected section.':'Smart UI disabled. Your classic navigation is restored.');});
     $('#daily-story-setting').addEventListener('change',async e=>{const snapshot=JSON.stringify(state);state.settings.dailyStory=!!e.target.checked;state.settings.dailyStoryPreferenceSet=true;if(!(await persistMutation(snapshot,'Could not save the daily story setting. Your previous settings were restored.'))){e.target.checked=!!state.settings.dailyStory;renderDailyStory();return;}renderDailyStory();toast(state.settings.dailyStory?'Daily money story enabled.':'Daily money story hidden.');});
     ['alert-threshold','notify-budget','notify-positive','notify-bills','notify-debts','notify-weekly','quiet-start','quiet-end'].forEach(id=>{const el=$(`#${id}`);el.addEventListener('change',async()=>{const map={'alert-threshold':'alertThreshold','notify-budget':'notifyBudget','notify-positive':'notifyPositive','notify-bills':'notifyBills','notify-debts':'notifyDebts','notify-weekly':'notifyWeekly','quiet-start':'quietStart','quiet-end':'quietEnd'},snapshot=JSON.stringify(state);state.settings[map[id]]=id==='alert-threshold'?Number(el.value):el.type==='checkbox'?el.checked:el.value;if(!(await persistMutation(snapshot,'Could not save this notification setting. Your previous settings were restored.'))){renderSettingsSummary();return;}renderSettingsSummary();});});
@@ -2562,7 +2560,7 @@
       if(e.target.closest('#event-plan-form'))validateEventPlannerForm();
       if(e.target.closest('#bill-split-form'))validateBillSplitForm();
     });
-    window.addEventListener('resize',scheduleCharts);window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',()=>{if(state.settings.theme==='system'||state.settings.theme==='glass'){applyTheme();scheduleCharts();}});
+    window.addEventListener('resize',scheduleCharts);window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',()=>{if(state.settings.theme==='system'){applyTheme();scheduleCharts();}});
     window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installedPrompt=e;});
   }
   function goalContributionForm(id){const goal=state.goals.find(g=>g.id===id);if(!goal)return;openModal('Update savings progress',`<form id="goal-contribution-form" class="modal-body goal-contribution-form" data-id="${escapeHTML(goal.id)}"><div class="goal-contribution-summary"><small>${escapeHTML(goal.name)}</small><strong data-money>${fmtHidden(Math.max(0,goal.target-goal.saved))}</strong><span>left to reach your target</span></div><div class="form-grid"><div class="form-field"><label for="goal-entry-kind">ENTRY TYPE</label><select id="goal-entry-kind" name="direction"><option value="add">Contribution</option><option value="withdraw">Withdrawal</option></select></div><div class="form-field"><label for="goal-add-amount">AMOUNT · INR</label><input class="amount-input" id="goal-add-amount" name="amount" type="number" enterkeyhint="done" min="0.01" step="0.01" required></div><div class="form-field"><label for="goal-entry-date">DATE</label><input id="goal-entry-date" name="date" type="date" max="${today()}" value="${today()}" required></div><div class="form-field"><label for="goal-entry-note">NOTE · OPTIONAL</label><input id="goal-entry-note" name="note" maxlength="80" placeholder="e.g. Monthly savings"></div></div><p class="form-note">This updates the tracker only. It does not move money between accounts.</p><div class="form-actions"><button class="secondary-button" type="button" data-cancel-modal>Cancel</button><button class="primary-button" type="submit">Save progress</button></div></form>`,'SAVINGS GOAL');}
