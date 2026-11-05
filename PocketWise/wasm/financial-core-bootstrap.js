@@ -15,9 +15,9 @@
     'local-ai.js',
     'statement-import.js'
   ];
-  const MIN_SPLASH_DURATION_MS = 2000;
-  const splashStartedAt = Date.now();
-  let hideTimer = null;
+  const SPLASH_EXIT_DURATION_MS = 190;
+  let splashAnimationDone = window.__pwSplashAnimationDone === true;
+  let splashHideStarted = false;
   let scriptsStarted = false;
   let scriptsLoaded = false;
   let appReady = false;
@@ -30,19 +30,13 @@
   const action = document.getElementById('pw-splash-retry');
 
   function maybeHideSplash() {
-    if (!scriptsLoaded || !appReady || runtimeFailure || !gate || !gate.isConnected) return;
-    const remaining = MIN_SPLASH_DURATION_MS - (Date.now() - splashStartedAt);
-    if (remaining > 0) {
-      if (hideTimer === null) {
-        hideTimer = setTimeout(() => {
-          hideTimer = null;
-          maybeHideSplash();
-        }, remaining);
-      }
-      return;
-    }
+    if (!scriptsLoaded || !appReady || !splashAnimationDone || runtimeFailure || !gate || !gate.isConnected || splashHideStarted) return;
+    splashHideStarted = true;
     gate.setAttribute('aria-busy', 'false');
-    gate.remove();
+    gate.classList.add('pw-splash-exiting');
+    setTimeout(() => {
+      if (gate.isConnected) gate.remove();
+    }, SPLASH_EXIT_DURATION_MS);
   }
 
   function showFailure(error, failureType) {
@@ -106,11 +100,18 @@
     }
   }
 
+  window.addEventListener('pocketwise:splash-animation-finished', () => {
+    splashAnimationDone = true;
+    maybeHideSplash();
+  }, { once: true });
+
   window.addEventListener('pocketwise:app-ready', () => {
     appReady = true;
     maybeHideSplash();
   }, { once: true });
 
+  // No timer may bypass the writing animation. splash-animation.js signals
+  // completion only after every rolling character reaches its final position.
   window.addEventListener('pocketwise:financial-engine-error', event => {
     runtimeFailure = new Error(event && event.detail && event.detail.message || 'Unknown WebAssembly calculation failure.');
     showFailure(runtimeFailure, 'runtime');
