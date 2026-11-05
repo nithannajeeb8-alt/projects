@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pocketwise-shell-v2.4.55-gradient-picker-check';
+const CACHE_NAME = 'pocketwise-shell-v2.4.56-monoline-wordmark';
 const PADDLE_RUNTIME_CACHE = 'pocketwise-paddle-runtime-v243';
 const PDF_RENDERER_URL = 'https://cdn.jsdelivr.net/npm/html2pdf.js@0.14.0/dist/html2pdf.bundle.min.js';
 const IOS_PDF_RENDERER_URL = 'https://cdn.jsdelivr.net/npm/html3pdf@0.12.2/dist/html3pdf.bundle.min.js';
@@ -9,6 +9,7 @@ const APP_SHELL = [
   BASE_URL,
   asset('index.html'),
   asset('theme-init.js'),
+  asset('splash-animation.js'),
   asset('first-run-onboarding.js'),
   asset('styles.css'),
   asset('wasm/pocketwise-engine.js'),
@@ -37,7 +38,6 @@ const APP_SHELL = [
   asset('manifest.webmanifest'),
   asset('share-target.html'),
   asset('assets/icons/icon.svg'),
-  asset('assets/icons/splash-mark-white.png'),
   asset('assets/icons/icon-192.PNG'),
   asset('assets/icons/icon-512.PNG')
 ];

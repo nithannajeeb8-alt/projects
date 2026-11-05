@@ -6,7 +6,6 @@
   <meta name="referrer" content="no-referrer">
   <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="theme-color" content="#f6f8f5">
-  <link rel="preload" as="image" href="assets/icons/splash-mark-white.png" fetchpriority="high">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Pocketwise">
@@ -15,18 +14,15 @@
     html[data-theme="dark"]{background:#000}
     html[data-theme="light"]{background:#f6f8f5}
     html[data-theme="gradient"]{background:#fff0e8}
-    #pocketwise-boot-splash{position:fixed;inset:0;z-index:2147483647;background:#000;color:#fff;display:block;overflow:hidden;pointer-events:auto}
-    #pw-splash-mark{position:absolute;left:50%;top:46%;width:124px;height:124px;transform:translate(-50%,-50%);display:grid;place-items:center}
-    #pw-splash-mark img{display:block;width:124px;height:124px;object-fit:contain}
-    #pw-splash-brand-lockup{display:block;text-align:center}
-    #pw-splash-brand{position:absolute;left:0;right:0;bottom:calc(82px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;text-align:center}
-    #pw-splash-from{font-size:14px;line-height:1.2;letter-spacing:.08em;color:#73808d;font-weight:400}
-    #pw-splash-versanya{display:block;font-family:Manrope,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:24px;line-height:1.2;letter-spacing:.025em;color:#f5f6f8;font-weight:700;text-align:center}
-    #pw-splash-error{position:absolute;left:24px;right:24px;top:calc(50% + 88px);text-align:center;color:#f2f3f5;font:13px/1.45 system-ui,-apple-system,BlinkMacSystemFont,sans-serif}
+    #pocketwise-boot-splash{position:fixed;inset:0;z-index:2147483647;background:#090a0c;color:#f4f3f1;display:block;overflow:hidden;pointer-events:auto;opacity:1}
+    #pw-splash-wordmark{position:absolute;left:50%;top:50%;display:block;width:min(88vw,380px);height:auto;overflow:visible;transform:translate(-50%,-50%);color:#f4f3f1}
+    #pw-splash-wordmark .pw-writing-stroke{fill:none;stroke:currentColor;stroke-width:4.6;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1000;stroke-dashoffset:1000;opacity:0}
+    #pw-splash-error{position:absolute;left:24px;right:24px;top:calc(50% + 62px);text-align:center;color:#f2f3f5;font:13px/1.45 system-ui,-apple-system,BlinkMacSystemFont,sans-serif}
     #pw-splash-details{display:block;margin-top:8px;color:#d7a0a0;overflow-wrap:anywhere}
     #pw-splash-retry{margin-top:16px;padding:11px 18px;border:0;border-radius:11px;background:#f5f6f8;color:#101115;font:600 14px system-ui;cursor:pointer}
-    @media(prefers-reduced-motion:no-preference){#pw-splash-mark img{animation:pw-splash-mark-in .28s ease-out both}}
-    @keyframes pw-splash-mark-in{from{opacity:.75;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+    #pocketwise-boot-splash.pw-splash-exiting{opacity:0;pointer-events:none;transition:opacity 180ms ease-out}
+    #pocketwise-boot-splash.pw-splash-wordmark-static #pw-splash-wordmark .pw-writing-stroke{stroke-dasharray:none!important;stroke-dashoffset:0!important;opacity:1!important}
+    @media(prefers-reduced-motion:reduce){#pocketwise-boot-splash.pw-splash-exiting{transition:none}}
     [hidden]{display:none!important}
   </style>
   <meta name="description" content="A private, offline-first personal finance companion for everyday money, budgets and lending.">
@@ -40,15 +36,33 @@
   <script src="viewport-guard.js" defer></script>
 </head>
 <body>
-  <section id="pocketwise-boot-splash" role="status" aria-live="polite" aria-label="Pocketwise by Versanya is starting">
-    <div id="pw-splash-mark" aria-hidden="true"><img src="assets/icons/splash-mark-white.png" width="124" height="124" alt="" fetchpriority="high" decoding="async"></div>
+  <section id="pocketwise-boot-splash" role="status" aria-live="polite" aria-busy="true" aria-label="PocketWise is starting">
+    <svg id="pw-splash-wordmark" viewBox="0 0 490 100" role="img" aria-label="PocketWise" xmlns="http://www.w3.org/2000/svg">
+      <g aria-hidden="true">
+        <path class="pw-writing-stroke" data-glyph="P" d="M22 17 L22 75" />
+        <path class="pw-writing-stroke" data-glyph="P" d="M22 17 C39 17 50 23 50 37 C50 50 41 57 22 57" />
+        <path class="pw-writing-stroke" data-glyph="o" d="M96 51 C96 38 89 30 79 30 C67 30 60 38 60 52 C60 66 67 75 79 75 C89 75 96 66 96 53" />
+        <path class="pw-writing-stroke" data-glyph="c" d="M142 37 C137 32 132 30 126 30 C114 30 107 39 107 53 C107 67 115 75 127 75 C133 75 138 73 142 69" />
+        <path class="pw-writing-stroke" data-glyph="k" d="M155 27 L155 75" />
+        <path class="pw-writing-stroke" data-glyph="k" d="M156 54 C165 48 175 38 185 29" />
+        <path class="pw-writing-stroke" data-glyph="k" d="M164 47 C172 55 181 66 188 75" />
+        <path class="pw-writing-stroke" data-glyph="e" d="M198 53 C210 51 224 52 237 51 C237 39 230 30 219 30 C207 30 199 39 199 53 C199 66 208 75 220 75 C229 75 234 71 238 66" />
+        <path class="pw-writing-stroke" data-glyph="t" d="M255 18 L255 70 C255 75 260 76 266 72" />
+        <path class="pw-writing-stroke" data-glyph="t" d="M244 39 L268 39" />
+        <path class="pw-writing-stroke" data-glyph="W" d="M283 17 L299 75 L319 41 L339 75 L355 17" />
+        <path class="pw-writing-stroke" data-glyph="i" d="M369 47 L369 75" />
+        <path class="pw-writing-stroke" data-glyph="i" d="M369 29 L369 30" />
+        <path class="pw-writing-stroke" data-glyph="s" d="M419 37 C414 31 407 29 400 31 C392 33 388 39 390 45 C392 51 399 53 406 55 C414 57 421 60 420 67 C419 74 411 77 402 75 C395 74 389 71 386 67" />
+        <path class="pw-writing-stroke" data-glyph="e" d="M431 53 C443 51 457 52 470 51 C470 39 463 30 452 30 C440 30 432 39 432 53 C432 66 441 75 453 75 C462 75 467 71 471 66" />
+      </g>
+    </svg>
     <div id="pw-splash-error" hidden>
-      <span id="pw-splash-message">Pocketwise is getting ready…</span>
+      <span id="pw-splash-message">PocketWise is getting ready…</span>
       <span id="pw-splash-details" hidden></span>
-      <button id="pw-splash-retry" type="button" hidden>Reload Pocketwise</button>
+      <button id="pw-splash-retry" type="button" hidden>Reload PocketWise</button>
     </div>
-    <div id="pw-splash-brand" aria-label="from Versanya"><span id="pw-splash-from">from</span><div id="pw-splash-brand-lockup"><strong id="pw-splash-versanya">VERSANYA</strong></div></div>
   </section>
+  <script src="splash-animation.js"></script>
   <div class="app-shell">
     <aside class="sidebar" aria-label="Main navigation">
       <a class="brand" href="#home" aria-label="Pocketwise home">
