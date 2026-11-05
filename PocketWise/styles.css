@@ -5543,3 +5543,459 @@ html[data-theme="gradient"] .period-caption { color:var(--muted); }
   html[data-theme="gradient"] .days-track,
   html[data-theme="gradient"] .mobile-inner-track { filter:none; }
 }
+
+
+/* PocketWise 2.4.54 — visible theme controls, Money Stories rings and balance arcs.
+   This is a Gradient-only clarity layer: Light, Dark and Auto keep their existing styles. */
+html[data-theme="gradient"][data-gradient="coral-wave"] {
+  --day-track:#B9788D;
+  --story-ring-a:#A65D73;
+  --story-ring-b:#D79AAC;
+  --story-ring-quiet:#B9788D;
+}
+html[data-theme="gradient"][data-gradient="green-screen"] {
+  --day-track:#799A80;
+  --story-ring-a:#54775C;
+  --story-ring-b:#A1C5A8;
+  --story-ring-quiet:#799A80;
+}
+html[data-theme="gradient"][data-gradient="retro-magic"] {
+  --day-track:#A28BBC;
+  --story-ring-a:#80649A;
+  --story-ring-b:#C4ACD7;
+  --story-ring-quiet:#A28BBC;
+}
+html[data-theme="gradient"][data-gradient="on-fire"] {
+  --day-track:#B98263;
+  --story-ring-a:#98624A;
+  --story-ring-b:#D4A382;
+  --story-ring-quiet:#B98263;
+}
+
+/* Theme picker controls get a real surface and a clear state cue, rather than disappearing
+   into the surrounding white glass. The moving indicator remains decorative only. */
+html[data-theme="gradient"] .gradient-preset-setting {
+  background:linear-gradient(145deg,rgba(255,255,255,.72),rgba(255,255,255,.54));
+  border:1px solid rgba(255,255,255,.92);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.99),inset 0 -1px 0 rgba(255,255,255,.52),0 7px 19px rgba(56,50,62,.055);
+  -webkit-backdrop-filter:blur(18px) saturate(150%);
+  backdrop-filter:blur(18px) saturate(150%);
+}
+html[data-theme="gradient"] .gradient-preset {
+  position:relative;
+  min-height:70px;
+  color:var(--ink);
+  background:linear-gradient(145deg,rgba(255,255,255,.78),rgba(255,255,255,.61));
+  border:1px solid color-mix(in srgb,var(--gradient-accent) 22%,rgba(255,255,255,.92));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.99),0 4px 13px rgba(50,48,58,.055);
+  -webkit-backdrop-filter:blur(13px) saturate(145%);
+  backdrop-filter:blur(13px) saturate(145%);
+  -webkit-tap-highlight-color:transparent;
+}
+html[data-theme="gradient"] .gradient-preset.selected {
+  background:linear-gradient(145deg,
+    color-mix(in srgb,var(--gradient-accent) 13%,rgba(255,255,255,.98)),
+    color-mix(in srgb,var(--gradient-accent) 7%,rgba(255,255,255,.94)));
+  border:1.5px solid color-mix(in srgb,var(--gradient-accent) 66%,white);
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--gradient-accent) 35%,transparent),
+    inset 0 1px 0 #fff,0 7px 17px color-mix(in srgb,var(--gradient-accent) 13%,transparent);
+}
+html[data-theme="gradient"] .gradient-preset-check {
+  width:20px;
+  height:20px;
+  border:1.5px solid color-mix(in srgb,var(--gradient-accent) 58%,#68716b);
+  background:rgba(255,255,255,.94);
+  color:transparent;
+  box-shadow:inset 0 1px 0 #fff;
+}
+html[data-theme="gradient"] .gradient-preset.selected .gradient-preset-check {
+  color:#fff;
+  background:var(--gradient-accent-strong);
+  border-color:var(--gradient-accent-strong);
+  box-shadow:0 2px 7px color-mix(in srgb,var(--gradient-accent) 24%,transparent),inset 0 1px 0 rgba(255,255,255,.28);
+}
+html[data-theme="gradient"] .gradient-preset:focus-visible {
+  outline:2px solid var(--gradient-accent-strong);
+  outline-offset:3px;
+}
+html[data-theme="gradient"] #theme-choice {
+  background:linear-gradient(145deg,rgba(255,255,255,.72),rgba(255,255,255,.56));
+  border:1px solid rgba(255,255,255,.94);
+  box-shadow:inset 0 1px 0 #fff,0 5px 15px rgba(50,48,58,.055);
+}
+html[data-theme="gradient"] #theme-choice button {
+  position:relative;
+  z-index:1;
+  color:#34433b;
+  font-weight:700;
+}
+html[data-theme="gradient"] #theme-choice button.selected {
+  color:var(--gradient-accent-strong);
+}
+html[data-theme="gradient"] #theme-choice .glass-segment-indicator {
+  z-index:0;
+  background:linear-gradient(145deg,
+    color-mix(in srgb,var(--gradient-accent) 17%,white),
+    color-mix(in srgb,var(--gradient-accent) 9%,white));
+  border:1px solid color-mix(in srgb,var(--gradient-accent) 48%,white);
+  box-shadow:inset 0 1px 0 #fff,0 3px 10px color-mix(in srgb,var(--gradient-accent) 13%,transparent);
+}
+html[data-theme="gradient"] #theme-choice:not(.glass-segments-ready) button.selected {
+  background:color-mix(in srgb,var(--gradient-accent) 13%,white);
+  border-radius:10px;
+}
+
+/* Money Stories: active and quiet circles both retain a visible coloured rim, while the
+   centre stays milky white. The quiet state is subdued, never indistinguishable from white. */
+html[data-theme="gradient"] .daily-story-ring {
+  border:1px solid rgba(255,255,255,.98);
+  background:conic-gradient(from 220deg,var(--story-ring-a),var(--story-ring-b) 52%,var(--story-ring-a) 100%);
+  box-shadow:0 3px 13px color-mix(in srgb,var(--gradient-accent) 19%,transparent),
+    inset 0 0 0 1px rgba(255,255,255,.38);
+}
+html[data-theme="gradient"] .daily-story-ring-inner {
+  border:2px solid rgba(255,255,255,.99);
+  background:linear-gradient(145deg,rgba(255,255,255,.99),color-mix(in srgb,var(--gradient-accent) 8%,white));
+  color:var(--gradient-accent-strong);
+  box-shadow:inset 0 1px 3px rgba(58,51,62,.085),inset 0 -1px 0 rgba(255,255,255,.98),0 0 0 1px color-mix(in srgb,var(--gradient-accent) 12%,transparent);
+}
+html[data-theme="gradient"] .daily-story-bubble.is-quiet .daily-story-ring {
+  background:conic-gradient(from 220deg,var(--story-ring-quiet),color-mix(in srgb,var(--story-ring-quiet) 78%,white) 52%,var(--story-ring-quiet) 100%);
+  border-color:rgba(255,255,255,.98);
+  box-shadow:0 2px 10px color-mix(in srgb,var(--gradient-accent) 13%,transparent),inset 0 0 0 1px rgba(255,255,255,.46);
+}
+html[data-theme="gradient"] .daily-story-bubble.is-quiet .daily-story-ring-inner {
+  background:linear-gradient(145deg,#fff,color-mix(in srgb,var(--gradient-accent) 7%,white));
+  border-color:#fff;
+  color:var(--gradient-accent-strong);
+}
+html[data-theme="gradient"] .daily-story-bubble:focus-visible .daily-story-ring {
+  outline:2px solid var(--gradient-accent-strong);
+  outline-offset:3px;
+}
+
+/* The empty balance-arc track was too close to white on the milky money card. Use the
+   per-scene contrast token for all desktop and mobile track paths; progress remains bold. */
+html[data-theme="gradient"] #money-arc .arc-track,
+html[data-theme="gradient"] #money-arc .mobile-inner-track,
+html[data-theme="gradient"] #days-arc .days-track {
+  stroke:var(--day-track) !important;
+  stroke-opacity:1 !important;
+  filter:drop-shadow(0 1px 0 rgba(255,255,255,.88));
+}
+html[data-theme="gradient"] #money-arc .arc-income { stroke:var(--chart-income) !important; }
+html[data-theme="gradient"] #money-arc .arc-expense { stroke:var(--chart-expense) !important; }
+html[data-theme="gradient"] #money-arc .mobile-inner-progress,
+html[data-theme="gradient"] #days-arc .days-progress { stroke:var(--day-progress) !important; }
+html[data-theme="gradient"] .remaining-color {
+  background:linear-gradient(145deg,color-mix(in srgb,var(--day-remaining) 80%,white),color-mix(in srgb,var(--day-track) 22%,white));
+  border:1px solid color-mix(in srgb,var(--day-track) 58%,white);
+  box-shadow:inset 0 1px 0 #fff,0 1px 3px color-mix(in srgb,var(--gradient-accent) 9%,transparent);
+}
+@media(prefers-reduced-transparency:reduce),(prefers-contrast:more) {
+  html[data-theme="gradient"] .gradient-preset,
+  html[data-theme="gradient"] #theme-choice { background:#fff !important; -webkit-backdrop-filter:none !important; backdrop-filter:none !important; }
+  html[data-theme="gradient"] .daily-story-ring-inner { background:#fff !important; -webkit-backdrop-filter:none !important; backdrop-filter:none !important; }
+}
+
+
+/* PocketWise 2.4.55 — Glisse-inspired Glass UI theme.
+   This is an additive appearance mode. It leaves layout geometry and existing themes intact.
+   Content cards remain opaque; only floating controls and navigation use the glass material. */
+html[data-glass-ui="on"] {
+  --lg-glass-bend: .45;
+  --lg-glass-dispersion: .4;
+  --lg-blur: 3px;
+  --lg-rim-shine: .13;
+  --muted: #5b6864;
+  --subtle: #626f6b;
+  --glass-card: rgba(255,255,255,.94);
+  --glass-card-low: rgba(251,253,253,.92);
+  --glass-control: rgba(255,255,255,.48);
+  --glass-control-hover: rgba(255,255,255,.68);
+  --glass-nav: rgba(255,255,255,.42);
+  --glass-border: rgba(255,255,255,.82);
+  --glass-edge: rgba(72,104,117,.13);
+  --glass-highlight: rgba(255,255,255,.96);
+  --glass-accent: rgba(105,151,167,.20);
+  --glass-card-shadow: 0 10px 28px rgba(39,66,76,.075);
+  --glass-float-shadow: 0 18px 46px rgba(35,58,71,.16), 0 3px 10px rgba(35,58,71,.06);
+  --glass-control-shadow: rgba(35,58,71,.09);
+}
+html[data-theme="dark"][data-glass-ui="on"] {
+  --muted: #b7c1c5;
+  --subtle: #a5b0b5;
+  --glass-card: rgba(13,17,20,.96);
+  --glass-card-low: rgba(10,14,17,.94);
+  --glass-control: rgba(20,27,32,.48);
+  --glass-control-hover: rgba(31,42,49,.68);
+  --glass-nav: rgba(12,17,21,.58);
+  --glass-border: rgba(238,248,255,.20);
+  --glass-edge: rgba(140,190,210,.18);
+  --glass-highlight: rgba(255,255,255,.22);
+  --glass-accent: rgba(115,177,198,.22);
+  --glass-card-shadow: 0 14px 38px rgba(0,0,0,.32);
+  --glass-float-shadow: 0 22px 54px rgba(0,0,0,.56), 0 4px 14px rgba(0,0,0,.24);
+  --glass-control-shadow: rgba(0,0,0,.30);
+}
+html[data-glass-ui="on"] body {
+  background: var(--bg);
+  background-attachment: fixed;
+}
+.glass-scene-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 8% 7%, rgba(164,205,211,.70), transparent 38%),
+    radial-gradient(ellipse at 92% 14%, rgba(220,194,230,.60), transparent 35%),
+    radial-gradient(ellipse at 54% 90%, rgba(222,205,176,.44), transparent 42%),
+    linear-gradient(138deg,#e9f2f1 0%,#f2edf5 48%,#edf2eb 100%);
+}
+html[data-glass-ui="on"] .glass-scene-backdrop { display: block; }
+html[data-theme="dark"][data-glass-ui="on"] .glass-scene-backdrop {
+  background:
+    radial-gradient(ellipse at 8% 7%, rgba(31,83,99,.42), transparent 38%),
+    radial-gradient(ellipse at 92% 14%, rgba(73,45,88,.32), transparent 35%),
+    radial-gradient(ellipse at 54% 90%, rgba(71,67,42,.23), transparent 42%),
+    #000;
+}
+html[data-glass-ui="on"] .app-shell { position: relative; z-index: 1; }
+
+/* Keep information surfaces calm and sharply readable, following Glisse's control-first rule. */
+html[data-glass-ui="on"] .card,
+html[data-glass-ui="on"] .metric-card,
+html[data-glass-ui="on"] .settings-card,
+html[data-glass-ui="on"] .data-card,
+html[data-glass-ui="on"] .danger-card {
+  background: var(--glass-card) !important;
+  border-color: color-mix(in srgb,var(--glass-border) 42%,var(--line)) !important;
+  box-shadow: var(--glass-card-shadow),inset 0 1px 0 var(--glass-highlight) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+html[data-glass-ui="on"] .transaction-row,
+html[data-glass-ui="on"] .entity-row,
+html[data-glass-ui="on"] .detail-cell,
+html[data-glass-ui="on"] .note-box {
+  background: var(--glass-card) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+html[data-glass-ui="on"] .app-modal {
+  background: var(--glass-card) !important;
+  -webkit-backdrop-filter: blur(8px) saturate(125%) !important;
+  backdrop-filter: blur(8px) saturate(125%) !important;
+}
+html[data-glass-ui="on"] .modal-head { background: var(--glass-nav); }
+
+/* Floating navigation and controls receive the translucent, lit-rim material. */
+html[data-glass-ui="on"] .sidebar,
+html[data-glass-ui="on"] .topbar,
+html[data-glass-ui="on"] .profile-chip,
+html[data-glass-ui="on"] .mobile-tabbar {
+  background: linear-gradient(145deg,rgba(255,255,255,.64),rgba(255,255,255,.30)) !important;
+  border-color: rgba(255,255,255,.78) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(255,255,255,.20),var(--glass-float-shadow) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(175%) !important;
+  backdrop-filter: blur(22px) saturate(175%) !important;
+}
+html[data-theme="dark"][data-glass-ui="on"] .sidebar,
+html[data-theme="dark"][data-glass-ui="on"] .topbar,
+html[data-theme="dark"][data-glass-ui="on"] .profile-chip,
+html[data-theme="dark"][data-glass-ui="on"] .mobile-tabbar {
+  background: linear-gradient(145deg,rgba(28,38,44,.76),rgba(7,11,14,.68)) !important;
+  border-color: rgba(238,248,255,.17) !important;
+}
+html[data-glass-ui="on"] .icon-button,
+html[data-glass-ui="on"] .round-subtle,
+html[data-glass-ui="on"] .quick-action,
+html[data-glass-ui="on"] .quick-choice,
+html[data-glass-ui="on"] .activity-chip,
+html[data-glass-ui="on"] .filter-pill,
+html[data-glass-ui="on"] .gradient-preset,
+html[data-glass-ui="on"] .secondary-button,
+html[data-glass-ui="on"] .mini-button,
+html[data-glass-ui="on"] .activity-toolbar #activity-period,
+html[data-glass-ui="on"] .form-field input,
+html[data-glass-ui="on"] .form-field select,
+html[data-glass-ui="on"] .form-field textarea,
+html[data-glass-ui="on"] .search-box,
+html[data-glass-ui="on"] .quiet-hours input {
+  background: linear-gradient(145deg,rgba(255,255,255,.70),rgba(255,255,255,.36)) !important;
+  border-color: rgba(255,255,255,.88) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.98),inset 0 -1px 0 rgba(255,255,255,.24),0 4px 14px rgba(34,58,70,.085) !important;
+  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(175%) !important;
+  backdrop-filter: blur(var(--lg-blur)) saturate(175%) !important;
+}
+html[data-theme="dark"][data-glass-ui="on"] .icon-button,
+html[data-theme="dark"][data-glass-ui="on"] .round-subtle,
+html[data-theme="dark"][data-glass-ui="on"] .quick-action,
+html[data-theme="dark"][data-glass-ui="on"] .quick-choice,
+html[data-theme="dark"][data-glass-ui="on"] .activity-chip,
+html[data-theme="dark"][data-glass-ui="on"] .filter-pill,
+html[data-theme="dark"][data-glass-ui="on"] .gradient-preset,
+html[data-theme="dark"][data-glass-ui="on"] .secondary-button,
+html[data-theme="dark"][data-glass-ui="on"] .mini-button,
+html[data-theme="dark"][data-glass-ui="on"] .activity-toolbar #activity-period,
+html[data-theme="dark"][data-glass-ui="on"] .form-field input,
+html[data-theme="dark"][data-glass-ui="on"] .form-field select,
+html[data-theme="dark"][data-glass-ui="on"] .form-field textarea,
+html[data-theme="dark"][data-glass-ui="on"] .search-box,
+html[data-theme="dark"][data-glass-ui="on"] .quiet-hours input {
+  background: linear-gradient(145deg,rgba(38,50,58,.76),rgba(11,16,20,.60)) !important;
+  border-color: rgba(238,248,255,.20) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.23),inset 0 -1px 0 rgba(140,190,210,.13),0 4px 14px rgba(0,0,0,.28) !important;
+}
+@supports (backdrop-filter: url(#pw-glisse-rim-filter)) {
+  html[data-glass-ui="on"] .icon-button,
+  html[data-glass-ui="on"] .round-subtle,
+  html[data-glass-ui="on"] .quick-action,
+  html[data-glass-ui="on"] .quick-choice,
+  html[data-glass-ui="on"] .activity-chip,
+  html[data-glass-ui="on"] .filter-pill,
+  html[data-glass-ui="on"] .gradient-preset,
+  html[data-glass-ui="on"] .secondary-button,
+  html[data-glass-ui="on"] .mini-button,
+  html[data-glass-ui="on"] .form-field input,
+  html[data-glass-ui="on"] .form-field select,
+  html[data-glass-ui="on"] .form-field textarea,
+  html[data-glass-ui="on"] .search-box {
+    -webkit-backdrop-filter: url(#pw-glisse-rim-filter) blur(var(--lg-blur)) saturate(175%) !important;
+    backdrop-filter: url(#pw-glisse-rim-filter) blur(var(--lg-blur)) saturate(175%) !important;
+  }
+}
+html[data-glass-ui="on"] .primary-button,
+html[data-glass-ui="on"] .mobile-add,
+html[data-glass-ui="on"] .toast-action {
+  background: linear-gradient(145deg,#287765,#1e5e5b) !important;
+  border: 1px solid rgba(255,255,255,.76) !important;
+  color: #fff !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.52),0 7px 20px rgba(34,112,104,.22) !important;
+}
+html[data-glass-ui="on"] .nav-item.active,
+html[data-glass-ui="on"] .mobile-tab.active,
+html[data-glass-ui="on"] .filter-pill.active,
+html[data-glass-ui="on"] .soft-button,
+html[data-glass-ui="on"] .segmented button.selected,
+html[data-glass-ui="on"] .type-switch button.selected {
+  background: linear-gradient(145deg,rgba(255,255,255,.76),rgba(255,255,255,.46)) !important;
+  border-color: rgba(255,255,255,.90) !important;
+  color: #245f5a !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.98),inset 0 -1px 0 rgba(255,255,255,.20),0 4px 14px rgba(34,72,84,.11) !important;
+}
+html[data-theme="dark"][data-glass-ui="on"] .nav-item.active,
+html[data-theme="dark"][data-glass-ui="on"] .mobile-tab.active,
+html[data-theme="dark"][data-glass-ui="on"] .filter-pill.active,
+html[data-theme="dark"][data-glass-ui="on"] .soft-button,
+html[data-theme="dark"][data-glass-ui="on"] .segmented button.selected,
+html[data-theme="dark"][data-glass-ui="on"] .type-switch button.selected {
+  background: linear-gradient(145deg,rgba(53,76,86,.82),rgba(24,39,47,.72)) !important;
+  border-color: rgba(211,236,247,.24) !important;
+  color: #d8f2f3 !important;
+}
+html[data-glass-ui="on"] .segmented,
+html[data-glass-ui="on"] .type-switch,
+html[data-glass-ui="on"] #activity-filters,
+html[data-glass-ui="on"] #theme-choice {
+  background: rgba(255,255,255,.34) !important;
+  border: 1px solid rgba(255,255,255,.76) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.86),0 3px 12px rgba(35,58,70,.055) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(165%) !important;
+  backdrop-filter: blur(18px) saturate(165%) !important;
+}
+html[data-theme="dark"][data-glass-ui="on"] .segmented,
+html[data-theme="dark"][data-glass-ui="on"] .type-switch,
+html[data-theme="dark"][data-glass-ui="on"] #activity-filters,
+html[data-theme="dark"][data-glass-ui="on"] #theme-choice {
+  background: rgba(18,26,31,.62) !important;
+  border-color: rgba(238,248,255,.18) !important;
+}
+html[data-glass-ui="on"] .glass-segment-indicator {
+  background: linear-gradient(145deg,rgba(255,255,255,.90),rgba(221,239,243,.58)) !important;
+  border: 1px solid rgba(255,255,255,.98) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.99),inset 0 -1px 0 rgba(126,169,181,.16),0 4px 14px rgba(42,80,91,.12) !important;
+  filter: url(#pw-glisse-rim-filter);
+}
+html[data-theme="dark"][data-glass-ui="on"] .glass-segment-indicator {
+  background: linear-gradient(145deg,rgba(54,74,84,.92),rgba(20,34,41,.86)) !important;
+  border-color: rgba(238,248,255,.26) !important;
+}
+html[data-glass-ui="on"] .glass-segments-ready .glass-segment-indicator {
+  transition: transform .32s cubic-bezier(.2,.82,.22,1),width .28s cubic-bezier(.2,.82,.22,1),height .20s ease,border-radius .20s ease;
+}
+html[data-glass-ui="on"] .switch span {
+  border: 1px solid rgba(255,255,255,.86);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.96),0 2px 8px rgba(35,58,70,.10);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  backdrop-filter: blur(12px) saturate(160%);
+}
+html[data-glass-ui="on"] .profile-chip { color: var(--ink); }
+html[data-glass-ui="on"] .nav-item,
+html[data-glass-ui="on"] .mobile-tab { color: var(--muted); }
+html[data-glass-ui="on"] .nav-item.active,
+html[data-glass-ui="on"] .mobile-tab.active { color: #245f5a; }
+html[data-theme="dark"][data-glass-ui="on"] .nav-item.active,
+html[data-theme="dark"][data-glass-ui="on"] .mobile-tab.active { color: #d8f2f3; }
+html[data-glass-ui="on"] .icon-button:hover,
+html[data-glass-ui="on"] .round-subtle:hover,
+html[data-glass-ui="on"] .secondary-button:hover,
+html[data-glass-ui="on"] .mini-button:hover { transform: translateY(-1px); }
+@media (max-width:720px) {
+  html[data-glass-ui="on"] .mobile-tabbar {
+    left: 12px;
+    right: 12px;
+    bottom: calc(8px + env(safe-area-inset-bottom));
+    width: auto;
+    min-height: 68px;
+    padding: 6px 8px;
+    border-radius: 999px;
+  }
+  html[data-glass-ui="on"] .topbar {
+    background: linear-gradient(145deg,rgba(255,255,255,.58),rgba(255,255,255,.30)) !important;
+  }
+  html[data-theme="dark"][data-glass-ui="on"] .topbar {
+    background: linear-gradient(145deg,rgba(28,38,44,.76),rgba(7,11,14,.68)) !important;
+  }
+}
+@media (prefers-reduced-transparency:reduce),(prefers-contrast:more) {
+  html[data-glass-ui="on"] .glass-scene-backdrop { opacity:.45; }
+  html[data-glass-ui="on"] .sidebar,
+  html[data-glass-ui="on"] .topbar,
+  html[data-glass-ui="on"] .profile-chip,
+  html[data-glass-ui="on"] .mobile-tabbar,
+  html[data-glass-ui="on"] .icon-button,
+  html[data-glass-ui="on"] .round-subtle,
+  html[data-glass-ui="on"] .secondary-button,
+  html[data-glass-ui="on"] .mini-button,
+  html[data-glass-ui="on"] .segmented,
+  html[data-glass-ui="on"] .type-switch,
+  html[data-glass-ui="on"] #activity-filters,
+  html[data-glass-ui="on"] #theme-choice {
+    background: #fff !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+  html[data-theme="dark"][data-glass-ui="on"] .sidebar,
+  html[data-theme="dark"][data-glass-ui="on"] .topbar,
+  html[data-theme="dark"][data-glass-ui="on"] .profile-chip,
+  html[data-theme="dark"][data-glass-ui="on"] .mobile-tabbar,
+  html[data-theme="dark"][data-glass-ui="on"] .icon-button,
+  html[data-theme="dark"][data-glass-ui="on"] .round-subtle,
+  html[data-theme="dark"][data-glass-ui="on"] .secondary-button,
+  html[data-theme="dark"][data-glass-ui="on"] .mini-button,
+  html[data-theme="dark"][data-glass-ui="on"] .segmented,
+  html[data-theme="dark"][data-glass-ui="on"] .type-switch,
+  html[data-theme="dark"][data-glass-ui="on"] #activity-filters,
+  html[data-theme="dark"][data-glass-ui="on"] #theme-choice { background:#111 !important; }
+}
+@media (prefers-reduced-motion:reduce) {
+  html[data-glass-ui="on"] .glass-segment-indicator,
+  html[data-glass-ui="on"] .icon-button,
+  html[data-glass-ui="on"] .round-subtle,
+  html[data-glass-ui="on"] .secondary-button,
+  html[data-glass-ui="on"] .mini-button { transition:none !important; }
+}

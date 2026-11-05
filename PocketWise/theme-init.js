@@ -5,7 +5,7 @@
   try{appleStatus=document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');}catch(_){}
   try{var raw=localStorage.getItem('pocketwise-state-v1');if(raw){var saved=JSON.parse(raw);settings=saved&&saved.settings&&typeof saved.settings==='object'?saved.settings:null;}}catch(_){}
   try{var rawAppearance=localStorage.getItem('pocketwise-appearance-v1');if(rawAppearance)appearance=JSON.parse(rawAppearance);}catch(_){}
-  var validTheme=function(v){return v==='light'||v==='dark'||v==='system'||v==='gradient';};
+  var validTheme=function(v){return v==='light'||v==='dark'||v==='system'||v==='gradient'||v==='glass';};
   var validPreset=function(v){return v==='coral-wave'||v==='green-screen'||v==='retro-magic'||v==='on-fire';};
   var preference=appearance&&validTheme(appearance.theme)?appearance.theme:(settings&&validTheme(settings.theme)?settings.theme:'light');
   var presetCandidate=appearance&&appearance.gradientPreset||settings&&settings.gradientPreset;
@@ -14,13 +14,15 @@
   var smartUI=appearance&&typeof appearance.smartUI==='boolean'?appearance.smartUI:!!(settings&&settings.smartUI===true);
   var systemDark=false;
   try{systemDark=!!(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);}catch(_){}
-  var actual=preference==='system'?(systemDark?'dark':'light'):preference;
+  var isGlassUi=preference==='glass';
+  var actual=(preference==='system'||isGlassUi)?(systemDark?'dark':'light'):preference;
   var themeColors={'coral-wave':'#FBECE9','green-screen':'#EDF5E9','retro-magic':'#F2ECF8','on-fire':'#FBEFE4'};
-  var canvas=actual==='dark'?'#000000':actual==='gradient'?themeColors[preset]:'#f6f8f5';
+  var canvas=actual==='dark'?'#000000':actual==='gradient'?themeColors[preset]:isGlassUi?'#EAF1F2':'#f6f8f5';
   var scheme=actual==='dark'?'dark':'light';
   root.dataset.theme=actual;
+  root.dataset.glassUi=isGlassUi?'on':'off';
   root.dataset.gradient=preset;
-  root.dataset.liquidGlass=(actual==='gradient'||liquidGlass)?'on':'off';
+  root.dataset.liquidGlass=(actual==='gradient'||isGlassUi||liquidGlass)?'on':'off';
   root.dataset.smartUi=smartUI?'on':'off';
   root.style.backgroundColor=canvas;
   root.style.colorScheme=scheme;
