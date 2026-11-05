@@ -1,34 +1,36 @@
-/* PocketWise supplied rolling-glyph word animation. Offline-safe fallback included. */
+/* PocketWise rolling-glyph word animation. The completion signal is emitted only
+   after every character's actual CSS roll animation has ended. Offline-safe. */
 (function () {
   'use strict';
   var boot = document.getElementById('pocketwise-boot-splash');
   var word = document.getElementById('pw-splash-wordmark');
   var GLYPHS = '0123456789₹$€£%+=−×÷';
   var TEXT = 'PocketWise';
-  var ROLL_MS = 1300;
   var FIRST_DELAY_MS = 200;
   var STAGGER_MS = 75;
   var done = false;
-  var finishTimer = 0;
+  var handleAnimationEnd = null;
+
+  window.__pwSplashAnimationDone = false;
 
   function finish() {
     if (done) return;
     done = true;
-    window.clearTimeout(finishTimer);
+    if (word && handleAnimationEnd) word.removeEventListener('animationend', handleAnimationEnd);
     if (word) {
       word.querySelectorAll('.pw-roll').forEach(function (roll) {
-        var count = Number(roll.parentNode.getAttribute('data-count')) || 0;
         roll.style.animation = 'none';
         roll.style.transform = 'translateY(calc(var(--pw-count)*var(--pw-row)*-1))';
         roll.style.color = 'var(--pw-money-green)';
       });
-      word.querySelectorAll('.pw-char').forEach(function (char) { char.style.opacity = '1'; });
+      word.querySelectorAll('.pw-char').forEach(function (character) {
+        character.style.opacity = '1';
+      });
     }
     window.__pwSplashAnimationDone = true;
     window.dispatchEvent(new Event('pocketwise:splash-animation-finished'));
   }
 
-  window.__pwSplashAnimationDone = false;
   if (!boot || !word) { finish(); return; }
 
   function build() {
@@ -65,23 +67,46 @@
   }
 
   function play() {
-    var reduced = false;
-    try { reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (_) {}
+    var reducedMotion = false;
+    try {
+      reducedMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    } catch (_) {}
 
     function startAnimation() {
       build();
-      if (reduced) { finish(); return; }
-      // Font metrics are settled before the vertical columns enter the layout.
-      var lastDelay = FIRST_DELAY_MS + (TEXT.length - 1) * STAGGER_MS;
-      var total = lastDelay + ROLL_MS + 80;
-      finishTimer = window.setTimeout(finish, total);
+      if (reducedMotion) { finish(); return; }
+
+      var rolls = Array.prototype.slice.call(word.querySelectorAll('.pw-roll'));
+      if (!rolls.length) { finish(); return; }
+      var completed = new Set();
+
+      handleAnimationEnd = function (event) {
+        if (event.animationName !== 'pwRoll' || !rolls.includes(event.target)) return;
+        completed.add(event.target);
+        // The app may be shown only after every letter has reached its final glyph.
+        if (completed.size === rolls.length) finish();
+      };
+      word.addEventListener('animationend', handleAnimationEnd);
+
+      // Force style calculation after registering the listener. If the browser
+      // doesn't apply the roll animation, settle the word visibly before opening.
+      var rollAnimationsAvailable = rolls.every(function (roll) {
+        var names = window.getComputedStyle(roll).animationName || '';
+        return names.split(',').some(function (name) { return name.trim() === 'pwRoll'; });
+      });
+      if (!rollAnimationsAvailable) finish();
     }
 
-    if (reduced) { startAnimation(); return; }
-    // Wait briefly for the supplied Bricolage Grotesque face; never block offline startup.
+    if (reducedMotion) { startAnimation(); return; }
+
+    // Wait for both requested type weights when possible. Offline or blocked
+    // font requests fall back to the local stack after 700ms, without hanging.
     var fontReady = (document.fonts && document.fonts.load)
       ? Promise.race([
-          document.fonts.load('800 1em "Bricolage Grotesque"').catch(function () {}),
+          Promise.all([
+            document.fonts.load('300 1em "Bricolage Grotesque"'),
+            document.fonts.load('800 1em "Bricolage Grotesque"')
+          ]).catch(function () {}),
           new Promise(function (resolve) { window.setTimeout(resolve, 700); })
         ])
       : Promise.resolve();
