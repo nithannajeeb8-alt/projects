@@ -400,7 +400,7 @@
     let navResizeObserver=null;
     if(mobileNav&&typeof ResizeObserver==='function'){
       navResizeObserver=new ResizeObserver(()=>{
-        if(mobileNav.classList.contains('is-geometry-animating')&&document.documentElement.dataset.smartUi==='on')syncSmartNavIndicator();
+        if(mobileNav.classList.contains('is-geometry-animating')&&document.documentElement.dataset.smartUi==='on')syncSmartNavIndicator(false);
       });
       navResizeObserver.observe(mobileNav);
     }
@@ -419,7 +419,7 @@
     mobileNav?.addEventListener?.('transitionend',event=>{
       if(event.target===mobileNav&&event.propertyName==='width'){
         mobileNav.classList.remove('is-geometry-animating');
-        if(document.documentElement.dataset.smartUi==='on')syncSmartNavIndicator();
+        if(document.documentElement.dataset.smartUi==='on')syncSmartNavIndicator(false);
       }
     });
     const update=()=>{
@@ -649,7 +649,7 @@
     if($('#hide-setting'))$('#hide-setting').checked=!!state.settings.hideBalances;
     if($('#smart-ui-setting'))$('#smart-ui-setting').checked=!!state.settings.smartUI;
     if($('#daily-story-setting'))$('#daily-story-setting').checked=!!state.settings.dailyStory;
-    syncSmartNavIndicator();
+    syncSmartNavIndicator(false);
     syncGlassSegmentIndicators();
   }
   // One animated material follows the selected control. The control states and their
@@ -684,19 +684,50 @@
     const nav=$('.mobile-tabbar'),indicator=$('.smart-nav-indicator');
     if(!nav||!indicator)return;
     if(!state.settings.smartUI){indicator.hidden=true;indicator.removeAttribute('data-positioned');return;}
-    const active=nav.querySelector('.mobile-tab.active');
+
+    // currentPage is the navigation source of truth. Do not pick the first
+    // element carrying .active: hidden/desktop navigation controls and rapid
+    // route changes can briefly leave stale active classes in the document.
+    const tabs=[...nav.querySelectorAll('.mobile-tab[data-page]')];
+    const active=tabs.find(tab=>tab.dataset.page===currentPage);
     if(!active){indicator.hidden=true;indicator.removeAttribute('data-positioned');return;}
-    const navRect=nav.getBoundingClientRect(),activeRect=active.getBoundingClientRect();
-    if(!navRect.width||!activeRect.width){indicator.hidden=true;indicator.removeAttribute('data-positioned');return;}
+
+    // Keep the mobile tabs' active state aligned with the same route used to
+    // position the capsule. Quick Add is deliberately not a destination.
+    tabs.forEach(tab=>tab.classList.toggle('active',tab===active));
+
+    const activeWidth=active.offsetWidth,activeHeight=active.offsetHeight;
+    if(!activeWidth||!activeHeight||!nav.getBoundingClientRect().width){
+      indicator.hidden=true;
+      indicator.removeAttribute('data-positioned');
+      return;
+    }
+
+    // Use layout coordinates local to the positioned nav rail. Comparing two
+    // viewport rectangles while the rail itself is translated/width-animated
+    // made the capsule chase a moving coordinate system on Android. The tab's
+    // offset geometry is stable in the rail's own coordinate space.
+    let x,y;
+    if(active.offsetParent===nav){
+      x=active.offsetLeft;
+      y=active.offsetTop;
+    }else{
+      const navRect=nav.getBoundingClientRect(),activeRect=active.getBoundingClientRect();
+      x=activeRect.left-navRect.left-nav.clientLeft;
+      y=activeRect.top-navRect.top-nav.clientTop;
+    }
+
     const firstPosition=!indicator.hasAttribute('data-positioned');
     const disableMotion=!animate||firstPosition;
     indicator.hidden=false;
     if(disableMotion)indicator.style.transition='none';
-    indicator.style.width=`${activeRect.width}px`;
-    indicator.style.height=`${activeRect.height}px`;
-    indicator.style.transform=`translate3d(${(activeRect.left-navRect.left-nav.clientLeft).toFixed(2)}px,${(activeRect.top-navRect.top-nav.clientTop).toFixed(2)}px,0)`;
+    indicator.style.width=`${activeWidth}px`;
+    indicator.style.height=`${activeHeight}px`;
+    indicator.style.transform=`translate3d(${x.toFixed(2)}px,${y.toFixed(2)}px,0)`;
     indicator.setAttribute('data-positioned','true');
-    if(disableMotion)requestAnimationFrame(()=>{if(indicator.isConnected)indicator.style.removeProperty('transition');});
+    if(disableMotion)requestAnimationFrame(()=>{
+      if(indicator.isConnected)indicator.style.removeProperty('transition');
+    });
   }
 
   const profileColors={mint:'#2f8f67',ocean:'#3478c8',plum:'#8756b5',sunset:'#d46b43'};
@@ -761,7 +792,7 @@
     collect(textSelectors).forEach(el=>{const raw=String(el.textContent||'');const value=Number(raw.replace(/[^0-9.\-]/g,''));el.classList.toggle('pw-large-money',Number.isFinite(value)&&Math.abs(value)>=100000);});
     collect(inputSelectors).forEach(el=>{const value=Number(String(el.value||'').replace(/[^0-9.\-]/g,''));el.classList.toggle('pw-large-money',Number.isFinite(value)&&Math.abs(value)>=100000);});
   }
-  function renderAll(){updateMoneyText();renderRecent();renderDailyStory();renderAlerts();renderActivity();renderFrequent();renderInsights();renderSettingsSummary();applyHiddenAmounts();$('#sample-banner').hidden=!state.sample;scheduleCharts();fitLargeMoneyAmounts();syncSmartNavIndicator();}
+  function renderAll(){updateMoneyText();renderRecent();renderDailyStory();renderAlerts();renderActivity();renderFrequent();renderInsights();renderSettingsSummary();applyHiddenAmounts();$('#sample-banner').hidden=!state.sample;scheduleCharts();fitLargeMoneyAmounts();syncSmartNavIndicator(false);}
   function renderBudgetCategoryPreview(){const target=$('#budget-category-list');if(!target)return;const limits=Object.entries(state.budgets.categories||{}).map(([id,limit])=>({id,activity:activityById(id),limit:Number(limit)||0,spent:spentForActivityThisMonth(id)})).filter(x=>x.activity&&x.limit>0).sort((a,b)=>(b.spent/b.limit)-(a.spent/a.limit)).slice(0,4);target.innerHTML=limits.length?`<div class="category-budget-heading">CATEGORY LIMITS <span>THIS MONTH</span></div>`+limits.map(x=>{const p=Math.min(100,x.spent/x.limit*100);return `<div class="category-budget-row"><div class="category-budget-row-top"><div class="row-between category-budget-row-values"><span>${escapeHTML(x.activity.name)}</span><small>${fmtHidden(x.spent)} / ${fmtHidden(x.limit)}</small></div><button type="button" class="category-budget-remove" data-remove-category-budget="${escapeHTML(x.id)}" aria-label="Remove ${escapeHTML(x.activity.name)} budget limit" title="Remove category limit"><span class="icon-wrap" aria-hidden="true"><i class="bi bi-x-lg"></i><svg class="icon-fallback" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></span></button></div><div class="progress-track"><span style="width:${p}%;background:${p>=100?'var(--red)':p>=(+state.settings.alertThreshold||90)?'var(--amber)':'var(--green)'}"></span></div></div>`}).join(''):`<div class="category-budget-empty">Set category limits to see what's on track.</div>`;syncBudgetResetButtons();}
   function syncBudgetResetButtons(){const monthly=$('#monthly-budget-reset'),weekly=$('#weekly-allowance-reset');if(monthly)monthly.disabled=!(Number(state.budgets?.total)>0||Object.values(state.budgets?.categories||{}).some(value=>Number(value)>0)||String(state.budgets?.note||'').trim());if(weekly)weekly.disabled=!(Number(state.settings?.weeklyAllowance)>0);}
   async function clearMonthlyBudget(){const categories=state.budgets?.categories||{};const hasBudget=Number(state.budgets?.total)>0||Object.values(categories).some(value=>Number(value)>0)||String(state.budgets?.note||'').trim();if(!hasBudget){toast('No monthly budget is set.');return;}if(!confirm('Remove the total monthly budget, all category limits, and the budget note? Transactions will not be deleted.'))return;const snapshot=JSON.stringify(state);state.budgets={...state.budgets,total:0,categories:{},note:''};if(!(await persistMutation(snapshot,'Could not remove the monthly budget. Your previous settings were restored.')))return;renderAll();void evaluateBudgetAlerts().catch(error=>console.warn('Budget alert refresh failed.',error));toast('Monthly budget and category limits removed. Transactions were kept.');}
@@ -769,7 +800,7 @@
   async function removeCategoryBudget(activityId){const id=String(activityId||'');if(!id||!Object.prototype.hasOwnProperty.call(state.budgets.categories||{},id)||!(Number(state.budgets.categories[id])>0)){toast('That category has no budget limit.');return;}const activity=activityById(id);const name=activity?.name||'this category';if(!confirm(`Remove the budget limit for ${name}? Transactions in this category will be kept.`))return;const snapshot=JSON.stringify(state);const categories={...(state.budgets.categories||{})};delete categories[id];state.budgets={...state.budgets,categories};if(!(await persistMutation(snapshot,'Could not remove this category limit. Your previous settings were restored.')))return;renderAll();void evaluateBudgetAlerts().catch(error=>console.warn('Budget alert refresh failed.',error));toast(`${name} budget limit removed. Transactions were kept.`);}
 
   function spentForActivityThisMonth(id){const amount=periodTransactions('month').filter(t=>t.activityId===id&&['expense','refund'].includes(t.type)).reduce((sum,t)=>sum+(t.type==='refund'?-1:1)*toMinorUnits(t.amount),0);return fromMinorUnits(Math.max(0,amount));}
-  function renderPage(page){if(page==='home'){renderRecent();renderDailyStory();renderAlerts();updateMoneyText();scheduleCharts()}if(page==='activity'){renderActivity();renderFrequent()}if(page==='insights'){renderInsights();scheduleCharts()}if(page==='settings'){renderSettingsSummary()}fitLargeMoneyAmounts();syncSmartNavIndicator();}
+  function renderPage(page){if(page==='home'){renderRecent();renderDailyStory();renderAlerts();updateMoneyText();scheduleCharts()}if(page==='activity'){renderActivity();renderFrequent()}if(page==='insights'){renderInsights();scheduleCharts()}if(page==='settings'){renderSettingsSummary()}fitLargeMoneyAmounts();}
   function createTxIcon(tx){const a=txActivity(tx);let name=a.icon||'receipt',color='';if(tx.type==='income'||tx.type==='repay_in'||tx.type==='refund'){color='positive';if(tx.type==='income')name='income';else if(tx.type==='refund')name='receipt';}else if(tx.type==='expense'||tx.type==='repay_out'){color='negative';if(tx.type==='expense')name=a.icon||'receipt';}else if(tx.type==='transfer'){color='blue';name='transfer';}else if(tx.type==='borrowed'||tx.type==='lent'){color='amber';name='people';}return `<span class="transaction-icon ${color}">${icon(name)}</span>`;}
   function previousLocalDate(){const d=new Date();d.setDate(d.getDate()-1);return localDate(d);}
   function dailyStoryDates(){
@@ -2528,11 +2559,11 @@
     $('#finance-period-prev')?.addEventListener('click',()=>{const type=$('#finance-period-type').value,range=financeSelectedRange();if(!range)return;if(type==='custom'){const days=Math.max(1,Math.round((dateFrom(range.end)-dateFrom(range.start))/86400000)+1);$('#finance-custom-start').value=finance.addDays(range.start,-days);$('#finance-custom-end').value=finance.addDays(range.end,-days);}else if(type==='week')financeAnchor=finance.addDays(financeAnchor,-7);else if(type==='year'){const d=dateFrom(financeAnchor);d.setFullYear(d.getFullYear()-1);financeAnchor=localDate(d);}else{const d=dateFrom(financeAnchor);d.setDate(1);d.setMonth(d.getMonth()-1);financeAnchor=localDate(d);}$('#finance-period-anchor').value=financeAnchor;renderFinanceAnalytics();scheduleCharts();});
     $('#finance-period-next')?.addEventListener('click',()=>{const type=$('#finance-period-type').value,range=financeSelectedRange();if(!range)return;if(type==='custom'){const days=Math.max(1,Math.round((dateFrom(range.end)-dateFrom(range.start))/86400000)+1);const start=finance.addDays(range.start,days),end=finance.addDays(range.end,days);if(start>today())return;$('#finance-custom-start').value=start;$('#finance-custom-end').value=end>today()?today():end;}else{let nextAnchor;if(type==='week')nextAnchor=finance.addDays(range.start,7);else if(type==='year')nextAnchor=`${Number(range.start.slice(0,4))+1}-01-01`;else{const d=dateFrom(range.start);d.setDate(1);d.setMonth(d.getMonth()+1);nextAnchor=localDate(d);}if(nextAnchor>today())return;financeAnchor=nextAnchor;$('#finance-period-anchor').value=financeAnchor;}renderFinanceAnalytics();scheduleCharts();});$('#home-chart-mode').addEventListener('change',scheduleCharts);$('#trend-type').addEventListener('change',scheduleCharts);$('#ranking-mode').addEventListener('change',()=>renderRankings(chartPeriod()));
     $('#activity-filters').addEventListener('click',e=>{const b=e.target.closest('[data-filter]');if(!b)return;currentFilter=b.dataset.filter;renderActivity();syncGlassSegmentIndicators($('#activity-filters'));});
-    window.addEventListener('resize',()=>{syncGlassSegmentIndicators();syncSmartNavIndicator();});
-    document.addEventListener('visibilitychange',()=>{if(!document.hidden){updateDateHeader();renderDailyStory();syncSmartNavIndicator();void processDueRecurringEntries();}});window.addEventListener('pageshow',()=>{void processDueRecurringEntries();});
+    window.addEventListener('resize',()=>{syncGlassSegmentIndicators();syncSmartNavIndicator(false);});
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden){updateDateHeader();renderDailyStory();syncSmartNavIndicator(false);void processDueRecurringEntries();}});window.addEventListener('pageshow',()=>{void processDueRecurringEntries();});
     $('#hide-setting').addEventListener('change',async e=>{const snapshot=JSON.stringify(state);state.settings.hideBalances=e.target.checked;if(!(await persistMutation(snapshot,'Could not save the balance visibility setting.'))){e.target.checked=!!state.settings.hideBalances;applyHiddenAmounts();return;}applyHiddenAmounts();renderAll();});
     $('#liquid-glass-setting').addEventListener('change',async e=>{if(state.settings.theme==='gradient'){applyTheme();return;}const snapshot=JSON.stringify(state);state.settings.liquidGlass=!!e.target.checked;if(!(await persistMutation(snapshot,'Could not save the appearance setting.'))){e.target.checked=!!state.settings.liquidGlass;applyTheme();return;}applyTheme();scheduleCharts();toast(state.settings.liquidGlass?'Liquid Glass enabled.':'Liquid Glass disabled.');});
-    $('#smart-ui-setting').addEventListener('change',async e=>{const snapshot=JSON.stringify(state);state.settings.smartUI=!!e.target.checked;if(!(await persistMutation(snapshot,'Could not save Smart UI. Your previous settings were restored.'))){e.target.checked=!!state.settings.smartUI;applyTheme();return;}applyTheme();syncSmartNavIndicator();toast(state.settings.smartUI?'Smart UI enabled. Your navigation capsule follows the selected section.':'Smart UI disabled. Your classic navigation is restored.');});
+    $('#smart-ui-setting').addEventListener('change',async e=>{const snapshot=JSON.stringify(state);state.settings.smartUI=!!e.target.checked;if(!(await persistMutation(snapshot,'Could not save Smart UI. Your previous settings were restored.'))){e.target.checked=!!state.settings.smartUI;applyTheme();return;}applyTheme();syncSmartNavIndicator(false);toast(state.settings.smartUI?'Smart UI enabled. Your navigation capsule follows the selected section.':'Smart UI disabled. Your classic navigation is restored.');});
     $('#daily-story-setting').addEventListener('change',async e=>{const snapshot=JSON.stringify(state);state.settings.dailyStory=!!e.target.checked;state.settings.dailyStoryPreferenceSet=true;if(!(await persistMutation(snapshot,'Could not save the daily story setting. Your previous settings were restored.'))){e.target.checked=!!state.settings.dailyStory;renderDailyStory();return;}renderDailyStory();toast(state.settings.dailyStory?'Daily money story enabled.':'Daily money story hidden.');});
     ['alert-threshold','notify-budget','notify-positive','notify-bills','notify-debts','notify-weekly','quiet-start','quiet-end'].forEach(id=>{const el=$(`#${id}`);el.addEventListener('change',async()=>{const map={'alert-threshold':'alertThreshold','notify-budget':'notifyBudget','notify-positive':'notifyPositive','notify-bills':'notifyBills','notify-debts':'notifyDebts','notify-weekly':'notifyWeekly','quiet-start':'quietStart','quiet-end':'quietEnd'},snapshot=JSON.stringify(state);state.settings[map[id]]=id==='alert-threshold'?Number(el.value):el.type==='checkbox'?el.checked:el.value;if(!(await persistMutation(snapshot,'Could not save this notification setting. Your previous settings were restored.'))){renderSettingsSummary();return;}renderSettingsSummary();});});
     $('#backup-file-input').addEventListener('change',e=>importBackup(e.target.files?.[0]));
