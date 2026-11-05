@@ -1,91 +1,92 @@
-/* PocketWise monoline wordmark animation. No external runtime dependencies. */
+/* PocketWise supplied rolling-glyph word animation. Offline-safe fallback included. */
 (function () {
   'use strict';
-
-  const gate = document.getElementById('pocketwise-boot-splash');
-  const wordmark = document.getElementById('pw-splash-wordmark');
-  const paths = wordmark ? Array.from(wordmark.querySelectorAll('.pw-writing-stroke')) : [];
-  window.__pwSplashAnimationDone = false;
+  var boot = document.getElementById('pocketwise-boot-splash');
+  var word = document.getElementById('pw-splash-wordmark');
+  var GLYPHS = '0123456789₹$€£%+=−×÷';
+  var TEXT = 'PocketWise';
+  var ROLL_MS = 1300;
+  var FIRST_DELAY_MS = 200;
+  var STAGGER_MS = 75;
+  var done = false;
+  var finishTimer = 0;
 
   function finish() {
-    paths.forEach(path => {
-      path.style.strokeDasharray = 'none';
-      path.style.strokeDashoffset = '0';
-      path.style.opacity = '1';
-    });
+    if (done) return;
+    done = true;
+    window.clearTimeout(finishTimer);
+    if (word) {
+      word.querySelectorAll('.pw-roll').forEach(function (roll) {
+        var count = Number(roll.parentNode.getAttribute('data-count')) || 0;
+        roll.style.animation = 'none';
+        roll.style.transform = 'translateY(calc(var(--pw-count)*var(--pw-row)*-1))';
+        roll.style.color = 'var(--pw-money-green)';
+      });
+      word.querySelectorAll('.pw-char').forEach(function (char) { char.style.opacity = '1'; });
+    }
     window.__pwSplashAnimationDone = true;
     window.dispatchEvent(new Event('pocketwise:splash-animation-finished'));
   }
 
-  if (!gate || !wordmark || paths.length === 0) {
-    finish();
-    return;
-  }
+  window.__pwSplashAnimationDone = false;
+  if (!boot || !word) { finish(); return; }
 
-  let reducedMotion = false;
-  try {
-    reducedMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-  } catch (_) {}
+  function build() {
+    word.textContent = '';
+    var fragment = document.createDocumentFragment();
+    TEXT.split('').forEach(function (character, index) {
+      var count = 6 + index;
+      var delay = (FIRST_DELAY_MS + index * STAGGER_MS) / 1000;
+      var column = document.createElement('span');
+      column.className = 'pw-char ' + (index < 6 ? 'pw-light' : 'pw-bold');
+      column.setAttribute('data-count', String(count));
+      column.style.setProperty('--pw-count', String(count));
+      column.style.setProperty('--pw-delay', delay.toFixed(3) + 's');
 
-  const supportsWebAnimations = typeof Element !== 'undefined' && typeof Element.prototype.animate === 'function';
-  const lengths = [];
-  try {
-    paths.forEach(path => {
-      const length = path.getTotalLength();
-      if (!Number.isFinite(length) || length <= 0) throw new Error('Invalid monoline stroke length.');
-      lengths.push(length);
-      path.style.strokeDasharray = String(length);
-      path.style.strokeDashoffset = String(length);
-      path.style.opacity = '1';
-    });
-  } catch (_) {
-    finish();
-    return;
-  }
+      var finalGlyph = document.createElement('span');
+      finalGlyph.className = 'pw-final';
+      finalGlyph.textContent = character;
+      column.appendChild(finalGlyph);
 
-  if (reducedMotion || !supportsWebAnimations) {
-    finish();
-    return;
-  }
-
-  const totalPenLift = paths.slice(1).reduce((sum, path, index) => {
-    const previous = paths[index];
-    return sum + (previous.dataset.glyph === path.dataset.glyph ? 16 : 36);
-  }, 0);
-  const targetDuration = 1250;
-  const drawingDuration = Math.max(420, targetDuration - totalPenLift);
-  const totalLength = lengths.reduce((sum, length) => sum + length, 0);
-  const animations = [];
-  let delay = 0;
-
-  try {
-    paths.forEach((path, index) => {
-      const duration = drawingDuration * (lengths[index] / totalLength);
-      const animation = path.animate(
-        [
-          { strokeDashoffset: lengths[index] },
-          { strokeDashoffset: 0 }
-        ],
-        {
-          duration: Math.max(8, duration),
-          delay,
-          easing: 'linear',
-          fill: 'forwards'
-        }
-      );
-      animations.push(animation);
-      delay += duration;
-      if (index < paths.length - 1) {
-        delay += paths[index].dataset.glyph === paths[index + 1].dataset.glyph ? 16 : 36;
+      var roll = document.createElement('span');
+      roll.className = 'pw-roll';
+      for (var row = 0; row < count; row += 1) {
+        var glyph = document.createElement('i');
+        glyph.textContent = GLYPHS.charAt(Math.floor(Math.random() * GLYPHS.length));
+        roll.appendChild(glyph);
       }
+      var settled = document.createElement('i');
+      settled.textContent = character;
+      roll.appendChild(settled);
+      column.appendChild(roll);
+      fragment.appendChild(column);
     });
-  } catch (_) {
-    animations.forEach(animation => { try { animation.cancel(); } catch (_) {} });
-    finish();
-    return;
+    word.appendChild(fragment);
   }
 
-  Promise.all(animations.map(animation => animation.finished))
-    .then(() => finish())
-    .catch(() => finish());
+  function play() {
+    var reduced = false;
+    try { reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (_) {}
+
+    function startAnimation() {
+      build();
+      if (reduced) { finish(); return; }
+      // Font metrics are settled before the vertical columns enter the layout.
+      var lastDelay = FIRST_DELAY_MS + (TEXT.length - 1) * STAGGER_MS;
+      var total = lastDelay + ROLL_MS + 80;
+      finishTimer = window.setTimeout(finish, total);
+    }
+
+    if (reduced) { startAnimation(); return; }
+    // Wait briefly for the supplied Bricolage Grotesque face; never block offline startup.
+    var fontReady = (document.fonts && document.fonts.load)
+      ? Promise.race([
+          document.fonts.load('800 1em "Bricolage Grotesque"').catch(function () {}),
+          new Promise(function (resolve) { window.setTimeout(resolve, 700); })
+        ])
+      : Promise.resolve();
+    fontReady.then(startAnimation, startAnimation);
+  }
+
+  play();
 })();

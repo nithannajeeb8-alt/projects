@@ -1,6 +1,6 @@
 {
   "id": "./",
-  "name": "Pocketwise \u00b7 Money, made clearer",
+  "name": "Pocketwise · Money, made clearer",
   "short_name": "Pocketwise",
   "description": "Offline-first personal finance tracker with reviewed payment imports.",
   "lang": "en-IN",
@@ -12,7 +12,7 @@
     "minimal-ui"
   ],
   "orientation": "any",
-  "background_color": "#090A0C",
+  "background_color": "#000000",
   "theme_color": "#f6f8f5",
   "categories": [
     "finance",
