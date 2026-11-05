@@ -5746,3 +5746,81 @@ html[data-theme="gradient"] .gradient-preset.selected .gradient-preset-check::be
     grid-template-columns:38px minmax(0,1fr) 20px;
   }
 }
+
+/* PocketWise Forecasting Foundation + Live Teacher 2.4.61 */
+.pw-forecast-intelligence-card { display:flex; flex-direction:column; gap:16px; }
+.pw-forecast-heading { align-items:flex-start; }
+.pw-forecast-heading h2 { margin:4px 0 3px; }
+.pw-forecast-heading p { margin:0; max-width:690px; }
+.pw-forecast-status { flex:0 0 auto; padding:7px 11px; border:1px solid color-mix(in srgb,var(--green) 22%,var(--border)); border-radius:999px; color:var(--green); background:color-mix(in srgb,var(--green) 8%,var(--card)); font-size:11px; font-weight:700; letter-spacing:.015em; }
+.pw-forecast-notice { padding:11px 13px; border:1px solid var(--border); border-radius:13px; background:color-mix(in srgb,var(--card) 88%,var(--bg)); color:var(--muted); font-size:12px; line-height:1.5; }
+.pw-forecast-cards { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+.pw-forecast-range-group { min-width:0; padding:13px; border:1px solid var(--border); border-radius:17px; background:color-mix(in srgb,var(--card) 94%,var(--bg)); }
+.pw-forecast-range-group > h3 { margin:0 0 10px; font-size:13px; font-weight:750; }
+.pw-forecast-flow-cards { display:grid; grid-template-columns:1fr; gap:8px; }
+.pw-forecast-window { min-width:0; padding:11px 12px; border-radius:13px; background:color-mix(in srgb,var(--bg) 72%,transparent); }
+.pw-forecast-window-heading { display:flex; justify-content:space-between; align-items:center; gap:8px; color:var(--muted); font-size:11px; }
+.pw-forecast-window-heading span { font-weight:700; color:var(--text); }
+.pw-forecast-window-heading small { text-align:right; }
+.pw-forecast-window > strong { display:block; margin-top:6px; font-size:clamp(19px,2vw,25px); font-weight:800; letter-spacing:-.04em; font-variant-numeric:tabular-nums; }
+.pw-forecast-range { display:flex; flex-direction:column; gap:3px; margin-top:5px; font-size:11px; }
+.pw-forecast-range > span { color:var(--text); font-weight:650; }
+.pw-forecast-range > small,.pw-forecast-window > p { color:var(--muted); font-size:10px; line-height:1.4; }
+.pw-forecast-window > p { margin:7px 0 0; }
+.pw-forecast-window-empty { font-size:15px!important; }
+.pw-forecast-lower-grid { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(230px,.85fr); gap:16px; border-top:1px solid var(--border); padding-top:15px; }
+.pw-forecast-pattern-section,.pw-forecast-learning-section { min-width:0; }
+.pw-forecast-pattern-section h3,.pw-forecast-learning-section h3 { margin:3px 0 10px; font-size:16px; }
+.pw-forecast-pattern-section .row-between { align-items:center; margin-bottom:9px; }
+.pw-forecast-pattern-section .row-between small { color:var(--muted); font-size:11px; }
+.pw-forecast-pattern { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:9px 12px; padding:11px 0; border-bottom:1px solid var(--border); }
+.pw-forecast-pattern:last-child { border-bottom:0; }
+.pw-forecast-pattern-copy { display:flex; flex-direction:column; gap:3px; min-width:0; }
+.pw-forecast-pattern-copy strong { overflow:hidden; color:var(--text); text-overflow:ellipsis; white-space:nowrap; font-size:12px; }
+.pw-forecast-pattern-copy small { color:var(--muted); font-size:10px; line-height:1.35; }
+.pw-forecast-pattern-edit { display:flex; align-items:center; gap:6px; }
+.pw-forecast-pattern-edit label { display:flex; flex-direction:column; gap:3px; color:var(--muted); font-size:9px; }
+.pw-forecast-pattern-edit input { width:94px; min-height:31px; padding:5px 7px; border:1px solid var(--border); border-radius:8px; background:var(--card); color:var(--text); font:inherit; font-size:11px; }
+.pw-forecast-pattern-edit button,.pw-forecast-pattern-actions button { min-height:30px; padding:5px 9px; border:1px solid var(--border); border-radius:8px; background:var(--card); color:var(--text); font:inherit; font-size:10px; font-weight:700; cursor:pointer; }
+.pw-forecast-pattern-actions { grid-column:1/-1; display:flex; flex-wrap:wrap; gap:6px; }
+.pw-forecast-pattern-actions button:disabled { opacity:.5; cursor:default; }
+.pw-forecast-score-list { display:grid; gap:8px; }
+.pw-forecast-score-list > div { display:grid; grid-template-columns:1fr auto; gap:3px 8px; padding:9px 0; border-bottom:1px solid var(--border); }
+.pw-forecast-score-list span { font-size:11px; color:var(--text); font-weight:650; }
+.pw-forecast-score-list strong { font-size:10px; color:var(--muted); }
+.pw-forecast-score-list small { grid-column:1/-1; color:var(--muted); font-size:10px; }
+.pw-forecast-data-actions { display:flex; flex-wrap:wrap; gap:5px 12px; margin-top:11px; }
+.pw-forecast-data-actions .text-button { padding:0; font-size:10px; }
+.pw-forecast-delete { color:var(--red)!important; }
+html[data-theme="dark"] .pw-forecast-status { background:color-mix(in srgb,var(--green) 12%,var(--card)); }
+html[data-theme="gradient"] .pw-forecast-status { background:color-mix(in srgb,var(--gradient-accent) 10%,var(--card)); color:var(--gradient-accent-strong); }
+@media(max-width:760px) {
+  .pw-forecast-cards { grid-template-columns:1fr; }
+  .pw-forecast-flow-cards { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .pw-forecast-lower-grid { grid-template-columns:1fr; }
+}
+@media(max-width:430px) {
+  .pw-forecast-heading { flex-direction:column; gap:10px; }
+  .pw-forecast-flow-cards { grid-template-columns:1fr; }
+  .pw-forecast-pattern { grid-template-columns:minmax(0,1fr); }
+  .pw-forecast-pattern-edit { justify-content:flex-start; }
+}
+
+.pw-forecast-why-section { padding-top:14px; border-top:1px solid var(--border); }
+.pw-forecast-why-section h3 { margin:3px 0 8px; font-size:15px; }
+.pw-forecast-why-row { display:grid; grid-template-columns:110px minmax(0,1fr); gap:10px; padding:8px 0; border-bottom:1px solid var(--border); }
+.pw-forecast-why-row:last-child { border-bottom:0; }
+.pw-forecast-why-row strong { font-size:11px; }
+.pw-forecast-why-row p { margin:0; color:var(--muted); font-size:11px; line-height:1.5; }
+@media(max-width:430px) { .pw-forecast-why-row { grid-template-columns:1fr; gap:4px; } }
+
+/* Forecast teacher: live grades stay visually separate from the historical backtest. */
+.pw-teacher-live { margin:10px 0 13px; padding:11px 12px; border:1px solid var(--border); border-radius:12px; background:color-mix(in srgb,var(--card) 86%,var(--bg)); }
+.pw-teacher-live-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.pw-teacher-live-heading strong { font-size:11px; color:var(--text); }
+.pw-teacher-live-heading span { padding:4px 8px; border-radius:999px; background:color-mix(in srgb,var(--green) 9%,var(--card)); color:var(--green); font-size:9px; font-weight:750; }
+.pw-teacher-live-metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; margin:9px 0; }
+.pw-teacher-live-metrics > div { display:flex; flex-direction:column; gap:2px; min-width:0; }
+.pw-teacher-live-metrics strong { font-size:18px; font-variant-numeric:tabular-nums; color:var(--text); }
+.pw-teacher-live-metrics small,.pw-teacher-live > small { color:var(--muted); font-size:9px; line-height:1.45; }
+.pw-teacher-live p { margin:5px 0; color:var(--text); font-size:10px; line-height:1.5; }

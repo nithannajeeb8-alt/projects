@@ -188,7 +188,8 @@
     settings:{theme:'light',gradientPreset:'coral-wave',liquidGlass:false,smartUI:false,dailyStory:true,dailyStoryPreferenceSet:false,profileName:'',profileColor:'mint',profileComplete:false,privacyReviewed:false,firstRunFlowStarted:false,firstRunFlowCompleted:false,hideBalances:false,alertThreshold:90,notifyBudget:true,notifyPositive:true,notifyBills:true,notifyDebts:true,notifyWeekly:true,quietStart:'21:00',quietEnd:'08:00',lastBackup:null,lastPositiveMonth:null,seenAlerts:[],notifications:[],categoryChart:'doughnut',weeklyAllowance:0,debtPayoffMonthly:0,debtStrategy:'snowball',smartRules:[],merchantRules:[],salaryPlan:{expectedSalary:0,frequency:'monthly',paydayDay:1,paydayDate:null,allocations:[]}},
     accounts:[{id:'cash',name:'Cash',type:'cash',openingBalance:0,openingBalanceDate:null},{id:'bank',name:'Bank / UPI',type:'bank',openingBalance:0,openingBalanceDate:null},{id:'card',name:'Card',type:'card',openingBalance:0,openingBalanceDate:null}],
     activities: activityDefaults.map(a=>({...a})),
-    budgets:{total:0,categories:{},note:''}, goals:[], reminders:[], pendingRecurringEntries:[], debts:[], transactions:[], billSplits:[], eventPlans:[]
+    budgets:{total:0,categories:{},note:''}, goals:[], reminders:[], pendingRecurringEntries:[], debts:[], transactions:[], billSplits:[], eventPlans:[],
+    forecasting:{version:3,labels:{},lastForecast:null,grades:[],backtest:null,selections:{},calibration:{},teacher:null}
   });
   let state = initialState();
   let db = null;
@@ -203,6 +204,11 @@
   let chartFrame = null;
   let installedPrompt = null;
   let forecastMonthOffset = 0;
+  let forecastingClient = null;
+  let forecastingRequestKey = '';
+  let forecastingBacktestKey = '';
+  let forecastingBacktestRunning = false;
+  let forecastingTeacherRunning = false;
   let dailyStoryTimer = null;
   let financeAnchor = today();
 
@@ -334,6 +340,32 @@
     next.budgets=source.budgets&&typeof source.budgets==='object'&&!Array.isArray(source.budgets)?{...defaults.budgets,...source.budgets}: {...defaults.budgets};
     if(!next.budgets.categories||typeof next.budgets.categories!=='object'||Array.isArray(next.budgets.categories))next.budgets.categories={};
     if(!Number.isFinite(Number(next.budgets.total)))next.budgets.total=0;
+    const forecastSource=source.forecasting&&typeof source.forecasting==='object'&&!Array.isArray(source.forecasting)?source.forecasting:{};
+    const labelsSource=forecastSource.labels&&typeof forecastSource.labels==='object'&&!Array.isArray(forecastSource.labels)?forecastSource.labels:{};
+    const labels={};for(const [key,value] of Object.entries(labelsSource).slice(0,500)){if(typeof key==='string'&&key.length<=300&&value&&typeof value==='object'&&!Array.isArray(value)){const status=['auto','confirmed','rejected','muted'].includes(value.status)?value.status:'auto';labels[key]={status,amountMinor:Number.isFinite(Number(value.amountMinor))?Math.max(0,Math.round(Number(value.amountMinor))):undefined};}}
+    const selectionSource=forecastSource.selections&&typeof forecastSource.selections==='object'&&!Array.isArray(forecastSource.selections)?forecastSource.selections:{};
+    const selections={};for(const key of ['day_expense','day_income','week_expense','week_income','month_expense','month_income'])selections[key]=selectionSource[key]==='seasonalNaive'?'seasonalNaive':'equalWeight';
+    const calibrationSource=forecastSource.calibration&&typeof forecastSource.calibration==='object'&&!Array.isArray(forecastSource.calibration)?forecastSource.calibration:{};
+    const calibration={};for(const key of ['day_expense','day_income','week_expense','week_income','month_expense','month_income']){const value=calibrationSource[key];if(value&&typeof value==='object'&&!Array.isArray(value))calibration[key]={n:Math.max(0,Math.min(52,Number(value.n)||0)),scores:Array.isArray(value.scores)?value.scores.slice(-52).map(Number).filter(Number.isFinite):[],delta:Number.isFinite(Number(value.delta))?Number(value.delta):null,coverage:Number.isFinite(Number(value.coverage))?Number(value.coverage):null,source:'backtest'};}
+    const teacherSource=forecastSource.teacher&&typeof forecastSource.teacher==='object'&&!Array.isArray(forecastSource.teacher)?forecastSource.teacher:null;
+    const teacher=teacherSource?{
+      version:3,
+      initializedOn:typeof teacherSource.initializedOn==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(teacherSource.initializedOn)?teacherSource.initializedOn:null,
+      lastOrigin:typeof teacherSource.lastOrigin==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(teacherSource.lastOrigin)?teacherSource.lastOrigin:null,
+      forecasts:Array.isArray(teacherSource.forecasts)?teacherSource.forecasts.slice(-1800):[],
+      grades:Array.isArray(teacherSource.grades)?teacherSource.grades.slice(-600):[],
+      calibration:teacherSource.calibration&&typeof teacherSource.calibration==='object'&&!Array.isArray(teacherSource.calibration)?teacherSource.calibration:{},
+      expertStats:teacherSource.expertStats&&typeof teacherSource.expertStats==='object'&&!Array.isArray(teacherSource.expertStats)?teacherSource.expertStats:{},
+      streamPredictions:Array.isArray(teacherSource.streamPredictions)?teacherSource.streamPredictions.slice(-2400):[],
+      streamStats:teacherSource.streamStats&&typeof teacherSource.streamStats==='object'&&!Array.isArray(teacherSource.streamStats)?teacherSource.streamStats:{},
+      regimeEvents:Array.isArray(teacherSource.regimeEvents)?teacherSource.regimeEvents.slice(-36):[],
+      circuitBreakers:teacherSource.circuitBreakers&&typeof teacherSource.circuitBreakers==='object'&&!Array.isArray(teacherSource.circuitBreakers)?teacherSource.circuitBreakers:{},
+      points:Number.isFinite(Number(teacherSource.points))?Number(teacherSource.points):0,
+      streak:Math.max(0,Number(teacherSource.streak)||0),
+      longestStreak:Math.max(0,Number(teacherSource.longestStreak)||0),
+      brain:teacherSource.brain&&typeof teacherSource.brain==='object'&&!Array.isArray(teacherSource.brain)?teacherSource.brain:{tier:'Learning',graded:0,skillVsNaive:null,coverage:null,coverageWilson:null,calibrationReady:false,points:0,streak:0}
+    }:null;
+    next.forecasting={version:3,labels,lastForecast:forecastSource.lastForecast&&typeof forecastSource.lastForecast==='object'&&!Array.isArray(forecastSource.lastForecast)?forecastSource.lastForecast:null,grades:Array.isArray(forecastSource.grades)?forecastSource.grades.slice(-250):[],backtest:forecastSource.backtest&&typeof forecastSource.backtest==='object'&&!Array.isArray(forecastSource.backtest)?forecastSource.backtest:null,selections,calibration,teacher};
     return next;
   }
   async function preserveRecoverySnapshot(snapshot){
@@ -523,6 +555,7 @@
     updateDateHeader();
     renderAll();
     scheduleDailyStoryRefresh();
+    setTimeout(()=>{void processForecastTeacher((state.transactions||[]).map(tx=>({...tx})),state.forecasting?.labels||{},today());},0);
     await evaluateBudgetAlerts(false);
     renderProfile();
     initAdaptiveHeaderSurface();
@@ -1301,7 +1334,239 @@
     const fileName=`pocketwise-${reportSlug}-${range.effectiveEnd}.pdf`;
     await deliverGeneratedPDF(html,fileName,`PocketWise ${title}`);
   }
-  function renderInsights(){const period=$('#insights-period')?.value||'month';const txs=periodTransactions(period);let filtered=txs;if(period==='last-month')filtered=periodTransactions('last-month');const t=totalsFor(filtered);$$('[data-money="insight-income"]').forEach(e=>e.textContent=fmtHidden(t.income));$$('[data-money="insight-expense"]').forEach(e=>e.textContent=fmtHidden(t.expenses));$$('[data-money="insight-net"]').forEach(e=>{e.textContent=fmtHidden(t.net);e.style.color=t.net<0?'var(--red)':'var(--green)'});let [start,end]=getPeriodRange(period);if(period==='all'){start=state.transactions.length?state.transactions.reduce((min,t)=>t.date<min? t.date:min,today()):today();end=today();}const span=Math.max(1,Math.ceil((dateFrom(end)-dateFrom(start))/86400000)+1);$$('[data-money="daily-average"]').forEach(e=>e.textContent=fmtHidden(t.expenses/Math.max(1,Math.min(span,Math.ceil((dateFrom(today())-dateFrom(start))/86400000)||span))));renderCategoryLegend(period);renderHeatmap(period);renderRankings(period);renderGoals();renderInsightDebts();renderYearArchive();renderPlanningTools();renderFinanceAnalytics();scheduleCharts();fitLargeMoneyAmounts();}
+  function forecastingSignature(){
+    let hash=2166136261;
+    for(const tx of state.transactions||[]){
+      const value=[tx.id,tx.date,tx.type,tx.amount,tx.activityId,tx.accountId,tx.merchantName,tx.note].join('|');
+      for(let i=0;i<value.length;i++){hash^=value.charCodeAt(i);hash=Math.imul(hash,16777619);}
+      hash^=10;hash=Math.imul(hash,16777619);
+    }
+    return (hash>>>0).toString(36);
+  }
+  function forecastMoney(minorValue){return Number.isFinite(Number(minorValue))?fmtHidden(Number(minorValue)/100):'—';}
+  function forecastStatusLabel(status){return status==='live-calibrated'?'Live calibrated':status==='backtest-calibrated'?'Backtest-calibrated':status==='early'?'Early estimate':status==='ready'?'Estimate':'Still learning';}
+  function forecastWindowCard(window,flow,label){
+    const result=window&&window[flow];
+    if(!result)return `<article class="pw-forecast-window"><div class="pw-forecast-window-heading"><span>${label}</span><small>Still learning</small></div><strong class="pw-forecast-window-empty">Not enough history</strong><p>Log more transactions to unlock this forecast.</p></article>`;
+    const calibration=result.calibration||{},status=calibration.state==='live-calibrated'?'live-calibrated':calibration.state==='backtest-calibrated'?'backtest-calibrated':window.status==='early'?'early':'learning';
+    const intervalLabel=status==='live-calibrated'?'80% target range · calibrated on live outcomes':status==='backtest-calibrated'?'80% target range · backtest only':'Exploratory range · not calibrated';
+    return `<article class="pw-forecast-window"><div class="pw-forecast-window-heading"><span>${label}</span><small>${forecastStatusLabel(status)}</small></div><strong>${forecastMoney(result.medianMinor)}</strong><div class="pw-forecast-range"><span>Could be ${forecastMoney(result.lowerMinor)} – ${forecastMoney(result.upperMinor)}</span><small>${intervalLabel}</small></div><p>${flow==='expense'?'Spending estimate':'Income estimate'} · ${result.selection==='seasonalNaive'?'using the recent seasonal baseline':'equal-weight local ensemble'}</p></article>`;
+  }
+  function renderForecastingPanels(snapshot){
+    const host=$('#pw-forecast-cards');if(!host)return;
+    if(!snapshot){host.innerHTML='';return;}
+    const windows=snapshot.windows||[];
+    const heading={day:'Tomorrow',week:'Next 7 days',month:'Next 28 days'};
+    host.innerHTML=windows.map(window=>`<section class="pw-forecast-range-group"><h3>${heading[window.key]||window.key}</h3><div class="pw-forecast-flow-cards">${forecastWindowCard(window,'expense','Spending')}${forecastWindowCard(window,'income','Income')}</div></section>`).join('');
+    const whyHost=$('#pw-forecast-why');
+    if(whyHost){
+      const reasons=Array.isArray(snapshot.explanations)?snapshot.explanations:[];
+      whyHost.innerHTML=reasons.length?reasons.map(item=>{
+        const period=heading[item.window]||item.window;
+        const scheduled=(item.scheduled||[]).slice(0,5).map(event=>`${escapeHTML(event.merchant||'Scheduled activity')} ${escapeHTML(event.date||'')} · ${forecastMoney(event.amountMedianMinor)} · ${Math.round((Number(event.p)||0)*100)}% observed-hit estimate`).join('; ');
+        const patterns=(item.patterns||[]).slice(0,4).map(pattern=>`${escapeHTML(pattern.name)} (${escapeHTML(pattern.cadence)}, ${Math.round((Number(pattern.confidence)||0)*100)}% pattern confidence)`).join(', ');
+        const width=Number.isFinite(Number(item.uncertainty))?forecastMoney(item.uncertainty):'not available';
+        return `<div class="pw-forecast-why-row"><strong>${escapeHTML(period)}</strong><p>${scheduled?`Scheduled events: ${scheduled}.`:'No detected scheduled event falls inside this period.'} ${patterns?`Recurring signals: ${patterns}.`:'Not enough repeat observations for a habit explanation.'} The spending estimate has an exploratory range width of ${width}; one-off purchases can make it wider.</p></div>`;
+      }).join(''):'<p class="muted small">Explanations will appear after the first forecast is generated.</p>';
+    }
+    const patterns=$('#pw-forecast-patterns');
+    const streams=Array.isArray(snapshot.streams)?snapshot.streams:[];
+    if($('#pw-pattern-count'))$('#pw-pattern-count').textContent=`${streams.length} detected`;
+    if(patterns){
+      if(!streams.length)patterns.innerHTML='<p class="muted small">No recurring patterns have been confirmed yet. More history may reveal bills and weekly habits.</p>';
+      else patterns.innerHTML=streams.slice(0,10).map(stream=>{
+        const status=stream.status||'auto';
+        const statusText=status==='confirmed'?'Confirmed by you':status==='rejected'?'Rejected':status==='muted'?'Muted':stream.possible?'Possible pattern':'Suggested pattern';
+        const amount=(Number(stream.amountModel?.medianMinor)||0)/100;
+        const safeKey=escapeHTML(stream.key||'');
+        const actions=status==='rejected'?`<button type="button" data-forecast-action="restore" data-forecast-key="${safeKey}">Restore</button>`:`<button type="button" data-forecast-action="confirm" data-forecast-key="${safeKey}" ${status==='confirmed'?'disabled':''}>Confirm</button><button type="button" data-forecast-action="reject" data-forecast-key="${safeKey}">Not recurring</button><button type="button" data-forecast-action="${status==='muted'?'unmute':'mute'}" data-forecast-key="${safeKey}">${status==='muted'?'Unmute':'Mute'}</button>`;
+        return `<article class="pw-forecast-pattern" data-forecast-pattern="${safeKey}"><div class="pw-forecast-pattern-copy"><strong>${escapeHTML(stream.merchant||stream.activityId||'Recurring activity')}</strong><small>${escapeHTML(stream.cadence?.type||'pattern')} · ${Number(stream.occurrences)||0} records · ${Math.round((Number(stream.confidence)||0)*100)}% confidence</small><small>${escapeHTML(statusText)} · Next expected ${escapeHTML(stream.nextExpected||'not estimated')}</small></div><div class="pw-forecast-pattern-edit"><label>Amount ₹<input type="number" min="0" step="0.01" value="${amount.toFixed(2)}" data-forecast-amount></label><button type="button" data-forecast-action="save-amount" data-forecast-key="${safeKey}">Save</button></div><div class="pw-forecast-pattern-actions">${actions}</div></article>`;
+      }).join('');
+    }
+    const notice=$('#pw-forecast-status');
+    if(notice){
+      const gaps=(snapshot.gapDays||[]).length;
+      const calibrations=windows.flatMap(w=>['expense','income'].map(flow=>w[flow]?.calibration?.state)).filter(Boolean);
+      const hasCalibrated=calibrations.includes('backtest-calibrated')||calibrations.includes('live-calibrated');
+      notice.textContent=snapshot.historyDays<14?`You have ${snapshot.historyDays} days of usable history. The forecasting engine needs about 14 days before making an early estimate.`:hasCalibrated?(calibrations.includes('live-calibrated')?'Ranges are being calibrated against live outcomes on this device.':'Backtest-calibrated ranges are based on earlier history and may be optimistic until live forecasts are graded.'):'Forecasts are local estimates. Their ranges are not calibrated yet; recurring bills are generally more predictable than one-off spending.'+(gaps?` ${gaps} possible logging-gap days were excluded.`:'');
+    }
+    const tier=$('#pw-forecast-tier');if(tier){const earned=state.forecasting?.teacher?.brain?.tier;tier.textContent=earned||'Learning';}
+  }
+  function renderForecastLearning(){
+    const host=$('#pw-forecast-learning');if(!host)return;
+    const teacher=state.forecasting?.teacher,brain=teacher?.brain;
+    const live=brain?(()=>{
+      const n=Number(brain.graded)||0,skill=brain.skillVsNaive!==null&&brain.skillVsNaive!==undefined&&Number.isFinite(Number(brain.skillVsNaive))?`${Math.round(Number(brain.skillVsNaive)*100)}% vs seasonal baseline`:'Not enough baseline loss to compare';
+      const coverage=brain.coverage!==null&&brain.coverage!==undefined&&Number.isFinite(Number(brain.coverage))?`${Math.round(Number(brain.coverage)*100)}% outer-interval coverage`:'Coverage still learning';
+      const ci=Array.isArray(brain.coverageWilson)&&brain.coverageWilson.length===2?` · 95% interval ${Math.round(brain.coverageWilson[0]*100)}–${Math.round(brain.coverageWilson[1]*100)}%`:'';
+      const calibration=brain.calibrationReady?'Live calibration active':'Calibrating · 20 live grades per weekly flow needed';
+      return `<section class="pw-teacher-live"><div class="pw-teacher-live-heading"><strong>Live learning</strong><span>${escapeHTML(String(brain.tier||'Learning'))}</span></div><div class="pw-teacher-live-metrics"><div><strong>${n}</strong><small>weekly live grades</small></div><div><strong>${Number(teacher.points)||0}</strong><small>points earned</small></div><div><strong>${Number(teacher.streak)||0}</strong><small>coverage streak</small></div></div><p>${escapeHTML(skill)} · ${escapeHTML(coverage)}${escapeHTML(ci)}</p><small>${escapeHTML(calibration)}. ${Number(brain.catchupGraded)||0} reconstructed catch-up grades are reported separately and do not increase live skill or points.</small></section>`;
+    })():'';
+    const backtest=state.forecasting?.backtest;
+    if(!backtest||backtest.status!=='complete'){
+      const status=backtest?.status==='running'?`<p class="muted small">Studying your history: ${Number(backtest.completed)||0}/${Number(backtest.jobs)||0}. This work runs in a separate local worker.</p>`:'<p class="muted small">A rolling-origin backtest will run once enough history is available. Backtest results are not the same as live accuracy.</p>';
+      host.innerHTML=live+status;return;
+    }
+    const summary=backtest.summary||{};
+    const rows=[['7-day spending','week_expense'],['7-day income','week_income'],['28-day spending','month_expense'],['28-day income','month_income']];
+    host.innerHTML=live+`<p class="muted small">${Number(backtest.completed)||0} historical forecasts graded · backtest-derived</p><div class="pw-forecast-score-list">${rows.map(([label,key])=>{const item=summary[key]||{};const skill=item.skillVsNaive!==null&&item.skillVsNaive!==undefined&&Number.isFinite(Number(item.skillVsNaive))?`${Math.round(Number(item.skillVsNaive)*100)}% vs baseline`:'Baseline is a zero-loss result';const coverage=item.coverage!==null&&item.coverage!==undefined&&Number.isFinite(Number(item.coverage))?`${Math.round(item.coverage*100)}% interval coverage`:'Coverage unavailable';return `<div><span>${label}</span><strong>${item.n?`${Number(item.n)} grades`:'Not enough grades'}</strong><small>${escapeHTML(skill)} · ${escapeHTML(coverage)}</small></div>`;}).join('')}</div>`;
+  }
+  function ensureForecastingClient(){
+    if(!forecastingClient&&window.PocketWiseForecasting)forecastingClient=window.PocketWiseForecasting.createClient({onFallback:error=>console.warn('PocketWise forecasting worker unavailable; using local fallback.',error)});
+    return forecastingClient;
+  }
+  async function processForecastTeacher(transactions,labels,asOf){
+    if(forecastingTeacherRunning)return;
+    const current=state.forecasting?.teacher;
+    const core=window.PocketWiseForecastCore;
+    const historyDays=core?core.buildDailySeries(transactions,asOf,{maxDays:365}).historyDays:0;
+    const backtest=state.forecasting?.backtest;
+    const labelSignature=JSON.stringify(Object.keys(labels||{}).sort().map(key=>[key,labels[key]]));
+    const expectedBacktestSignature=[forecastingSignature(),labelSignature].join('|');
+    const backtestMatches=backtest?.signature===expectedBacktestSignature;
+    // On a first run or changed history, the matching rolling-origin backtest
+    // must seed calibration before the first live-origin forecast is committed.
+    if(historyDays>=28&&(forecastingBacktestRunning||!backtestMatches||!['complete','failed'].includes(backtest?.status)))return;
+    if(current?.lastOrigin===asOf)return;
+    const client=ensureForecastingClient();if(!client||!window.PocketWiseForecastTeacher)return;
+    forecastingTeacherRunning=true;
+    try{
+      let teacher=current||null,loops=0,pending=true;
+      const teacherStateStamp=value=>JSON.stringify([value?.lastOrigin,Object.keys(value?.streamStats||{}).length,Object.values(value?.streamStats||{}).reduce((sum,row)=>sum+(Number(row.liveHits)||0)+(Number(row.liveMisses)||0),0),Object.entries(value?.circuitBreakers||{}).map(([key,row])=>[key,!!row?.tripped,Number(row?.recent?.length)||0]),Object.keys(value?.expertStats||{}).length]);
+      const beforeTeacherSignature=teacherStateStamp(current);
+      while(pending&&loops<14){
+        const result=await client.runTeacher(transactions,labels,teacher,asOf,{
+          seed:0x51a7e,
+          paths:300,chunkDays:7,
+          selections:state.forecasting?.selections||{},
+          backtestCalibration:state.forecasting?.calibration||{}
+        },progress=>{
+          const host=$('#pw-forecast-learning');
+          if(host&&progress.pending)host.innerHTML=`<p class="muted small">Catching up local forecast grades · ${escapeHTML(progress.nextOrigin||'')} onward. Your records stay on this device.</p>`;
+        });
+        if(!result||!result.teacher)throw new Error('Forecast teacher returned no state.');
+        teacher=result.teacher;state.forecasting.teacher=teacher;
+        await persistForecastState();renderForecastLearning();
+        pending=!!result.pending;loops++;
+      }
+      if(pending){const host=$('#pw-forecast-learning');if(host)host.insertAdjacentHTML('beforeend','<p class="muted small">Catch-up paused at a safe checkpoint. It will continue the next time PocketWise is opened or returns to the foreground.</p>');}
+      const afterTeacherSignature=teacherStateStamp(teacher);
+      if(beforeTeacherSignature!==afterTeacherSignature&&!pending){state.forecasting.lastForecast=null;await persistForecastState();}
+    }catch(error){console.error('PocketWise live forecast grading failed.',error);}
+    finally{forecastingTeacherRunning=false;renderForecastLearning();if(state.forecasting?.lastForecast===null)void refreshForecasting(false);}
+  }
+  function persistForecastState(){return persist().catch(error=>{console.warn('Forecasting state could not be saved.',error);toast('Forecasts could not be saved. Your transactions remain untouched.','amber');});}
+  async function refreshForecasting(force){
+    const client=ensureForecastingClient(),host=$('#pw-forecast-status');if(!client||!window.PocketWiseForecastCore)return;
+    const asOf=today(),signature=forecastingSignature(),labels=state.forecasting?.labels||{};
+    const transactions=(state.transactions||[]).map(tx=>({...tx}));
+    const labelSignature=JSON.stringify(Object.keys(labels).sort().map(key=>[key,labels[key]]));
+    const teacherState=state.forecasting?.teacher||{};
+    const breakerSignature=Object.entries(teacherState.circuitBreakers||{}).map(([key,value])=>[key,!!value?.tripped,Number(value?.recent?.length)||0]);
+    const selectionSignature=JSON.stringify([state.forecasting?.selections,state.forecasting?.calibration,teacherState.lastOrigin||null,Object.keys(teacherState.streamStats||{}).length,Object.keys(teacherState.expertStats||{}).length,breakerSignature]);
+    const backtestSignature=[signature,labelSignature].join('|');
+    const requestKey=[asOf,signature,labelSignature,selectionSignature].join('|');
+    const stored=state.forecasting?.lastForecast;
+    const storedHistory=Number(stored?.historyDays)||0;
+    const backtestSettled=storedHistory<28||['complete','failed'].includes(state.forecasting?.backtest?.status);
+    if(!force&&stored&&stored.asOf===asOf&&stored.signature===signature&&stored.labelSignature===labelSignature&&stored.selectionSignature===selectionSignature&&backtestSettled&&state.forecasting?.backtest?.status!=='running'){renderForecastingPanels(stored);renderForecastLearning();await processForecastTeacher(transactions,labels,asOf);return;}
+    if(forecastingRequestKey===requestKey)return;
+    forecastingRequestKey=requestKey;
+    if(host)host.textContent='Analysing your recorded transactions on this device…';
+    try{
+      const forecastTeacher=state.forecasting?.teacher||{};
+      const result=await client.forecast(transactions,{asOf,labels,seed:parseInt(signature,36)||0x51a7e,paths:2000,selections:state.forecasting?.selections||{},calibration:state.forecasting?.calibration||{},streamStats:forecastTeacher.streamStats||{},expertStats:forecastTeacher.expertStats||{},circuitBreakers:forecastTeacher.circuitBreakers||{},regimeEvents:forecastTeacher.regimeEvents||[]});
+      if(forecastingRequestKey!==requestKey)return;
+      const compact={version:2,asOf,signature,labelSignature,selectionSignature,historyDays:result.historyDays,tier:result.tier,gapDays:result.gapDays||[],windows:result.windows||[],streams:(result.streams||[]).map(stream=>({...stream,matchedTransactionIds:undefined})),events:result.events||[],regimeChanges:result.regimeChanges||[],regimeActive:!!result.regimeActive,lookbackDays:Number(result.lookbackDays)||84,explanations:result.explanations||[]};
+      state.forecasting.lastForecast=compact;
+      renderForecastingPanels(compact);renderForecastLearning();await persistForecastState();
+      const history=Number(result.historyDays)||0;
+      const currentBacktest=state.forecasting.backtest;
+      if(history>=28&&(!currentBacktest||currentBacktest.signature!==backtestSignature||currentBacktest.status!=='complete')&&!forecastingBacktestRunning){
+        forecastingBacktestRunning=true;forecastingBacktestKey=backtestSignature;
+        state.forecasting.backtest={status:'running',signature:backtestSignature,jobs:0,completed:0,summary:{}};
+        renderForecastLearning();
+        try{
+          const test=await client.runBacktest(transactions,labels,asOf,progress=>{
+            const progressHost=$('#pw-forecast-learning');
+            if(progressHost)progressHost.innerHTML=`<p class="muted small">Studying your history: ${progress.completed}/${progress.total} · ${escapeHTML(progress.origin||'')}</p>`;
+            state.forecasting.backtest={status:'running',signature,jobs:progress.total,completed:progress.completed,summary:{}};
+          });
+          if(test&&test.cancelled)throw new Error('Backtest cancelled before completion.');
+          state.forecasting.grades=(test.grades||[]).slice(-250);
+          state.forecasting.backtest={status:'complete',signature:backtestSignature,jobs:test.jobs||0,completed:test.completed||0,elapsedMs:test.elapsedMs||0,summary:test.summary||{}};
+          state.forecasting.selections=test.selections||{};
+          state.forecasting.calibration=test.calibration||{};
+          state.forecasting.lastForecast=null;
+          await persistForecastState();
+          forecastingRequestKey='';
+          renderForecastLearning();
+          refreshForecasting(true);
+        }catch(error){
+          console.error('PocketWise initial backtest failed.',error);
+          state.forecasting.backtest={status:'failed',signature:backtestSignature,jobs:state.forecasting.backtest?.jobs||0,completed:state.forecasting.backtest?.completed||0,message:error.message};
+          await persistForecastState();renderForecastLearning();
+        }finally{forecastingBacktestRunning=false;}
+      }
+      await processForecastTeacher(transactions,labels,asOf);
+    }catch(error){
+      if(forecastingRequestKey===requestKey)forecastingRequestKey='';
+      console.error('PocketWise local forecast failed.',error);
+      if(host)host.textContent='Forecasting is unavailable in this session. Your existing finance tools and records are unaffected.';
+    }
+  }
+  function renderForecasting(){
+    renderForecastingPanels(state.forecasting?.lastForecast||null);
+    renderForecastLearning();
+    refreshForecasting(false);
+  }
+  async function handleForecastingAction(button){
+    const action=button.dataset.forecastAction,key=button.dataset.forecastKey||'';
+    if(action==='export'){
+      const payload={format:'pocketwise-forecast-learning',version:3,exportedAt:today(),labels:state.forecasting.labels||{},grades:state.forecasting.grades||[],backtest:state.forecasting.backtest||null,selections:state.forecasting.selections||{},calibration:state.forecasting.calibration||{},teacher:state.forecasting.teacher||null};
+      downloadBlob(`pocketwise-learning-${today()}.json`,new Blob([JSON.stringify(payload,null,2)],{type:'application/json;charset=utf-8'}));toast('Forecast learning data exported.');return;
+    }
+    if(action==='import'){$('#pw-forecast-import')?.click();return;}
+    if(action==='delete'){
+      if(!confirm('Delete all forecasting patterns, labels, backtest grades and calibration data? Your transactions and other PocketWise records will remain.'))return;
+      const snapshot=JSON.stringify(state);state.forecasting={version:3,labels:{},lastForecast:null,grades:[],backtest:null,selections:{},calibration:{},teacher:null};
+      forecastingRequestKey='';if(!(await persistMutation(snapshot,'Could not delete forecasting data.')))return;renderForecasting();toast('Forecast learning data deleted.');return;
+    }
+    if(!key)return;
+    const snapshot=JSON.stringify(state),label={...(state.forecasting.labels[key]||{})};
+    if(action==='confirm')label.status='confirmed';
+    else if(action==='reject')label.status='rejected';
+    else if(action==='restore')label.status='auto';
+    else if(action==='mute')label.status='muted';
+    else if(action==='unmute')label.status='auto';
+    else if(action==='save-amount'){
+      const pattern=button.closest('[data-forecast-pattern]'),input=pattern?.querySelector('[data-forecast-amount]'),amount=Number(input?.value);
+      if(!Number.isFinite(amount)||amount<=0){toast('Enter a valid recurring amount.','amber');return;}
+      label.amountMinor=Math.round(amount*100);
+    }else return;
+    state.forecasting.labels[key]=label;state.forecasting.lastForecast=null;forecastingRequestKey='';
+    if(!(await persistMutation(snapshot,'Could not save your pattern decision.')))return;
+    refreshForecasting(true);toast(action==='confirm'?'Pattern confirmed.':action==='reject'?'Pattern rejected.':'Pattern updated.');
+  }
+  async function importForecastLearning(file){
+    if(!file)return;
+    if(file.size>2*1024*1024){toast('Learning data file is too large.','error');return;}
+    try{
+      const payload=JSON.parse(await file.text());
+      if(payload.format!=='pocketwise-forecast-learning'||![1,2,3].includes(payload.version)||!payload.labels||typeof payload.labels!=='object'||Array.isArray(payload.labels)||!Array.isArray(payload.grades)||payload.grades.length>250)throw new Error('This is not a supported PocketWise learning export.');
+      const importedLabels={};for(const [key,value] of Object.entries(payload.labels).slice(0,500)){if(key.length<=300&&value&&typeof value==='object'&&!Array.isArray(value)){const status=['auto','confirmed','rejected','muted'].includes(value.status)?value.status:'auto';const amountMinor=Number(value.amountMinor);importedLabels[key]={status,...(Number.isFinite(amountMinor)&&amountMinor>0?{amountMinor:Math.round(amountMinor)}:{})};}}
+      const importedSelections={};for(const key of ['day_expense','day_income','week_expense','week_income','month_expense','month_income'])importedSelections[key]=payload.selections?.[key]==='seasonalNaive'?'seasonalNaive':'equalWeight';
+      const importedCalibration={};for(const key of ['day_expense','day_income','week_expense','week_income','month_expense','month_income']){const value=payload.calibration?.[key];if(value&&typeof value==='object'&&!Array.isArray(value)){const scores=Array.isArray(value.scores)?value.scores.slice(-52).map(Number).filter(Number.isFinite):[];importedCalibration[key]={n:Math.min(52,Math.max(0,Number(value.n)||0)),scores,delta:Number.isFinite(Number(value.delta))?Number(value.delta):null,coverage:Number.isFinite(Number(value.coverage))?Number(value.coverage):null,source:'backtest'};}}
+      const safeGrades=payload.grades.filter(g=>g&&typeof g==='object'&&!Array.isArray(g)&&typeof g.origin==='string'&&['day','week','month'].includes(g.window)).slice(-250);
+      const safeBacktest=payload.backtest&&typeof payload.backtest==='object'&&!Array.isArray(payload.backtest)?{status:payload.backtest.status==='complete'?'complete':'failed',signature:String(payload.backtest.signature||'').slice(0,500),jobs:Math.max(0,Number(payload.backtest.jobs)||0),completed:Math.max(0,Number(payload.backtest.completed)||0),elapsedMs:Math.max(0,Number(payload.backtest.elapsedMs)||0),summary:payload.backtest.summary&&typeof payload.backtest.summary==='object'?payload.backtest.summary:{}}:null;
+      const snapshot=JSON.stringify(state);const importedTeacher=payload.version>=2&&payload.teacher&&typeof payload.teacher==='object'&&!Array.isArray(payload.teacher)?{...payload.teacher,version:3,forecasts:Array.isArray(payload.teacher.forecasts)?payload.teacher.forecasts.slice(-1800):[],grades:Array.isArray(payload.teacher.grades)?payload.teacher.grades.slice(-600):[],streamPredictions:Array.isArray(payload.teacher.streamPredictions)?payload.teacher.streamPredictions.slice(-2400):[],regimeEvents:Array.isArray(payload.teacher.regimeEvents)?payload.teacher.regimeEvents.slice(-36):[]}:null;
+      state.forecasting={version:3,labels:importedLabels,grades:safeGrades,backtest:safeBacktest,selections:importedSelections,calibration:importedCalibration,teacher:importedTeacher,lastForecast:null};
+      if(!(await persistMutation(snapshot,'Could not import forecasting data.')))return;
+      forecastingRequestKey='';renderForecasting();toast('Forecast learning data imported.');
+    }catch(error){toast(error.message||'Could not read the learning data file.','error');}
+  }
+
+  function renderInsights(){const period=$('#insights-period')?.value||'month';const txs=periodTransactions(period);let filtered=txs;if(period==='last-month')filtered=periodTransactions('last-month');const t=totalsFor(filtered);$$('[data-money="insight-income"]').forEach(e=>e.textContent=fmtHidden(t.income));$$('[data-money="insight-expense"]').forEach(e=>e.textContent=fmtHidden(t.expenses));$$('[data-money="insight-net"]').forEach(e=>{e.textContent=fmtHidden(t.net);e.style.color=t.net<0?'var(--red)':'var(--green)'});let [start,end]=getPeriodRange(period);if(period==='all'){start=state.transactions.length?state.transactions.reduce((min,t)=>t.date<min? t.date:min,today()):today();end=today();}const span=Math.max(1,Math.ceil((dateFrom(end)-dateFrom(start))/86400000)+1);$$('[data-money="daily-average"]').forEach(e=>e.textContent=fmtHidden(t.expenses/Math.max(1,Math.min(span,Math.ceil((dateFrom(today())-dateFrom(start))/86400000)||span))));renderCategoryLegend(period);renderHeatmap(period);renderRankings(period);renderGoals();renderInsightDebts();renderYearArchive();renderForecasting();renderPlanningTools();renderFinanceAnalytics();scheduleCharts();fitLargeMoneyAmounts();}
   const chartColorFallback=['#005A9C','#B54708','#007A5E','#7B3F8C','#B42318','#146C94','#7A5A00','#475569'];
   function chartColor(index){const normalized=((Number(index)||0)%chartColorFallback.length+chartColorFallback.length)%chartColorFallback.length;return cssVar(`--chart-${normalized+1}`)||chartColorFallback[normalized];}
   function chartCategoryColor(item,index=0){if(item?.id==='__others__'||item?.id==='__uncategorised__'||item?.name==='Other categories')return chartColor(chartColorFallback.length-1);const activity=state.activities.find(candidate=>candidate.name===item?.name||candidate.id===item?.id);const stableIndex=activity?state.activities.findIndex(candidate=>candidate.id===activity.id):index;return chartColor(stableIndex>=0?stableIndex:index);}
@@ -2392,7 +2657,9 @@
     appModal.addEventListener('click',event=>{
       if(event.target===appModal){if(pendingGeneratedPDF)restorePDFReturnModal();else closeModal();}
     });
+    $('#pw-forecast-import')?.addEventListener('change',async event=>{const file=event.target.files?.[0];event.target.value='';await importForecastLearning(file);});
     document.addEventListener('click', async event=>{
+      const forecastAction=event.target.closest('[data-forecast-action]');if(forecastAction){await handleForecastingAction(forecastAction);return;}
       const openSwipeShell=document.querySelector('.transaction-swipe-shell.is-open');
       const clickedSwipeShell=event.target.closest('.transaction-swipe-shell');
       if(openSwipeShell&&openSwipeShell!==clickedSwipeShell)closeTransactionSwipeActions();
@@ -2560,7 +2827,7 @@
     $('#finance-period-next')?.addEventListener('click',()=>{const type=$('#finance-period-type').value,range=financeSelectedRange();if(!range)return;if(type==='custom'){const days=Math.max(1,Math.round((dateFrom(range.end)-dateFrom(range.start))/86400000)+1);const start=finance.addDays(range.start,days),end=finance.addDays(range.end,days);if(start>today())return;$('#finance-custom-start').value=start;$('#finance-custom-end').value=end>today()?today():end;}else{let nextAnchor;if(type==='week')nextAnchor=finance.addDays(range.start,7);else if(type==='year')nextAnchor=`${Number(range.start.slice(0,4))+1}-01-01`;else{const d=dateFrom(range.start);d.setDate(1);d.setMonth(d.getMonth()+1);nextAnchor=localDate(d);}if(nextAnchor>today())return;financeAnchor=nextAnchor;$('#finance-period-anchor').value=financeAnchor;}renderFinanceAnalytics();scheduleCharts();});$('#home-chart-mode').addEventListener('change',scheduleCharts);$('#trend-type').addEventListener('change',scheduleCharts);$('#ranking-mode').addEventListener('change',()=>renderRankings(chartPeriod()));
     $('#activity-filters').addEventListener('click',e=>{const b=e.target.closest('[data-filter]');if(!b)return;currentFilter=b.dataset.filter;renderActivity();syncGlassSegmentIndicators($('#activity-filters'));});
     window.addEventListener('resize',()=>{syncGlassSegmentIndicators();syncSmartNavIndicator(false);});
-    document.addEventListener('visibilitychange',()=>{if(!document.hidden){updateDateHeader();renderDailyStory();syncSmartNavIndicator(false);void processDueRecurringEntries();}});window.addEventListener('pageshow',()=>{void processDueRecurringEntries();});
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden){updateDateHeader();renderDailyStory();syncSmartNavIndicator(false);void processDueRecurringEntries();void processForecastTeacher((state.transactions||[]).map(tx=>({...tx})),state.forecasting?.labels||{},today());}});window.addEventListener('pageshow',()=>{void processDueRecurringEntries();void processForecastTeacher((state.transactions||[]).map(tx=>({...tx})),state.forecasting?.labels||{},today());});
     $('#hide-setting').addEventListener('change',async e=>{const snapshot=JSON.stringify(state);state.settings.hideBalances=e.target.checked;if(!(await persistMutation(snapshot,'Could not save the balance visibility setting.'))){e.target.checked=!!state.settings.hideBalances;applyHiddenAmounts();return;}applyHiddenAmounts();renderAll();});
     $('#liquid-glass-setting').addEventListener('change',async e=>{if(state.settings.theme==='gradient'){applyTheme();return;}const snapshot=JSON.stringify(state);state.settings.liquidGlass=!!e.target.checked;if(!(await persistMutation(snapshot,'Could not save the appearance setting.'))){e.target.checked=!!state.settings.liquidGlass;applyTheme();return;}applyTheme();scheduleCharts();toast(state.settings.liquidGlass?'Liquid Glass enabled.':'Liquid Glass disabled.');});
     $('#smart-ui-setting').addEventListener('change',async e=>{const snapshot=JSON.stringify(state);state.settings.smartUI=!!e.target.checked;if(!(await persistMutation(snapshot,'Could not save Smart UI. Your previous settings were restored.'))){e.target.checked=!!state.settings.smartUI;applyTheme();return;}applyTheme();syncSmartNavIndicator(false);toast(state.settings.smartUI?'Smart UI enabled. Your navigation capsule follows the selected section.':'Smart UI disabled. Your classic navigation is restored.');});

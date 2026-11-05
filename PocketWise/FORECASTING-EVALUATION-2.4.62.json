@@ -1,0 +1,546 @@
+{
+  "seed": 24874,
+  "days": 240,
+  "paths": 200,
+  "profiles": [
+    {
+      "persona": "salaried",
+      "transactions": 240,
+      "eligibleOrigins": 78,
+      "testedOrigins": 15,
+      "summary": {
+        "day": {
+          "n": 10,
+          "modelWIS": 40143.20103703705,
+          "naiveWIS": 121192.03688888888,
+          "improvement": 0.6687637070260558,
+          "coverage": 0.9,
+          "improvementCI": {
+            "mean": 81048.83585185184,
+            "low": 1059.6207407407412,
+            "high": 238490.62510740742,
+            "n": 10
+          }
+        },
+        "week": {
+          "n": 10,
+          "modelWIS": 189093.04044444446,
+          "naiveWIS": 516902.3891111111,
+          "improvement": 0.6341803705538729,
+          "coverage": 0.7,
+          "improvementCI": {
+            "mean": 327809.34866666666,
+            "low": 99023.61350000005,
+            "high": 692207.3737999998,
+            "n": 10
+          }
+        },
+        "month": {
+          "n": 10,
+          "modelWIS": 201924.99103703708,
+          "naiveWIS": 475226.6877777778,
+          "improvement": 0.5750975350705476,
+          "coverage": 0.8,
+          "improvementCI": {
+            "mean": 273301.6967407407,
+            "low": -11787.290498148139,
+            "high": 689308.8067833331,
+            "n": 10
+          }
+        }
+      }
+    },
+    {
+      "persona": "freelancer",
+      "transactions": 185,
+      "eligibleOrigins": 78,
+      "testedOrigins": 15,
+      "summary": {
+        "day": {
+          "n": 10,
+          "modelWIS": 9371.275185185186,
+          "naiveWIS": 7806.597111111111,
+          "improvement": -0.2004302325077174,
+          "coverage": 0.8,
+          "improvementCI": {
+            "mean": -1564.6780740740749,
+            "low": -5378.482648148149,
+            "high": 1161.6806407407398,
+            "n": 10
+          }
+        },
+        "week": {
+          "n": 10,
+          "modelWIS": 93381.25851851857,
+          "naiveWIS": 175267.02355555556,
+          "improvement": 0.46720577194649004,
+          "coverage": 0.9,
+          "improvementCI": {
+            "mean": 81885.765037037,
+            "low": -8633.590077777886,
+            "high": 232575.63858518517,
+            "n": 10
+          }
+        },
+        "month": {
+          "n": 10,
+          "modelWIS": 565111.0168148148,
+          "naiveWIS": 749456.8062222223,
+          "improvement": 0.24597253354284299,
+          "coverage": 0.5,
+          "improvementCI": {
+            "mean": 184345.78940740746,
+            "low": 41282.30752037039,
+            "high": 337131.43435740756,
+            "n": 10
+          }
+        }
+      }
+    },
+    {
+      "persona": "student",
+      "transactions": 289,
+      "eligibleOrigins": 78,
+      "testedOrigins": 15,
+      "summary": {
+        "day": {
+          "n": 10,
+          "modelWIS": 7356.859481481486,
+          "naiveWIS": 10854.468222222224,
+          "improvement": 0.3222275535875746,
+          "coverage": 0.9,
+          "improvementCI": {
+            "mean": 3497.608740740741,
+            "low": 1146.3379037037012,
+            "high": 5817.334148148149,
+            "n": 10
+          }
+        },
+        "week": {
+          "n": 10,
+          "modelWIS": 53767.41014814815,
+          "naiveWIS": 119444.85800000004,
+          "improvement": 0.549855799165937,
+          "coverage": 0.7,
+          "improvementCI": {
+            "mean": 65677.44785185184,
+            "low": 20549.365255555553,
+            "high": 112922.62881481479,
+            "n": 10
+          }
+        },
+        "month": {
+          "n": 10,
+          "modelWIS": 47215.90074074075,
+          "naiveWIS": 39648.25066666667,
+          "improvement": -0.19086970917575452,
+          "coverage": 0.8,
+          "improvementCI": {
+            "mean": -7567.650074074077,
+            "low": -22314.382592592607,
+            "high": 8079.883749999992,
+            "n": 10
+          }
+        }
+      }
+    },
+    {
+      "persona": "gig-worker",
+      "transactions": 431,
+      "eligibleOrigins": 78,
+      "testedOrigins": 15,
+      "summary": {
+        "day": {
+          "n": 10,
+          "modelWIS": 1310.040148148148,
+          "naiveWIS": 1283.7391111111108,
+          "improvement": -0.020487836515530766,
+          "coverage": 1,
+          "improvementCI": {
+            "mean": -26.301037037037258,
+            "low": -76.80646296296348,
+            "high": 23.123407407407647,
+            "n": 10
+          }
+        },
+        "week": {
+          "n": 10,
+          "modelWIS": 28043.39014814815,
+          "naiveWIS": 26832.63111111112,
+          "improvement": -0.045122635645509446,
+          "coverage": 1,
+          "improvementCI": {
+            "mean": -1210.7590370370374,
+            "low": -3326.837290740739,
+            "high": 892.6966833333297,
+            "n": 10
+          }
+        },
+        "month": {
+          "n": 10,
+          "modelWIS": 47085.2528888889,
+          "naiveWIS": 42196.83600000001,
+          "improvement": -0.11584794862081327,
+          "coverage": 0.9,
+          "improvementCI": {
+            "mean": -4888.4168888888835,
+            "low": -10059.360405555533,
+            "high": 18.626374074071936,
+            "n": 10
+          }
+        }
+      }
+    },
+    {
+      "persona": "family",
+      "transactions": 103,
+      "eligibleOrigins": 78,
+      "testedOrigins": 15,
+      "summary": {
+        "day": {
+          "n": 10,
+          "modelWIS": 13570.59274074074,
+          "naiveWIS": 14787.491333333333,
+          "improvement": 0.08229242980853102,
+          "coverage": 1,
+          "improvementCI": {
+            "mean": 1216.898592592592,
+            "low": -4968.770962962967,
+            "high": 6600.345185185186,
+            "n": 10
+          }
+        },
+        "week": {
+          "n": 10,
+          "modelWIS": 253765.98807407403,
+          "naiveWIS": 679754.3615555556,
+          "improvement": 0.6266798678667485,
+          "coverage": 0.9,
+          "improvementCI": {
+            "mean": 425988.3734814815,
+            "low": 143362.47579259265,
+            "high": 810670.9222796299,
+            "n": 10
+          }
+        },
+        "month": {
+          "n": 10,
+          "modelWIS": 365899.5748888889,
+          "naiveWIS": 572810.1244444444,
+          "improvement": 0.36122013338404824,
+          "coverage": 0.9,
+          "improvementCI": {
+            "mean": 206910.54955555554,
+            "low": -44353.54281666675,
+            "high": 657601.0028444446,
+            "n": 10
+          }
+        }
+      }
+    },
+    {
+      "persona": "regime-change",
+      "transactions": 179,
+      "eligibleOrigins": 78,
+      "testedOrigins": 15,
+      "summary": {
+        "day": {
+          "n": 10,
+          "modelWIS": 37158.06955555556,
+          "naiveWIS": 151873.51377777776,
+          "improvement": 0.7553354193811208,
+          "coverage": 1,
+          "improvementCI": {
+            "mean": 114715.44422222223,
+            "low": 943.0733333333337,
+            "high": 339752.2623703703,
+            "n": 10
+          }
+        },
+        "week": {
+          "n": 10,
+          "modelWIS": 300101.92140740744,
+          "naiveWIS": 661401.3166666667,
+          "improvement": 0.5462634956339936,
+          "coverage": 0.9,
+          "improvementCI": {
+            "mean": 361299.39525925927,
+            "low": -3165.4136166666185,
+            "high": 858884.565785185,
+            "n": 10
+          }
+        },
+        "month": {
+          "n": 10,
+          "modelWIS": 389136.60748148145,
+          "naiveWIS": 223672.51066666664,
+          "improvement": -0.7397605379473817,
+          "coverage": 0.8,
+          "improvementCI": {
+            "mean": -165464.09681481487,
+            "low": -382927.7772018519,
+            "high": 140944.22979629625,
+            "n": 10
+          }
+        }
+      }
+    },
+    {
+      "persona": "data-problems",
+      "transactions": 204,
+      "eligibleOrigins": 78,
+      "testedOrigins": 15,
+      "summary": {
+        "day": {
+          "n": 10,
+          "modelWIS": 11015.684074074077,
+          "naiveWIS": 483.15600000000006,
+          "improvement": -21.799435532362374,
+          "coverage": 1,
+          "improvementCI": {
+            "mean": -10532.528074074078,
+            "low": -31711.544962962973,
+            "high": 120.25339629629639,
+            "n": 10
+          }
+        },
+        "week": {
+          "n": 10,
+          "modelWIS": 175051.9383703704,
+          "naiveWIS": 394481.4406666667,
+          "improvement": 0.5562479743672207,
+          "coverage": 0.9,
+          "improvementCI": {
+            "mean": 219429.50229629633,
+            "low": 15130.842444444459,
+            "high": 567529.7662851851,
+            "n": 10
+          }
+        },
+        "month": {
+          "n": 10,
+          "modelWIS": 337037.4218518519,
+          "naiveWIS": 722421.1646666668,
+          "improvement": 0.5334613126854266,
+          "coverage": 0.7,
+          "improvementCI": {
+            "mean": 385383.7428148148,
+            "low": 92015.37414074075,
+            "high": 740916.2938870369,
+            "n": 10
+          }
+        }
+      }
+    },
+    {
+      "persona": "seasonal",
+      "transactions": 263,
+      "eligibleOrigins": 78,
+      "testedOrigins": 15,
+      "summary": {
+        "day": {
+          "n": 10,
+          "modelWIS": 42404.844,
+          "naiveWIS": 122598.88355555556,
+          "improvement": 0.6541172091442066,
+          "coverage": 0.9,
+          "improvementCI": {
+            "mean": 80194.03955555556,
+            "low": 1683.5144444444445,
+            "high": 233297.5404055555,
+            "n": 10
+          }
+        },
+        "week": {
+          "n": 10,
+          "modelWIS": 363663.5305185186,
+          "naiveWIS": 640871.6086666667,
+          "improvement": 0.43254853920722036,
+          "coverage": 0.8,
+          "improvementCI": {
+            "mean": 277208.07814814814,
+            "low": 26469.347127777826,
+            "high": 640437.5583870367,
+            "n": 10
+          }
+        },
+        "month": {
+          "n": 10,
+          "modelWIS": 906278.3806666664,
+          "naiveWIS": 1003689.1553333334,
+          "improvement": 0.09705273206256382,
+          "coverage": 0.4,
+          "improvementCI": {
+            "mean": 97410.77466666666,
+            "low": -144411.17238703702,
+            "high": 485873.2365907408,
+            "n": 10
+          }
+        }
+      }
+    }
+  ],
+  "recurrence": [
+    {
+      "persona": "salaried",
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "found": 6,
+      "expected": 6,
+      "tp": 6,
+      "fp": 0,
+      "fn": 0
+    },
+    {
+      "persona": "freelancer",
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "found": 4,
+      "expected": 4,
+      "tp": 4,
+      "fp": 0,
+      "fn": 0
+    },
+    {
+      "persona": "student",
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "found": 2,
+      "expected": 2,
+      "tp": 2,
+      "fp": 0,
+      "fn": 0
+    },
+    {
+      "persona": "gig-worker",
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "found": 2,
+      "expected": 2,
+      "tp": 2,
+      "fp": 0,
+      "fn": 0
+    },
+    {
+      "persona": "family",
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "found": 5,
+      "expected": 5,
+      "tp": 5,
+      "fp": 0,
+      "fn": 0
+    },
+    {
+      "persona": "regime-change",
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "found": 5,
+      "expected": 5,
+      "tp": 5,
+      "fp": 0,
+      "fn": 0
+    },
+    {
+      "persona": "data-problems",
+      "precision": 1,
+      "recall": 0.8333333333333334,
+      "f1": 0.9090909090909091,
+      "found": 5,
+      "expected": 6,
+      "tp": 5,
+      "fp": 0,
+      "fn": 1
+    },
+    {
+      "persona": "seasonal",
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "found": 6,
+      "expected": 6,
+      "tp": 6,
+      "fp": 0,
+      "fn": 0
+    }
+  ],
+  "overall": {
+    "day": {
+      "n": 80,
+      "modelWIS": 20291.320777777782,
+      "naiveWIS": 53859.98574999999,
+      "improvement": 0.6232579623774263,
+      "coverage": 0.9375,
+      "improvementCI": {
+        "mean": 33568.66497222222,
+        "low": 66.34732175925906,
+        "high": 74761.27103587959,
+        "n": 80
+      }
+    },
+    "week": {
+      "n": 80,
+      "modelWIS": 182108.55970370368,
+      "naiveWIS": 401869.45366666664,
+      "improvement": 0.5468464745400757,
+      "coverage": 0.85,
+      "improvementCI": {
+        "mean": 219760.89396296302,
+        "low": 128739.53821898148,
+        "high": 336356.2270018517,
+        "n": 80
+      }
+    },
+    "month": {
+      "n": 80,
+      "modelWIS": 357461.14329629636,
+      "naiveWIS": 478640.1919722222,
+      "improvement": 0.2531735752833695,
+      "coverage": 0.725,
+      "improvementCI": {
+        "mean": 121179.04867592598,
+        "low": 26492.510133101845,
+        "high": 238435.95373749992,
+        "n": 80
+      }
+    }
+  },
+  "ablations": {
+    "recurrence": {
+      "n": 96,
+      "deltaWIS": 168000.0778317902,
+      "ci": {
+        "mean": 168000.0778317902,
+        "low": 110832.8641410108,
+        "high": 236587.41474189813,
+        "n": 96
+      }
+    },
+    "hurdle": {
+      "n": 96,
+      "deltaWIS": 25328.15141975309,
+      "ci": {
+        "mean": 25328.15141975309,
+        "low": 9515.343294270822,
+        "high": 45802.487502893506,
+        "n": 96
+      }
+    },
+    "blockBootstrap": {
+      "n": 96,
+      "deltaWIS": 25716.59879243829,
+      "ci": {
+        "mean": 25716.59879243829,
+        "low": 10667.162586998455,
+        "high": 45255.10378993058,
+        "n": 96
+      }
+    }
+  }
+}
