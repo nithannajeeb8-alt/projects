@@ -316,6 +316,169 @@ img { display: block; max-width: 100%; }
   [data-reveal-text] { opacity: 1; transform: none; }
   .gallery-card[data-reveal] img { clip-path: none; }
 }
+
+
+/* --------------------------------------------------------------------------
+   Impact + archive refinement: editorial, tactile, and consistent with navy.
+   -------------------------------------------------------------------------- */
+.impact-section{padding:clamp(86px,9vw,132px) 0 clamp(76px,8vw,112px);background:var(--navy);color:var(--white)}
+.impact-top{align-items:end;margin-bottom:clamp(35px,5vw,64px);gap:clamp(28px,6vw,90px)}
+.impact-top h2{max-width:820px;font-size:clamp(48px,7.3vw,96px);line-height:.94;letter-spacing:-.062em}
+.impact-top h2 em{font-family:var(--display);font-style:italic;font-weight:400;color:#cbd9e8}
+.impact-top p{max-width:300px;font-size:13px;line-height:1.85}
+.impact-ledger{display:grid;grid-template-columns:minmax(0,1.28fr) minmax(300px,.72fr);gap:14px;align-items:stretch}
+.impact-lead{position:relative;isolation:isolate;overflow:hidden;display:flex;min-height:395px;flex-direction:column;justify-content:space-between;padding:clamp(24px,3.2vw,44px);background:var(--white);color:var(--navy)}
+.impact-lead:after{position:absolute;z-index:-1;right:-94px;top:68px;width:330px;height:330px;border:1px solid rgba(7,29,56,.11);border-radius:50%;content:"";box-shadow:0 0 0 34px rgba(7,29,56,.025),0 0 0 68px rgba(7,29,56,.02)}
+.impact-lead-meta,.impact-mini-meta{display:flex;justify-content:space-between;gap:14px;font-family:var(--mono);font-size:8px;letter-spacing:.12em;text-transform:uppercase}
+.impact-lead-meta{color:var(--muted)}
+.impact-lead-number{display:flex;align-items:flex-start;gap:4px;margin:15px 0 0;font-family:var(--display);font-size:clamp(100px,14.3vw,190px);line-height:.83;letter-spacing:-.075em;white-space:nowrap}
+.impact-lead-number sup{margin-top:.1em;font-family:var(--sans);font-size:.26em;font-weight:700;letter-spacing:-.04em}
+.impact-lead-bottom{display:flex;align-items:end;justify-content:space-between;gap:20px;padding-top:22px;border-top:1px solid var(--line)}
+.impact-lead-bottom h3{margin:0;font-size:clamp(19px,2vw,25px);font-weight:600;letter-spacing:-.04em}
+.impact-lead-bottom p{max-width:440px;margin:9px 0 0;color:var(--muted);font-size:12px;line-height:1.75}
+.impact-stamp{display:grid;width:54px;height:54px;flex:0 0 54px;place-content:center;border:1px solid rgba(7,29,56,.25);border-radius:50%;font-family:var(--mono);font-size:10px;line-height:1.25;text-align:center;letter-spacing:.08em}
+.impact-aside{display:grid;grid-template-rows:1fr 1fr;gap:14px}
+.impact-mini{display:flex;min-height:190px;flex-direction:column;justify-content:space-between;padding:24px 26px}
+.impact-mini-light{background:var(--ice);color:var(--navy)}
+.impact-mini-outline{border:1px solid rgba(255,255,255,.35);background:var(--navy);color:var(--white)}
+.impact-mini-meta{opacity:.72}
+.impact-mini-number{display:block;margin:8px 0 0;font-family:var(--display);font-size:clamp(62px,7vw,88px);font-weight:400;line-height:.82;letter-spacing:-.06em}
+.impact-mini-number sup{font-family:var(--sans);font-size:.38em;font-weight:600}
+.impact-mini-copy{display:flex;align-items:baseline;justify-content:space-between;gap:20px;padding-top:15px;border-top:1px solid currentColor;border-color:rgba(7,29,56,.18)}
+.impact-mini-outline .impact-mini-copy{border-color:rgba(255,255,255,.25)}
+.impact-mini-copy h3{max-width:170px;margin:0;font-size:14px;line-height:1.3;font-weight:600;letter-spacing:-.02em}
+.impact-mini-copy p{max-width:185px;margin:0;color:var(--muted);font-size:10px;line-height:1.65}
+.impact-mini-outline .impact-mini-copy p{color:#b9cbe0}
+.impact-return{display:grid;grid-template-columns:minmax(190px,.65fr) minmax(0,1.6fr);gap:35px;align-items:center;margin-top:14px;padding:27px 0;border-top:1px solid rgba(255,255,255,.27);border-bottom:1px solid rgba(255,255,255,.27)}
+.impact-return-label{color:#b9cbe0;font-family:var(--mono);font-size:8px;letter-spacing:.13em;text-transform:uppercase}
+.impact-return-heading p{margin:10px 0 0;font-family:var(--display);font-size:clamp(21px,2.4vw,30px);line-height:1.15;letter-spacing:-.025em}
+.impact-cycle{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.impact-cycle-step{display:flex;min-width:0;flex-direction:column;gap:12px}
+.impact-cycle-step span{color:#a9bfd8;font-family:var(--mono);font-size:8px;letter-spacing:.08em}
+.impact-cycle-step strong{max-width:135px;font-size:12px;line-height:1.35;font-weight:600}
+.impact-cycle-return strong{color:#fff}
+.impact-cycle-arrow{color:#90a9c4;font-size:20px}
+.impact-foot{margin-top:20px;font-size:8px}
+
+.editions-section{overflow:hidden;padding-top:clamp(88px,9vw,128px);padding-bottom:clamp(76px,8vw,110px);background:var(--paper)}
+.archive-heading{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,.44fr);align-items:end;gap:44px;margin-bottom:clamp(36px,5vw,62px)}
+.archive-heading h2{max-width:820px;font-size:clamp(50px,7.8vw,100px);line-height:.92;letter-spacing:-.065em}
+.archive-heading h2 em{font-family:var(--display);font-weight:400}
+.archive-heading-side>p{max-width:330px;margin:0;color:var(--muted);font-size:13px;line-height:1.8}
+.archive-controls-row{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-top:22px;padding-top:16px;border-top:1px solid var(--line)}
+.archive-current{color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:.08em}
+.archive-current strong{color:var(--navy);font-size:15px;font-weight:500}
+.archive-current>span{opacity:.65}
+.edition-controls{display:flex;gap:8px;margin:0}
+.edition-control{width:43px;height:43px;border:1px solid #b8c7d8;border-radius:50%;background:transparent;color:var(--navy);font-size:18px;transition:background .22s ease,color .22s ease,border-color .22s ease,transform .22s ease}
+.edition-control:hover:not(:disabled){transform:translateY(-2px);border-color:var(--navy);background:var(--navy);color:var(--white)}
+.edition-control:disabled{opacity:.28;cursor:not-allowed}
+.edition-wheel{overflow-x:auto;overflow-y:hidden;padding:4px 2px 24px;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior-x:contain;cursor:grab;touch-action:pan-x pan-y}
+.edition-wheel::-webkit-scrollbar{display:none}
+.edition-wheel:active{cursor:grabbing}
+.edition-track{display:flex;gap:18px;width:max-content;padding-right:2px}
+.edition-card{position:relative;display:flex;width:clamp(275px,30vw,370px);min-height:0;flex:0 0 auto;flex-direction:column;overflow:hidden;padding:0;border:1px solid var(--line);background:var(--white);color:var(--navy);scroll-snap-align:start;text-decoration:none;transition:transform .35s var(--ease),box-shadow .35s ease,border-color .35s ease}
+.edition-card:hover{transform:translateY(-7px);border-color:#9eb1c7;background:var(--white);color:var(--navy);box-shadow:0 18px 36px rgba(7,29,56,.12)}
+.edition-card:focus-visible{outline:3px solid #4e78a6;outline-offset:4px}
+.edition-card-visual{position:relative;height:clamp(245px,26vw,310px);overflow:hidden;background:var(--ice);isolation:isolate}
+.edition-card-visual:after{position:absolute;inset:0;z-index:1;background:rgba(7,29,56,.16);content:"";pointer-events:none;transition:background .3s ease}
+.edition-card:hover .edition-card-visual:after{background:rgba(7,29,56,.06)}
+.edition-card-visual img{display:block;width:100%;height:100%;object-fit:cover;filter:saturate(.78);transform:scale(1.001);transition:transform .8s var(--ease),filter .5s ease}
+.edition-card:hover .edition-card-visual img{transform:scale(1.055);filter:saturate(1)}
+.edition-card-overline{position:absolute;z-index:2;top:15px;left:15px;padding:8px 10px;background:var(--navy);color:var(--white);font-family:var(--mono);font-size:7px;letter-spacing:.12em}
+.edition-card-number{position:absolute;z-index:2;bottom:-.16em;left:15px;color:var(--white);font-family:var(--display);font-size:clamp(112px,13vw,168px);line-height:.9;letter-spacing:-.08em;text-shadow:0 3px 18px rgba(0,0,0,.18)}
+.edition-card-visual-index{position:absolute;z-index:2;right:15px;bottom:15px;color:var(--white);font-family:var(--mono);font-size:7px;letter-spacing:.12em;text-transform:uppercase}
+.edition-card-bottom{display:flex;min-height:118px;align-items:center;justify-content:space-between;gap:14px;padding:21px 21px 22px;background:var(--white)}
+.edition-card-bottom>div{display:flex;min-width:0;flex-direction:column;align-items:flex-start}
+.edition-card-bottom small{color:var(--muted);font-family:var(--mono);font-size:7px;letter-spacing:.1em;text-transform:uppercase}
+.edition-card-bottom strong{display:block;margin-top:8px;font-size:21px;font-weight:600;letter-spacing:-.045em}
+.edition-card-bottom span:not(.edition-card-arrow){display:block;margin-top:5px;color:var(--muted);font-size:10px}
+.edition-card-arrow{display:grid;width:42px;height:42px;flex:0 0 42px;place-items:center;border:1px solid #c7d3e0;border-radius:50%;background:var(--white);color:var(--navy);font-size:18px;transition:transform .3s ease,background .3s ease,color .3s ease,border-color .3s ease}
+.edition-card:hover .edition-card-arrow{transform:rotate(45deg);border-color:var(--navy);background:var(--navy);color:var(--white)}
+.edition-card-current .edition-card-bottom{background:#edf2f8}
+.edition-card-current .edition-card-bottom small{color:var(--navy-3)}
+.archive-progress-row{display:grid;grid-template-columns:auto minmax(70px,1fr) auto;align-items:center;gap:18px;margin-top:3px}
+.archive-progress-label,.archive-progress-total,.edition-hint,.archive-image-note{font-family:var(--mono);font-size:8px;letter-spacing:.1em;text-transform:uppercase}
+.archive-progress-label,.archive-progress-total{color:var(--muted)}
+.archive-progress-track{height:2px;overflow:hidden;background:#d9e2ec}
+.archive-progress-track span{display:block;width:100%;height:100%;background:var(--navy-2);transform:scaleX(0);transform-origin:left center;transition:transform .12s linear}
+.edition-hint{margin:17px 0 0;color:var(--navy-3);letter-spacing:.06em}
+.archive-image-note{margin:10px 0 0;color:#8998aa;font-size:7px;letter-spacing:.05em;text-transform:none}
+
+@media(max-width:980px){
+  .impact-ledger{grid-template-columns:minmax(0,1.1fr) minmax(260px,.9fr)}
+  .impact-lead{min-height:360px}
+  .impact-lead-number{font-size:clamp(92px,14vw,150px)}
+  .impact-mini{padding:20px}
+  .impact-mini-copy{display:block}
+  .impact-mini-copy p{margin-top:6px;max-width:260px}
+  .impact-return{grid-template-columns:1fr;gap:22px}
+  .archive-heading{grid-template-columns:1fr minmax(245px,.5fr);gap:28px}
+}
+@media(max-width:720px){
+  .impact-section{padding:78px 0 76px}
+  .impact-top{margin-bottom:30px}
+  .impact-top h2{font-size:clamp(43px,11.8vw,66px);line-height:.98}
+  .impact-top p{max-width:100%;margin-top:15px;font-size:12px}
+  .impact-ledger{grid-template-columns:1fr;gap:10px}
+  .impact-lead{min-height:350px;padding:23px}
+  .impact-lead-meta{font-size:7px}
+  .impact-lead-number{font-size:clamp(100px,25vw,150px);margin:35px 0 25px}
+  .impact-lead-bottom{gap:12px;padding-top:17px}
+  .impact-lead-bottom h3{font-size:19px}
+  .impact-lead-bottom p{font-size:11px;max-width:280px}
+  .impact-stamp{width:46px;height:46px;flex-basis:46px;font-size:9px}
+  .impact-aside{grid-template-columns:1fr 1fr;grid-template-rows:auto;gap:10px}
+  .impact-mini{min-height:205px;padding:16px 14px}
+  .impact-mini-meta{display:block;font-size:6px;line-height:1.6}
+  .impact-mini-meta span{display:block}
+  .impact-mini-number{font-size:clamp(53px,13vw,76px);margin:20px 0 13px}
+  .impact-mini-copy{padding-top:11px}
+  .impact-mini-copy h3{font-size:12px}
+  .impact-mini-copy p{font-size:9px;line-height:1.55}
+  .impact-return{margin-top:10px;padding:21px 0;gap:18px}
+  .impact-return-heading p{font-size:23px}
+  .impact-cycle{display:grid;grid-template-columns:1fr 18px 1fr;gap:12px 8px}
+  .impact-cycle-step{gap:7px}
+  .impact-cycle-step strong{font-size:10px}
+  .impact-cycle-arrow{justify-self:center;font-size:16px}
+  .impact-cycle > :nth-child(5){grid-column:1;grid-row:2}
+  .impact-cycle > :nth-child(6){grid-column:2;grid-row:2}
+  .impact-cycle > :nth-child(7){grid-column:3;grid-row:2}
+  .impact-foot{font-size:7px;line-height:1.6}
+
+  .editions-section{padding:78px 0 72px}
+  .archive-heading{display:block;margin-bottom:27px}
+  .archive-heading h2{font-size:clamp(46px,12.4vw,72px);line-height:.96}
+  .archive-heading-side>p{margin-top:16px;font-size:12px}
+  .archive-controls-row{margin-top:20px;padding-top:13px}
+  .edition-control{width:40px;height:40px}
+  .edition-wheel{margin-right:-18px;padding:3px 18px 18px 0}
+  .edition-track{gap:12px}
+  .edition-card{width:min(78vw,310px)}
+  .edition-card-visual{height:clamp(220px,66vw,260px)}
+  .edition-card-number{font-size:clamp(105px,33vw,140px);left:12px}
+  .edition-card-overline{top:12px;left:12px;font-size:6px}
+  .edition-card-visual-index{right:12px;bottom:12px;font-size:6px}
+  .edition-card-bottom{min-height:105px;padding:17px 15px}
+  .edition-card-bottom strong{font-size:19px}
+  .edition-card-arrow{width:36px;height:36px;flex-basis:36px}
+  .archive-progress-row{grid-template-columns:1fr auto;gap:9px 14px;margin-top:0}
+  .archive-progress-track{grid-column:1 / -1;grid-row:2}
+  .archive-progress-label,.archive-progress-total{font-size:7px}
+  .edition-hint{font-size:7px;line-height:1.6}
+  .archive-image-note{font-size:7px;line-height:1.6}
+}
+@media(max-width:380px){
+  .impact-aside{grid-template-columns:1fr}
+  .impact-mini{min-height:175px}
+  .impact-mini-number{margin:14px 0 10px}
+  .edition-card{width:82vw}
+}
+@media(prefers-reduced-motion:reduce){
+  .edition-card,.edition-card-visual img,.edition-card-arrow,.edition-card-visual:after{transition:none!important}
+}
+
 </style>
 <style id="asparanza-scroll-refinement">
 
@@ -537,25 +700,112 @@ img { display: block; max-width: 100%; }
 
   <section class="impact-section" id="impact">
     <div class="container">
-      <div class="impact-top" data-reveal-text><div><span class="kicker">04 / The impact so far</span><h2>Five editions.<br>More than a thousand stories.</h2></div><p>Figures shared by the programme team. Add the verified edition-wise sales totals before publication.</p></div>
-      <div class="impact-grid">
-        <div class="impact-stat" data-reveal-text><span class="impact-number">05</span><span class="impact-label">Editions conducted</span><span class="impact-detail">An annual Commerce Department initiative, now entering its fifth edition.</span></div>
-        <div class="impact-stat" data-reveal-text data-delay="1"><span class="impact-number">1,000+</span><span class="impact-label">Unique products sold</span><span class="impact-detail">A cumulative figure across the editions, as shared by the organisers.</span></div>
-        <div class="impact-stat" data-reveal-text data-delay="2"><span class="impact-number">100%</span><span class="impact-label">Maker profit stays with makers</span><span class="impact-detail">Profits from participating makers’ product sales go back to the people who made them.</span></div>
+      <div class="impact-top" data-reveal-text>
+        <div>
+          <span class="kicker">04 / The impact so far</span>
+          <h2>The numbers are only<br><em>part of the story.</em></h2>
+        </div>
+        <p>Five editions have brought makers, students and customers together on campus. What matters most is where the value goes next.</p>
       </div>
+
+      <div class="impact-ledger">
+        <article class="impact-lead" data-reveal-text>
+          <div class="impact-lead-meta"><span>01 / PRODUCT DIVERSITY</span><span>ACROSS FIVE EDITIONS</span></div>
+          <div class="impact-lead-number" aria-label="More than one thousand"><span>1,000</span><sup>+</sup></div>
+          <div class="impact-lead-bottom">
+            <div>
+              <h3>unique products sold</h3>
+              <p>More than a thousand distinct products have reached the campus marketplace through participating makers.</p>
+            </div>
+            <span class="impact-stamp" aria-hidden="true">AS<br>05</span>
+          </div>
+        </article>
+
+        <div class="impact-aside">
+          <article class="impact-mini impact-mini-light" data-reveal-text data-delay="1">
+            <div class="impact-mini-meta"><span>02 / CONTINUITY</span><span>ANNUAL INITIATIVE</span></div>
+            <strong class="impact-mini-number">05</strong>
+            <div class="impact-mini-copy"><h3>editions conducted</h3><p>A Commerce Department initiative that has grown year after year.</p></div>
+          </article>
+          <article class="impact-mini impact-mini-outline" data-reveal-text data-delay="2">
+            <div class="impact-mini-meta"><span>03 / MAKER FIRST</span><span>THE CENTRAL PROMISE</span></div>
+            <strong class="impact-mini-number">100<sup>%</sup></strong>
+            <div class="impact-mini-copy"><h3>maker profits stay with makers</h3><p>Profits from products sold by participating makers go back to the people who made them.</p></div>
+          </article>
+        </div>
+      </div>
+
+      <div class="impact-return" data-reveal-text>
+        <div class="impact-return-heading">
+          <span class="impact-return-label">THE VALUE CYCLE</span>
+          <p>Support should create opportunity<br>without taking ownership away.</p>
+        </div>
+        <div class="impact-cycle" aria-label="Products are made by makers, presented on campus, sold with student support, and the profits return to the makers">
+          <div class="impact-cycle-step"><span>01</span><strong>Made by makers</strong></div>
+          <span class="impact-cycle-arrow" aria-hidden="true">→</span>
+          <div class="impact-cycle-step"><span>02</span><strong>Presented on campus</strong></div>
+          <span class="impact-cycle-arrow" aria-hidden="true">→</span>
+          <div class="impact-cycle-step"><span>03</span><strong>Sold with student support</strong></div>
+          <span class="impact-cycle-arrow" aria-hidden="true">→</span>
+          <div class="impact-cycle-step impact-cycle-return"><span>04</span><strong>Profits return to makers</strong></div>
+        </div>
+      </div>
+
       <div class="impact-foot"><span>Asparanza · Fifth edition</span><span>Impact is measured in opportunity, not only numbers.</span></div>
     </div>
   </section>
 
   <section class="section editions-section" id="editions">
     <div class="container">
-      <div class="section-heading" data-reveal-text><div><span class="kicker">05 / The archive</span><h2>One idea. <em>Five chapters.</em></h2></div><div><p>Move through the editions and open each chapter to explore its story.</p><div class="edition-controls"><button class="edition-control tap-feedback" type="button" data-edition-prev aria-label="Previous edition">←</button><button class="edition-control tap-feedback" type="button" data-edition-next aria-label="Next edition">→</button></div></div></div>
-      <div class="edition-wheel" tabindex="0" aria-label="Scroll horizontally to browse editions">
-        <div class="edition-track">
-          <a class="edition-card" href="editions/edition-01.html"><div class="edition-card-top"><span>Asparanza archive</span><span>01 / 05</span></div><span class="edition-card-number">01</span><div class="edition-card-bottom"><div><strong>Edition 1</strong><small>Explore this chapter</small></div><span class="edition-card-arrow" aria-hidden="true">↗</span></div></a><a class="edition-card" href="editions/edition-02.html"><div class="edition-card-top"><span>Asparanza archive</span><span>02 / 05</span></div><span class="edition-card-number">02</span><div class="edition-card-bottom"><div><strong>Edition 2</strong><small>Explore this chapter</small></div><span class="edition-card-arrow" aria-hidden="true">↗</span></div></a><a class="edition-card" href="editions/edition-03.html"><div class="edition-card-top"><span>Asparanza archive</span><span>03 / 05</span></div><span class="edition-card-number">03</span><div class="edition-card-bottom"><div><strong>Edition 3</strong><small>Explore this chapter</small></div><span class="edition-card-arrow" aria-hidden="true">↗</span></div></a><a class="edition-card" href="editions/edition-04.html"><div class="edition-card-top"><span>Asparanza archive</span><span>04 / 05</span></div><span class="edition-card-number">04</span><div class="edition-card-bottom"><div><strong>Edition 4</strong><small>Explore this chapter</small></div><span class="edition-card-arrow" aria-hidden="true">↗</span></div></a><a class="edition-card" href="editions/edition-05.html"><div class="edition-card-top"><span>Asparanza archive</span><span>05 / 05</span></div><span class="edition-card-number">05</span><div class="edition-card-bottom"><div><strong>Edition 5</strong><small>Fifth edition · 2026</small></div><span class="edition-card-arrow" aria-hidden="true">↗</span></div></a>
+      <div class="section-heading archive-heading" data-reveal-text>
+        <div>
+          <span class="kicker">05 / The archive</span>
+          <h2>Five editions.<br><em>One evolving story.</em></h2>
+        </div>
+        <div class="archive-heading-side">
+          <p>Go back through the chapters. Each edition opens its own page, with room for its photographs, people and moments.</p>
+          <div class="archive-controls-row">
+            <span class="archive-current"><strong data-archive-current>01</strong><span> / 05</span></span>
+            <div class="edition-controls">
+              <button class="edition-control tap-feedback" type="button" data-edition-prev aria-label="Previous edition">←</button>
+              <button class="edition-control tap-feedback" type="button" data-edition-next aria-label="Next edition">→</button>
+            </div>
+          </div>
         </div>
       </div>
-      <p class="edition-hint">Use your trackpad, swipe or scroll to move through the editions →</p>
+
+      <div class="edition-wheel" tabindex="0" aria-label="Browse the five Asparanza editions horizontally">
+        <div class="edition-track">
+          <a class="edition-card" href="editions/edition-01.html" aria-label="Open the first Asparanza edition archive">
+            <div class="edition-card-visual"><img src="https://mesmampadcollege.edu.in/resources/images/about1.jpg" alt="Illustrative view of the MES Mampad College campus" loading="lazy" decoding="async"><span class="edition-card-overline">ASPARANZA / ARCHIVE</span><span class="edition-card-number">01</span><span class="edition-card-visual-index">CHAPTER ONE</span></div>
+            <div class="edition-card-bottom"><div><small>01 / 05 · ARCHIVE ENTRY</small><strong>Edition 01</strong><span>Open this chapter</span></div><span class="edition-card-arrow" aria-hidden="true">↗</span></div>
+          </a>
+          <a class="edition-card" href="editions/edition-02.html" aria-label="Open the second Asparanza edition archive">
+            <div class="edition-card-visual"><img src="https://manufacturers.tanutra.com/wp-content/uploads/2024/06/TF.webp" alt="Illustrative handmade products arranged for display" loading="lazy" decoding="async"><span class="edition-card-overline">ASPARANZA / ARCHIVE</span><span class="edition-card-number">02</span><span class="edition-card-visual-index">CHAPTER TWO</span></div>
+            <div class="edition-card-bottom"><div><small>02 / 05 · ARCHIVE ENTRY</small><strong>Edition 02</strong><span>Open this chapter</span></div><span class="edition-card-arrow" aria-hidden="true">↗</span></div>
+          </a>
+          <a class="edition-card" href="editions/edition-03.html" aria-label="Open the third Asparanza edition archive">
+            <div class="edition-card-visual"><img src="https://mesmampadcollege.edu.in/source/Files/criterion%204/4-2/421/LIBRARY%20PHOTOS/LIB%20LAB.jpeg" alt="Illustrative MES Mampad College learning space" loading="lazy" decoding="async"><span class="edition-card-overline">ASPARANZA / ARCHIVE</span><span class="edition-card-number">03</span><span class="edition-card-visual-index">CHAPTER THREE</span></div>
+            <div class="edition-card-bottom"><div><small>03 / 05 · ARCHIVE ENTRY</small><strong>Edition 03</strong><span>Open this chapter</span></div><span class="edition-card-arrow" aria-hidden="true">↗</span></div>
+          </a>
+          <a class="edition-card" href="editions/edition-04.html" aria-label="Open the fourth Asparanza edition archive">
+            <div class="edition-card-visual"><img src="https://cdn.culturecrossroads.ca/images/d39b6df9c32d68c27f08909b7d2aa947_cc.webp" alt="Illustrative handmade craft and textile products" loading="lazy" decoding="async"><span class="edition-card-overline">ASPARANZA / ARCHIVE</span><span class="edition-card-number">04</span><span class="edition-card-visual-index">CHAPTER FOUR</span></div>
+            <div class="edition-card-bottom"><div><small>04 / 05 · ARCHIVE ENTRY</small><strong>Edition 04</strong><span>Open this chapter</span></div><span class="edition-card-arrow" aria-hidden="true">↗</span></div>
+          </a>
+          <a class="edition-card edition-card-current" href="editions/edition-05.html" aria-label="Open the fifth Asparanza edition archive">
+            <div class="edition-card-visual"><img src="https://images.yourstory.com/cs/2/28b451402d6a11e9aa979329348d4c3e/14-1771696020468.jpg" alt="Illustrative maker displaying handmade products" loading="lazy" decoding="async"><span class="edition-card-overline">ASPARANZA / ARCHIVE</span><span class="edition-card-number">05</span><span class="edition-card-visual-index">CURRENT EDITION</span></div>
+            <div class="edition-card-bottom"><div><small>05 / 05 · 2026</small><strong>Edition 05</strong><span>Explore the current chapter</span></div><span class="edition-card-arrow" aria-hidden="true">↗</span></div>
+          </a>
+        </div>
+      </div>
+
+      <div class="archive-progress-row">
+        <span class="archive-progress-label">MOVE THROUGH THE ARCHIVE</span>
+        <div class="archive-progress-track" aria-hidden="true"><span data-archive-progress></span></div>
+        <span class="archive-progress-total">05 CHAPTERS</span>
+      </div>
+      <p class="edition-hint">Swipe, drag or use the arrows to browse. Select a cover to open its edition page.</p>
+      <p class="archive-image-note">Archive cover photography is illustrative for this template. Replace with verified photographs from each edition.</p>
     </div>
   </section>
 
@@ -742,7 +992,7 @@ img { display: block; max-width: 100%; }
   });
 
   // Reading words remember a hover, tap or finger-swipe and keep their underline afterwards.
-  const copySelector = '.hero-intro, .about-lead, .about-body, .community-intro, .community-step p, .impact-top > p, .impact-detail, .college-copy > p, .faculty-heading > p, .contact-main > p';
+  const copySelector = '.hero-intro, .about-lead, .about-body, .community-intro, .community-step p, .impact-top > p, .impact-detail, .impact-lead-bottom p, .impact-mini-copy p, .impact-return-heading p, .college-copy > p, .faculty-heading > p, .contact-main > p';
   document.querySelectorAll(copySelector).forEach(copy => {
     copy.classList.add('touch-copy');
     wrapWords(copy, 'touch-word');
@@ -783,5 +1033,40 @@ img { display: block; max-width: 100%; }
   update();
 })();
 </script>
+
+<script>
+(() => {
+  const wheel = document.querySelector('.edition-wheel');
+  if (!wheel) return;
+  const cards = [...wheel.querySelectorAll('.edition-card')];
+  const counter = document.querySelector('[data-archive-current]');
+  const progress = document.querySelector('[data-archive-progress]');
+  const previous = document.querySelector('[data-edition-prev]');
+  const next = document.querySelector('[data-edition-next]');
+  let frame = 0;
+  const updateArchive = () => {
+    frame = 0;
+    const max = Math.max(1, wheel.scrollWidth - wheel.clientWidth);
+    const fraction = Math.max(0, Math.min(1, wheel.scrollLeft / max));
+    if (progress) progress.style.transform = `scaleX(${fraction})`;
+    const step = (cards[0]?.getBoundingClientRect().width || 1) + (parseFloat(getComputedStyle(wheel.querySelector('.edition-track')).columnGap) || 0);
+    const active = Math.min(cards.length, Math.max(1, Math.round(wheel.scrollLeft / Math.max(1, step)) + 1));
+    if (counter) counter.textContent = String(active).padStart(2, '0');
+    if (previous) previous.disabled = wheel.scrollLeft <= 2;
+    if (next) next.disabled = wheel.scrollLeft >= max - 2;
+  };
+  const schedule = () => { if (!frame) frame = requestAnimationFrame(updateArchive); };
+  wheel.addEventListener('scroll', schedule, {passive:true});
+  window.addEventListener('resize', schedule, {passive:true});
+  previous?.addEventListener('click', schedule);
+  next?.addEventListener('click', schedule);
+  wheel.addEventListener('keydown', event => {
+    if (event.key === 'ArrowRight') { event.preventDefault(); wheel.scrollBy({left: 320, behavior:'smooth'}); }
+    if (event.key === 'ArrowLeft') { event.preventDefault(); wheel.scrollBy({left: -320, behavior:'smooth'}); }
+  });
+  updateArchive();
+})();
+</script>
+
 </body>
 </html>
